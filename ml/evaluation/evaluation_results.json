@@ -1,0 +1,25 @@
+{
+  "project": "AgriMind AI",
+  "crop": "soybean",
+  "model": "EfficientNet-B0",
+  "image_size": "224x224",
+  "test_images": 55,
+  "accuracy": 98.18,
+  "precision": 98.33,
+  "recall": 98.18,
+  "f1_score": 98.18,
+  "classes": [
+    "Bacterial Blight",
+    "Cercospora Leaf Blight",
+    "Healthy",
+    "Rust",
+    "Sudden Death Syndrome"
+  ],
+  "confusion_matrix": [
+    [10, 0, 0, 1, 0],
+    [0, 11, 0, 0, 0],
+    [0, 0, 11, 0, 0],
+    [0, 0, 0, 11, 0],
+    [0, 0, 0, 0, 11]
+  ]
+}

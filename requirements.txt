@@ -1,0 +1,17 @@
+datasets
+fastapi
+uvicorn
+python-multipart
+bcrypt
+python-jose
+python-dotenv
+email-validator
+pillow
+imagehash
+numpy
+pandas
+scikit-learn
+torch
+torchvision
+matplotlib
+seaborn

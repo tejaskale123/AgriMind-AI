@@ -1,0 +1,178 @@
+# ============================================================
+# AGRIMIND AI - GITIGNORE
+# ============================================================
+
+# ------------------------------------------------------------
+# Python
+# ------------------------------------------------------------
+
+__pycache__/
+*.py[cod]
+*.pyo
+
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+*.egg-info/
+dist/
+build/
+
+# ------------------------------------------------------------
+# Virtual Environments
+# ------------------------------------------------------------
+
+venv/
+env/
+.venv/
+ENV/
+
+# Conda environments
+conda-env/
+.agri*
+!agrimind/
+
+# ------------------------------------------------------------
+# Environment / Secrets
+# ------------------------------------------------------------
+
+.env
+.env.*
+!.env.example
+
+# ------------------------------------------------------------
+# Frontend
+# ------------------------------------------------------------
+
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+node_modules/
+
+# ------------------------------------------------------------
+# Python / Backend generated files
+# ------------------------------------------------------------
+
+backend/__pycache__/
+backend/.pytest_cache/
+
+# ------------------------------------------------------------
+# Machine Learning Models
+# Keep models locally, don't upload large weights to GitHub
+# ------------------------------------------------------------
+
+models/*.pth
+models/*.pt
+models/*.h5
+models/*.keras
+models/*.onnx
+models/*.bin
+models/*.safetensors
+
+# ------------------------------------------------------------
+# Datasets
+# Large datasets should NOT be stored in Git repository
+# ------------------------------------------------------------
+
+datasets/
+data/
+*.zip
+*.rar
+*.7z
+*.tar
+*.tar.gz
+
+# ------------------------------------------------------------
+# Databases
+# ------------------------------------------------------------
+
+*.db
+*.sqlite
+*.sqlite3
+
+# ------------------------------------------------------------
+# Logs
+# ------------------------------------------------------------
+
+*.log
+logs/
+
+# ------------------------------------------------------------
+# OS files
+# ------------------------------------------------------------
+
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ------------------------------------------------------------
+# IDE
+# ------------------------------------------------------------
+
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+.idea/
+
+# ------------------------------------------------------------
+# Temporary files
+# ------------------------------------------------------------
+
+*.tmp
+*.temp
+*.bak
+*.swp
+
+
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+
+# VS Code local history
+.history/
+
+# VS Code settings
+.vscode/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Node
+node_modules/
+frontend/node_modules/
+dist/
+build/
+
+# Datasets
+datasets/
+
+# ML model files
+models/
+*.pth
+*.pt
+*.onnx
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+
+# OS files
+.DS_Store
+Thumbs.db
