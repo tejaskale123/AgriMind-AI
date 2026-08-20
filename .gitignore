@@ -176,3 +176,5 @@ models/
 # OS files
 .DS_Store
 Thumbs.db
+# Old backup files
+archive/

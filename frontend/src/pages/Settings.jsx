@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 
+const API_BASE_URL = "http://127.0.0.1:8000";
+
 const DEFAULT_SETTINGS = {
     confidenceThreshold: 70,
     autoHistory: true,
@@ -9,10 +11,18 @@ const DEFAULT_SETTINGS = {
     theme: "Light",
 };
 
+const DEFAULT_USER = {
+    full_name: "Test Farmer",
+    email: "farmer@example.com",
+    role: "Farmer",
+    status: "Active",
+    created_at: null,
+};
+
 const translations = {
     English: {
         settings: "Settings",
-        subtitle: "Manage your AgriMind AI preferences.",
+        subtitle: "Manage your AgriMind AI preferences and account.",
         aiModel: "AI Model",
         aiModelDesc: "Information about the disease detection model.",
         model: "Model",
@@ -27,6 +37,13 @@ const translations = {
         historyDesc: "Automatically save AI detection results.",
         probabilities: "Show Class Probabilities",
         probabilitiesDesc: "Display probability for every disease class.",
+        profile: "Farmer Profile",
+        profileDesc: "Information about your AgriMind AI account.",
+        name: "Farmer Name",
+        email: "Email Address",
+        role: "Account Type",
+        accountStatus: "Account Status",
+        accountCreated: "Account Created",
         appearance: "Appearance",
         appearanceDesc: "Customize how AgriMind AI looks.",
         theme: "Theme",
@@ -52,11 +69,13 @@ const translations = {
         systemTheme: "System",
         on: "ON",
         off: "OFF",
+        loading: "Loading profile...",
+        unavailable: "Profile information unavailable",
     },
 
     Marathi: {
         settings: "सेटिंग्ज",
-        subtitle: "तुमच्या AgriMind AI च्या सेटिंग्ज व्यवस्थापित करा.",
+        subtitle: "तुमच्या AgriMind AI सेटिंग्ज आणि अकाउंटचे व्यवस्थापन करा.",
         aiModel: "AI मॉडेल",
         aiModelDesc: "रोग शोधणाऱ्या AI मॉडेलची माहिती.",
         model: "मॉडेल",
@@ -71,6 +90,13 @@ const translations = {
         historyDesc: "AI detection चे परिणाम आपोआप सेव्ह करा.",
         probabilities: "Class Probabilities दाखवा",
         probabilitiesDesc: "प्रत्येक disease class ची probability दाखवा.",
+        profile: "शेतकरी प्रोफाइल",
+        profileDesc: "तुमच्या AgriMind AI अकाउंटची माहिती.",
+        name: "शेतकऱ्याचे नाव",
+        email: "ई-मेल",
+        role: "अकाउंट प्रकार",
+        accountStatus: "अकाउंट स्थिती",
+        accountCreated: "अकाउंट तयार केले",
         appearance: "दिसण्याची सेटिंग्ज",
         appearanceDesc: "AgriMind AI चा appearance बदला.",
         theme: "Theme",
@@ -96,11 +122,13 @@ const translations = {
         systemTheme: "System",
         on: "ON",
         off: "OFF",
+        loading: "प्रोफाइल लोड होत आहे...",
+        unavailable: "प्रोफाइल माहिती उपलब्ध नाही",
     },
 
     Hindi: {
         settings: "सेटिंग्स",
-        subtitle: "अपनी AgriMind AI preferences manage करें।",
+        subtitle: "अपनी AgriMind AI settings और account manage करें।",
         aiModel: "AI मॉडल",
         aiModelDesc: "Disease detection AI model की जानकारी।",
         model: "मॉडल",
@@ -115,6 +143,13 @@ const translations = {
         historyDesc: "AI detection results automatically save करें।",
         probabilities: "Class Probabilities दिखाएं",
         probabilitiesDesc: "हर disease class की probability दिखाएं।",
+        profile: "Farmer Profile",
+        profileDesc: "आपके AgriMind AI account की जानकारी।",
+        name: "Farmer Name",
+        email: "Email Address",
+        role: "Account Type",
+        accountStatus: "Account Status",
+        accountCreated: "Account Created",
         appearance: "Appearance",
         appearanceDesc: "AgriMind AI का appearance customize करें।",
         theme: "Theme",
@@ -140,16 +175,22 @@ const translations = {
         systemTheme: "System",
         on: "ON",
         off: "OFF",
+        loading: "Profile loading...",
+        unavailable: "Profile information unavailable",
     },
 };
 
+
+// =========================================================
+// LOAD SETTINGS
+// =========================================================
 
 function getStoredSettings() {
     try {
         const stored = localStorage.getItem("agrimind_settings");
 
         if (!stored) {
-            return DEFAULT_SETTINGS;
+            return { ...DEFAULT_SETTINGS };
         }
 
         const parsed = JSON.parse(stored);
@@ -158,20 +199,21 @@ function getStoredSettings() {
             ...DEFAULT_SETTINGS,
             ...parsed,
         };
-
     } catch (error) {
         console.error("Unable to load settings:", error);
-        return DEFAULT_SETTINGS;
+        return { ...DEFAULT_SETTINGS };
     }
 }
 
 
-function applyTheme(theme) {
+// =========================================================
+// APPLY THEME
+// =========================================================
 
+function applyTheme(theme) {
     const html = document.documentElement;
     const body = document.body;
 
-    // Remove old theme classes
     html.classList.remove(
         "agrimind-light",
         "agrimind-dark"
@@ -182,82 +224,69 @@ function applyTheme(theme) {
         "agrimind-dark"
     );
 
-    // DARK
     if (theme === "Dark") {
-
         html.classList.add("agrimind-dark");
         body.classList.add("agrimind-dark");
 
-        html.setAttribute(
-            "data-theme",
-            "dark"
-        );
-
+        html.setAttribute("data-theme", "dark");
+        return;
     }
 
-    // SYSTEM
-    else if (theme === "System") {
-
-        const darkMode =
-            window.matchMedia(
-                "(prefers-color-scheme: dark)"
-            ).matches;
+    if (theme === "System") {
+        const darkMode = window.matchMedia(
+            "(prefers-color-scheme: dark)"
+        ).matches;
 
         if (darkMode) {
-
-            html.classList.add(
-                "agrimind-dark"
-            );
-
-            body.classList.add(
-                "agrimind-dark"
-            );
-
-            html.setAttribute(
-                "data-theme",
-                "dark"
-            );
-
+            html.classList.add("agrimind-dark");
+            body.classList.add("agrimind-dark");
+            html.setAttribute("data-theme", "dark");
         } else {
-
-            html.classList.add(
-                "agrimind-light"
-            );
-
-            body.classList.add(
-                "agrimind-light"
-            );
-
-            html.setAttribute(
-                "data-theme",
-                "light"
-            );
+            html.classList.add("agrimind-light");
+            body.classList.add("agrimind-light");
+            html.setAttribute("data-theme", "light");
         }
 
+        return;
     }
 
-    // LIGHT
-    else {
-
-        html.classList.add(
-            "agrimind-light"
-        );
-
-        body.classList.add(
-            "agrimind-light"
-        );
-
-        html.setAttribute(
-            "data-theme",
-            "light"
-        );
-    }
+    html.classList.add("agrimind-light");
+    body.classList.add("agrimind-light");
+    html.setAttribute("data-theme", "light");
 }
+
+
+// =========================================================
+// GET AUTH TOKEN
+// =========================================================
+
+function getAuthToken() {
+    return (
+        localStorage.getItem("access_token") ||
+        localStorage.getItem("accessToken") ||
+        localStorage.getItem("token") ||
+        localStorage.getItem("agrimind_token") ||
+        ""
+    );
+}
+
+
+// =========================================================
+// SETTINGS COMPONENT
+// =========================================================
 
 function Settings() {
 
-    const [settings, setSettings] =
-        useState(getStoredSettings);
+    const [settings, setSettings] = useState(
+        getStoredSettings
+    );
+
+    const [user, setUser] = useState(
+        DEFAULT_USER
+    );
+
+    const [profileLoading, setProfileLoading] =
+        useState(true);
 
     const [message, setMessage] =
         useState("");
@@ -269,7 +298,75 @@ function Settings() {
 
 
     // =========================================================
-    // APPLY SAVED THEME ON PAGE LOAD
+    // LOAD CURRENT USER
+    // =========================================================
+
+    useEffect(() => {
+
+        const loadUser = async () => {
+
+            try {
+
+                const token = getAuthToken();
+
+                if (!token) {
+                    setUser(DEFAULT_USER);
+                    setProfileLoading(false);
+                    return;
+                }
+
+                const response = await fetch(
+                    `${API_BASE_URL}/auth/me`,
+                    {
+                        method: "GET",
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error(
+                        "Unable to load current user."
+                    );
+                }
+
+                const data =
+                    await response.json();
+
+                if (data?.user) {
+
+                    setUser({
+                        ...DEFAULT_USER,
+                        ...data.user,
+                    });
+
+                }
+
+            } catch (error) {
+
+                console.error(
+                    "Profile loading error:",
+                    error
+                );
+
+                setUser(DEFAULT_USER);
+
+            } finally {
+
+                setProfileLoading(false);
+
+            }
+        };
+
+
+        loadUser();
+
+    }, []);
+
+
+    // =========================================================
+    // APPLY THEME
     // =========================================================
 
     useEffect(() => {
@@ -280,7 +377,7 @@ function Settings() {
 
 
     // =========================================================
-    // SYSTEM THEME CHANGE
+    // SYSTEM THEME LISTENER
     // =========================================================
 
     useEffect(() => {
@@ -304,10 +401,12 @@ function Settings() {
         );
 
         return () => {
+
             mediaQuery.removeEventListener(
                 "change",
                 handleChange
             );
+
         };
 
     }, [settings.theme]);
@@ -317,7 +416,10 @@ function Settings() {
     // UPDATE SETTING
     // =========================================================
 
-    const updateSetting = (key, value) => {
+    const updateSetting = (
+        key,
+        value
+    ) => {
 
         setSettings(prev => ({
             ...prev,
@@ -338,11 +440,9 @@ function Settings() {
             JSON.stringify(settings)
         );
 
-
-        // Keep old keys for compatibility
         localStorage.setItem(
             "agrimind_confidence_threshold",
-            settings.confidenceThreshold
+            String(settings.confidenceThreshold)
         );
 
         localStorage.setItem(
@@ -370,8 +470,6 @@ function Settings() {
             settings.theme
         );
 
-
-        // Notify other React components
         window.dispatchEvent(
             new CustomEvent(
                 "agrimind-settings-changed",
@@ -380,7 +478,6 @@ function Settings() {
                 }
             )
         );
-
 
         setMessage(t.saved);
 
@@ -396,10 +493,11 @@ function Settings() {
 
     const handleResetSettings = () => {
 
-        setSettings({
+        const resetSettings = {
             ...DEFAULT_SETTINGS,
-        });
+        };
 
+        setSettings(resetSettings);
 
         localStorage.removeItem(
             "agrimind_settings"
@@ -429,11 +527,9 @@ function Settings() {
             "agrimind_theme"
         );
 
-
         applyTheme(
             DEFAULT_SETTINGS.theme
         );
-
 
         window.dispatchEvent(
             new CustomEvent(
@@ -444,11 +540,10 @@ function Settings() {
             )
         );
 
-
         setMessage(
-            translations[
-                DEFAULT_SETTINGS.language
-            ].resetDone
+            translations
+                .English
+                .resetDone
         );
 
         setTimeout(() => {
@@ -458,7 +553,7 @@ function Settings() {
 
 
     // =========================================================
-    // TOGGLE COMPONENT
+    // TOGGLE
     // =========================================================
 
     const Toggle = ({
@@ -502,6 +597,35 @@ function Settings() {
     };
 
 
+    // =========================================================
+    // FORMAT DATE
+    // =========================================================
+
+    const formatDate = (date) => {
+
+        if (!date) {
+            return "—";
+        }
+
+        try {
+
+            return new Date(
+                date
+            ).toLocaleDateString(
+                "en-IN",
+                {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                }
+            );
+
+        } catch {
+            return "—";
+        }
+    };
+
+
     return (
 
         <div className="page">
@@ -519,6 +643,209 @@ function Settings() {
                 <p>
                     {t.subtitle}
                 </p>
+
+            </div>
+
+
+            {/* =================================================
+                FARMER PROFILE
+            ================================================= */}
+
+            <div className="settings-card">
+
+                <div className="settings-section-title">
+
+                    <h2>
+                        👨‍🌾 {t.profile}
+                    </h2>
+
+                    <p>
+                        {t.profileDesc}
+                    </p>
+
+                </div>
+
+
+                {profileLoading ? (
+
+                    <div
+                        style={{
+                            padding: "30px",
+                            textAlign: "center",
+                        }}
+                    >
+                        ⏳ {t.loading}
+                    </div>
+
+                ) : (
+
+                    <>
+
+                        {/* PROFILE HEADER */}
+
+                        <div
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "18px",
+                                padding:
+                                    "10px 0 24px",
+                            }}
+                        >
+
+                            <div
+                                style={{
+                                    width: "68px",
+                                    height: "68px",
+                                    borderRadius: "50%",
+                                    background:
+                                        "#16a34a",
+                                    color: "white",
+                                    display: "flex",
+                                    alignItems:
+                                        "center",
+                                    justifyContent:
+                                        "center",
+                                    fontSize: "28px",
+                                    fontWeight: "700",
+                                }}
+                            >
+                                {(
+                                    user.full_name ||
+                                    "F"
+                                )
+                                    .charAt(0)
+                                    .toUpperCase()}
+                            </div>
+
+                            <div>
+
+                                <h2
+                                    style={{
+                                        margin:
+                                            "0 0 5px",
+                                    }}
+                                >
+                                    {user.full_name}
+                                </h2>
+
+                                <p
+                                    style={{
+                                        margin: 0,
+                                        color:
+                                            "#64748b",
+                                    }}
+                                >
+                                    {user.email}
+                                </p>
+
+                            </div>
+
+                        </div>
+
+
+                        {/* NAME */}
+
+                        <div className="setting-row">
+
+                            <div>
+                                <h3>
+                                    {t.name}
+                                </h3>
+
+                                <p>
+                                    {user.full_name}
+                                </p>
+                            </div>
+
+                        </div>
+
+
+                        {/* EMAIL */}
+
+                        <div className="setting-row">
+
+                            <div>
+                                <h3>
+                                    {t.email}
+                                </h3>
+
+                                <p>
+                                    {user.email}
+                                </p>
+                            </div>
+
+                        </div>
+
+
+                        {/* ROLE */}
+
+                        <div className="setting-row">
+
+                            <div>
+                                <h3>
+                                    {t.role}
+                                </h3>
+
+                                <p>
+                                    {user.role}
+                                </p>
+                            </div>
+
+                            <span
+                                className="status"
+                            >
+                                👨‍🌾 Farmer
+                            </span>
+
+                        </div>
+
+
+                        {/* STATUS */}
+
+                        <div className="setting-row">
+
+                            <div>
+                                <h3>
+                                    {t.accountStatus}
+                                </h3>
+
+                                <p>
+                                    Your account is
+                                    currently active.
+                                </p>
+                            </div>
+
+                            <span
+                                className="status"
+                            >
+                                🟢 {user.status}
+                            </span>
+
+                        </div>
+
+
+                        {/* CREATED DATE */}
+
+                        <div className="setting-row">
+
+                            <div>
+                                <h3>
+                                    {t.accountCreated}
+                                </h3>
+
+                                <p>
+                                    {formatDate(
+                                        user.created_at
+                                    )}
+                                </p>
+                            </div>
+
+                        </div>
+
+                    </>
+
+                )}
 
             </div>
 
@@ -546,14 +873,11 @@ function Settings() {
 
                     <div>
                         <h3>{t.model}</h3>
-
-                        <p>
-                            EfficientNet-B0
-                        </p>
+                        <p>EfficientNet-B0</p>
                     </div>
 
                     <span className="status">
-                        {t.ready}
+                        ✓ {t.ready}
                     </span>
 
                 </div>
@@ -563,9 +887,8 @@ function Settings() {
 
                     <div>
                         <h3>{t.crop}</h3>
-
                         <p>
-                            Soybean
+                            Cotton & Soybean
                         </p>
                     </div>
 
@@ -576,7 +899,6 @@ function Settings() {
 
                     <div>
                         <h3>{t.imageSize}</h3>
-
                         <p>
                             224 × 224 pixels
                         </p>
@@ -589,7 +911,6 @@ function Settings() {
 
                     <div>
                         <h3>{t.device}</h3>
-
                         <p>
                             CPU / CUDA when available
                         </p>
@@ -637,15 +958,38 @@ function Settings() {
 
 
                     <div
-                        className="setting-control"
                         style={{
-                            minWidth: "220px",
+                            minWidth: "230px",
                         }}
                     >
 
-                        <strong>
-                            {settings.confidenceThreshold}%
-                        </strong>
+                        <div
+                            style={{
+                                display: "flex",
+                                justifyContent:
+                                    "space-between",
+                                marginBottom:
+                                    "8px",
+                            }}
+                        >
+
+                            <strong>
+                                {
+                                    settings
+                                        .confidenceThreshold
+                                }%
+                            </strong>
+
+                            <span
+                                style={{
+                                    color:
+                                        "#64748b",
+                                }}
+                            >
+                                50–95%
+                            </span>
+
+                        </div>
 
                         <input
                             type="range"
@@ -659,10 +1003,15 @@ function Settings() {
                                 updateSetting(
                                     "confidenceThreshold",
                                     Number(
-                                        event.target.value
+                                        event
+                                            .target
+                                            .value
                                     )
                                 )
                             }
+                            style={{
+                                width: "100%",
+                            }}
                         />
 
                     </div>
@@ -675,7 +1024,6 @@ function Settings() {
                 <div className="setting-row">
 
                     <div>
-
                         <h3>
                             {t.history}
                         </h3>
@@ -683,9 +1031,7 @@ function Settings() {
                         <p>
                             {t.historyDesc}
                         </p>
-
                     </div>
-
 
                     <Toggle
                         checked={
@@ -707,7 +1053,6 @@ function Settings() {
                 <div className="setting-row">
 
                     <div>
-
                         <h3>
                             {t.probabilities}
                         </h3>
@@ -715,9 +1060,7 @@ function Settings() {
                         <p>
                             {t.probabilitiesDesc}
                         </p>
-
                     </div>
-
 
                     <Toggle
                         checked={
@@ -760,20 +1103,21 @@ function Settings() {
                 <div className="setting-row">
 
                     <div>
-
                         <h3>
                             {t.theme}
                         </h3>
 
                         <p>
-                            Choose the application appearance.
+                            Choose the application
+                            appearance.
                         </p>
-
                     </div>
 
 
                     <select
-                        value={settings.theme}
+                        value={
+                            settings.theme
+                        }
                         onChange={(event) =>
                             updateSetting(
                                 "theme",
@@ -781,11 +1125,16 @@ function Settings() {
                             )
                         }
                         style={{
-                            padding: "10px 14px",
-                            borderRadius: "8px",
-                            border: "1px solid #ccc",
-                            fontSize: "15px",
-                            cursor: "pointer",
+                            padding:
+                                "10px 14px",
+                            borderRadius:
+                                "8px",
+                            border:
+                                "1px solid #ccc",
+                            fontSize:
+                                "15px",
+                            cursor:
+                                "pointer",
                         }}
                     >
 
@@ -834,11 +1183,16 @@ function Settings() {
                             )
                         }
                         style={{
-                            padding: "10px 14px",
-                            borderRadius: "8px",
-                            border: "1px solid #ccc",
-                            fontSize: "15px",
-                            cursor: "pointer",
+                            padding:
+                                "10px 14px",
+                            borderRadius:
+                                "8px",
+                            border:
+                                "1px solid #ccc",
+                            fontSize:
+                                "15px",
+                            cursor:
+                                "pointer",
                         }}
                     >
 
@@ -915,7 +1269,6 @@ function Settings() {
                 <div className="setting-row">
 
                     <div>
-
                         <h3>
                             {t.application}
                         </h3>
@@ -923,7 +1276,6 @@ function Settings() {
                         <p>
                             AgriMind AI
                         </p>
-
                     </div>
 
                 </div>
@@ -932,7 +1284,6 @@ function Settings() {
                 <div className="setting-row">
 
                     <div>
-
                         <h3>
                             {t.version}
                         </h3>
@@ -940,7 +1291,6 @@ function Settings() {
                         <p>
                             v1.0.0
                         </p>
-
                     </div>
 
                 </div>
@@ -949,7 +1299,6 @@ function Settings() {
                 <div className="setting-row">
 
                     <div>
-
                         <h3>
                             {t.backend}
                         </h3>
@@ -957,11 +1306,10 @@ function Settings() {
                         <p>
                             FastAPI
                         </p>
-
                     </div>
 
                     <span className="status">
-                        {t.connected}
+                        🟢 {t.connected}
                     </span>
 
                 </div>
@@ -970,7 +1318,6 @@ function Settings() {
                 <div className="setting-row">
 
                     <div>
-
                         <h3>
                             {t.database}
                         </h3>
@@ -978,11 +1325,10 @@ function Settings() {
                         <p>
                             SQLite
                         </p>
-
                     </div>
 
                     <span className="status">
-                        {t.active}
+                        🟢 {t.active}
                     </span>
 
                 </div>
@@ -994,7 +1340,15 @@ function Settings() {
                 ACTION BUTTONS
             ================================================= */}
 
-            <div className="settings-actions">
+            <div
+                className="settings-actions"
+                style={{
+                    display: "flex",
+                    gap: "14px",
+                    marginTop: "20px",
+                    marginBottom: "30px",
+                }}
+            >
 
                 <button
                     className="save-settings-btn"
@@ -1019,15 +1373,18 @@ function Settings() {
 
 
             {/* =================================================
-                MESSAGE
+                SUCCESS MESSAGE
             ================================================= */}
 
             {message && (
 
-                <div className="settings-message">
-
+                <div
+                    className="settings-message"
+                    style={{
+                        marginBottom: "30px",
+                    }}
+                >
                     ✅ {message}
-
                 </div>
 
             )}

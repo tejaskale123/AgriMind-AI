@@ -2,7 +2,8 @@ import {
     BrowserRouter,
     Routes,
     Route,
-    useLocation
+    useLocation,
+    Navigate
 } from "react-router-dom";
 
 import Sidebar from "./components/Sidebar";
@@ -18,6 +19,7 @@ import Login from "./pages/Login";
 
 
 function AppLayout() {
+
     const location = useLocation();
 
     const token = localStorage.getItem("access_token");
@@ -28,15 +30,48 @@ function AppLayout() {
         location.pathname === "/login" ||
         location.pathname === "/register";
 
+
+    // ============================================================
+    // PROTECTED ROUTES
+    // ============================================================
+
     if (!publicPage && !isAuthenticated) {
-        window.location.href = "/login";
-        return null;
+
+        return (
+            <Navigate
+                to="/login"
+                replace
+            />
+        );
+
     }
 
-    // Pages where Sidebar should NOT appear
+
+    // ============================================================
+    // AUTHENTICATED USER ON LOGIN / REGISTER
+    // ============================================================
+
+    if (publicPage && isAuthenticated) {
+
+        return (
+            <Navigate
+                to="/"
+                replace
+            />
+        );
+
+    }
+
+
+    // ============================================================
+    // SIDEBAR
+    // ============================================================
+
     const hideSidebar = publicPage;
 
+
     return (
+
         <div
             className={
                 hideSidebar
@@ -58,15 +93,14 @@ function AppLayout() {
 
                 <Routes>
 
-                    {/* LOGIN */}
+                    {/* ==================================================
+                        PUBLIC ROUTES
+                    ================================================== */}
 
                     <Route
                         path="/login"
                         element={<Login />}
                     />
-
-
-                    {/* REGISTER */}
 
                     <Route
                         path="/register"
@@ -74,51 +108,48 @@ function AppLayout() {
                     />
 
 
-                    {/* DASHBOARD */}
+                    {/* ==================================================
+                        PROTECTED ROUTES
+                    ================================================== */}
 
                     <Route
                         path="/"
                         element={<Dashboard />}
                     />
 
-
-                    {/* DISEASE DETECTION */}
-
                     <Route
                         path="/detection"
                         element={<DiseaseDetection />}
                     />
-
-
-                    {/* CROPS */}
 
                     <Route
                         path="/crops"
                         element={<Crops />}
                     />
 
-
-                    {/* ANALYTICS */}
-
                     <Route
                         path="/analytics"
                         element={<Analytics />}
                     />
-
-
-                    {/* HISTORY */}
 
                     <Route
                         path="/history"
                         element={<History />}
                     />
 
-
-                    {/* SETTINGS */}
-
                     <Route
                         path="/settings"
                         element={<Settings />}
+                    />
+
+
+                    {/* ==================================================
+                        UNKNOWN ROUTE
+                    ================================================== */}
+
+                    <Route
+                        path="*"
+                        element={<Navigate to="/" replace />}
                     />
 
                 </Routes>
@@ -126,17 +157,24 @@ function AppLayout() {
             </main>
 
         </div>
+
     );
+
 }
 
 
 function App() {
 
     return (
+
         <BrowserRouter>
+
             <AppLayout />
+
         </BrowserRouter>
+
     );
+
 }
 
 
