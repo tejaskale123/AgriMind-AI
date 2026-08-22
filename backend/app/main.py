@@ -1,4 +1,4 @@
-from pathlib import Path
+﻿from pathlib import Path
 import sqlite3
 import json
 from datetime import datetime
@@ -269,6 +269,7 @@ def init_database():
 # ============================================================
 
 def save_detection_history(
+    user_id,
     filename,
     crop,
     prediction,
@@ -321,6 +322,7 @@ def save_detection_history(
         """
         INSERT INTO detection_history
         (
+            user_id,
             filename,
             crop,
             prediction,
@@ -333,9 +335,10 @@ def save_detection_history(
             farmer_action,
             created_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
+            user_id,
             filename,
             crop,
             prediction,
@@ -355,7 +358,6 @@ def save_detection_history(
 
     connection.commit()
     connection.close()
-
 
 # ============================================================
 # DISEASE RECOMMENDATIONS
@@ -743,7 +745,7 @@ def health():
     }
 
 
-# ============================================================
+    # ============================================================
 # PREDICTION API
 # ============================================================
 
@@ -751,7 +753,18 @@ def health():
 async def predict(
     file: UploadFile = File(...),
     crop: str = Form("cotton"),
+    token: str = Depends(oauth2_scheme),
 ):
+
+    current_user = verify_access_token(token)
+
+    if current_user is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or expired token."
+        )
+
+    user_id = current_user["user_id"]
 
     crop = crop.strip().lower()
 
@@ -1009,27 +1022,29 @@ async def predict(
 
     save_detection_history(
 
-        filename=(
-            file.filename
-            or "unknown.jpg"
+    user_id=user_id,
+
+    filename=(
+        file.filename
+        or "unknown.jpg"
+    ),
+
+    crop=crop,
+
+    prediction=
+        predicted_class,
+
+    confidence=
+        round(
+            confidence_value,
+            2,
         ),
 
-        crop=crop,
+    probabilities=
+        all_probabilities,
 
-        prediction=
-            predicted_class,
-
-        confidence=
-            round(
-                confidence_value,
-                2,
-            ),
-
-        probabilities=
-            all_probabilities,
-
-        recommendation=
-            recommendation,
+    recommendation=
+        recommendation,
     )
 
 
@@ -1066,6 +1081,7 @@ async def predict(
         "recommendation":
             recommendation,
     }
+
 
 
 # ============================================================

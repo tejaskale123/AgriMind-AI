@@ -570,6 +570,67 @@ function DiseaseDetection() {
 
 
     // =========================================================
+    // GET SAVED AUTH TOKEN
+    // =========================================================
+    const getAuthToken = () => {
+
+        const storageKeys = [
+            "access_token",
+            "token",
+            "accessToken",
+            "authToken",
+            "jwt",
+            "auth"
+        ];
+
+        for (const key of storageKeys) {
+
+            const localValue = localStorage.getItem(key);
+            if (localValue) {
+                try {
+                    const parsed = JSON.parse(localValue);
+                    if (typeof parsed === "string" && parsed.length > 20) return parsed;
+                    if (parsed?.access_token) return parsed.access_token;
+                    if (parsed?.token) return parsed.token;
+                } catch {
+                    return localValue;
+                }
+            }
+
+            const sessionValue = sessionStorage.getItem(key);
+            if (sessionValue) {
+                try {
+                    const parsed = JSON.parse(sessionValue);
+                    if (typeof parsed === "string" && parsed.length > 20) return parsed;
+                    if (parsed?.access_token) return parsed.access_token;
+                    if (parsed?.token) return parsed.token;
+                } catch {
+                    return sessionValue;
+                }
+            }
+        }
+
+        const storages = [localStorage, sessionStorage];
+        for (const storage of storages) {
+            for (let index = 0; index < storage.length; index++) {
+                const key = storage.key(index);
+                if (!key) continue;
+                const value = storage.getItem(key);
+                if (!value) continue;
+                try {
+                    const parsed = JSON.parse(value);
+                    if (parsed?.access_token) return parsed.access_token;
+                    if (parsed?.token) return parsed.token;
+                } catch {
+                    // Ignore non-JSON values
+                }
+            }
+        }
+
+        return null;
+    };
+
+    // =========================================================
     // AI PREDICTION
     // =========================================================
 
@@ -667,11 +728,32 @@ function DiseaseDetection() {
             // API REQUEST
             // =================================================
 
+            // =================================================
+            // AUTHENTICATION
+            // =================================================
+
+            const token = getAuthToken();
+
+            if (!token) {
+                throw new Error(
+                    "Not authenticated. Please logout and login again."
+                );
+            }
+
+            console.log("🔐 Authentication token found.");
+
+            // =================================================
+            // API REQUEST
+            // =================================================
+
             const response =
                 await fetch(
                     "http://127.0.0.1:8000/predict",
                     {
                         method: "POST",
+                        headers: {
+                            Authorization: `Bearer ${token}`
+                        },
                         body: formData
                     }
                 );
@@ -707,6 +789,12 @@ function DiseaseDetection() {
             // =================================================
 
             if (!response.ok) {
+
+                if (response.status === 401) {
+                    throw new Error(
+                        "Authentication expired or invalid. Please logout and login again."
+                    );
+                }
 
                 throw new Error(
                     data.detail ||
@@ -864,17 +952,18 @@ function DiseaseDetection() {
     // DISPLAY CROP NAME
     // =========================================================
 
-    const displayCropName =
-        (
-            predictionResult?.crop ||
-            selectedCrop
-        )
-            .toString()
-            .replace(
-                /^./,
-                (char) =>
-                    char.toUpperCase()
-            );
+    // =========================================================
+// DISPLAY CROP NAME
+// =========================================================
+
+    const displayCropName = String(
+        predictionResult?.crop ||
+        selectedCrop ||
+        "cotton"
+    ).replace(
+        /^./,
+        (char) => char.toUpperCase()
+    );
 
 
     // =========================================================
