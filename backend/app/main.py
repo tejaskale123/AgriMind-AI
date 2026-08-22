@@ -1088,8 +1088,24 @@ async def predict(
 # HISTORY API
 # ============================================================
 
+
 @app.get("/history")
-def get_history():
+def get_history(
+    token: str = Depends(oauth2_scheme)
+):
+
+    current_user = verify_access_token(
+        token
+    )
+
+    if current_user is None:
+
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or expired token."
+        )
+
+    user_id = current_user["user_id"]
 
     connection = sqlite3.connect(
         DATABASE_PATH
@@ -1100,7 +1116,6 @@ def get_history():
     )
 
     cursor = connection.cursor()
-
 
     cursor.execute(
         """
@@ -1118,18 +1133,19 @@ def get_history():
             farmer_action,
             created_at
         FROM detection_history
+        WHERE user_id = ?
         ORDER BY id DESC
-        """
+        """,
+        (
+            user_id,
+        )
     )
-
 
     rows = cursor.fetchall()
 
     connection.close()
 
-
     history = []
-
 
     for row in rows:
 
@@ -1165,7 +1181,6 @@ def get_history():
                 row["created_at"],
         })
 
-
     return {
 
         "success":
@@ -1180,11 +1195,26 @@ def get_history():
 
 
 # ============================================================
-# CLEAR HISTORY
+# CLEAR USER HISTORY
 # ============================================================
 
 @app.delete("/history")
-def clear_history():
+def clear_history(
+    token: str = Depends(oauth2_scheme)
+):
+
+    current_user = verify_access_token(
+        token
+    )
+
+    if current_user is None:
+
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or expired token."
+        )
+
+    user_id = current_user["user_id"]
 
     connection = sqlite3.connect(
         DATABASE_PATH
@@ -1193,13 +1223,20 @@ def clear_history():
     cursor = connection.cursor()
 
     cursor.execute(
-        "DELETE FROM detection_history"
+        """
+        DELETE FROM detection_history
+        WHERE user_id = ?
+        """,
+        (
+            user_id,
+        )
     )
+
+    deleted_count = cursor.rowcount
 
     connection.commit()
 
     connection.close()
-
 
     return {
 
@@ -1207,7 +1244,10 @@ def clear_history():
             True,
 
         "message":
-            "Detection history cleared successfully.",
+            "Your detection history cleared successfully.",
+
+        "deleted_count":
+            deleted_count,
     }
 
 
