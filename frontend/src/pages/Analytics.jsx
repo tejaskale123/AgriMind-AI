@@ -9,6 +9,165 @@ function Analytics() {
     const [error, setError] = useState("");
 
     // =========================================================
+    // GET SAVED AUTH TOKEN
+    // =========================================================
+
+    const getAuthToken = () => {
+
+        const storageKeys = [
+            "access_token",
+            "token",
+            "accessToken",
+            "authToken",
+            "jwt",
+            "auth"
+        ];
+
+        // -----------------------------------------------------
+        // CHECK COMMON STORAGE KEYS
+        // -----------------------------------------------------
+
+        for (const key of storageKeys) {
+
+            const localValue =
+                localStorage.getItem(key);
+
+            if (localValue) {
+
+                try {
+
+                    const parsed =
+                        JSON.parse(localValue);
+
+                    if (
+                        typeof parsed === "string" &&
+                        parsed.length > 20
+                    ) {
+                        return parsed;
+                    }
+
+                    if (
+                        parsed?.access_token
+                    ) {
+                        return parsed.access_token;
+                    }
+
+                    if (
+                        parsed?.token
+                    ) {
+                        return parsed.token;
+                    }
+
+                } catch {
+
+                    return localValue;
+
+                }
+            }
+
+
+            const sessionValue =
+                sessionStorage.getItem(key);
+
+            if (sessionValue) {
+
+                try {
+
+                    const parsed =
+                        JSON.parse(sessionValue);
+
+                    if (
+                        typeof parsed === "string" &&
+                        parsed.length > 20
+                    ) {
+                        return parsed;
+                    }
+
+                    if (
+                        parsed?.access_token
+                    ) {
+                        return parsed.access_token;
+                    }
+
+                    if (
+                        parsed?.token
+                    ) {
+                        return parsed.token;
+                    }
+
+                } catch {
+
+                    return sessionValue;
+
+                }
+            }
+        }
+
+
+        // -----------------------------------------------------
+        // SEARCH ALL STORAGE VALUES
+        // -----------------------------------------------------
+
+        const storages = [
+            localStorage,
+            sessionStorage
+        ];
+
+        for (
+            const storage of storages
+        ) {
+
+            for (
+                let index = 0;
+                index < storage.length;
+                index++
+            ) {
+
+                const key =
+                    storage.key(index);
+
+                if (!key) {
+                    continue;
+                }
+
+                const value =
+                    storage.getItem(key);
+
+                if (!value) {
+                    continue;
+                }
+
+                try {
+
+                    const parsed =
+                        JSON.parse(value);
+
+                    if (
+                        parsed?.access_token
+                    ) {
+                        return parsed.access_token;
+                    }
+
+                    if (
+                        parsed?.token
+                    ) {
+                        return parsed.token;
+                    }
+
+                } catch {
+
+                    // Ignore normal text values
+
+                }
+            }
+        }
+
+
+        return null;
+    };
+
+
+    // =========================================================
     // FETCH HISTORY
     // =========================================================
 
@@ -19,18 +178,106 @@ function Analytics() {
             setLoading(true);
             setError("");
 
-            const response = await fetch(
-                `${API_BASE_URL}/history`
+
+            // =================================================
+            // AUTHENTICATION
+            // =================================================
+
+            const token =
+                getAuthToken();
+
+
+            if (!token) {
+
+                throw new Error(
+                    "Not authenticated. Please logout and login again."
+                );
+
+            }
+
+
+            console.log(
+                "🔐 Analytics authentication token found."
             );
 
-            const data = await response.json();
+
+            // =================================================
+            // API REQUEST
+            // =================================================
+
+            const response =
+                await fetch(
+                    `${API_BASE_URL}/history`,
+                    {
+                        method: "GET",
+
+                        headers: {
+                            Authorization:
+                                `Bearer ${token}`
+                        }
+                    }
+                );
+
+
+            // =================================================
+            // RESPONSE
+            // =================================================
+
+            let data;
+
+            try {
+
+                data =
+                    await response.json();
+
+            } catch {
+
+                throw new Error(
+                    "Invalid response received from AI server."
+                );
+
+            }
+
+
+            console.log(
+                "📊 Analytics history response:",
+                data
+            );
+
+
+            // =================================================
+            // AUTH ERROR
+            // =================================================
+
+            if (
+                response.status === 401
+            ) {
+
+                throw new Error(
+                    "Authentication expired or invalid. Please logout and login again."
+                );
+
+            }
+
+
+            // =================================================
+            // OTHER API ERROR
+            // =================================================
 
             if (!response.ok) {
+
                 throw new Error(
                     data.detail ||
+                    data.message ||
                     "Failed to load analytics data."
                 );
+
             }
+
+
+            // =================================================
+            // SAVE HISTORY
+            // =================================================
 
             setHistory(
                 Array.isArray(data.history)
@@ -73,22 +320,32 @@ function Analytics() {
     // PARSE PROBABILITIES
     // =========================================================
 
-    const getProbabilities = (probabilities) => {
+    const getProbabilities = (
+        probabilities
+    ) => {
 
         if (!probabilities) {
+
             return {};
+
         }
+
 
         if (
             typeof probabilities === "object" &&
             !Array.isArray(probabilities)
         ) {
+
             return probabilities;
+
         }
+
 
         try {
 
-            return JSON.parse(probabilities);
+            return JSON.parse(
+                probabilities
+            );
 
         } catch {
 
@@ -102,16 +359,23 @@ function Analytics() {
     // HEALTHY CLASS CHECK
     // =========================================================
 
-    const isHealthyPrediction = (prediction) => {
+    const isHealthyPrediction = (
+        prediction
+    ) => {
 
-        const value = String(prediction || "")
-            .toLowerCase()
-            .trim();
+        const value =
+            String(
+                prediction || ""
+            )
+                .toLowerCase()
+                .trim();
+
 
         return (
             value === "healthy" ||
             value === "healthy leaf"
         );
+
     };
 
 
@@ -121,17 +385,28 @@ function Analytics() {
 
     const analytics = useMemo(() => {
 
-        const total = history.length;
+        const total =
+            history.length;
+
 
         if (total === 0) {
 
             return {
+
                 total: 0,
+
                 healthy: 0,
+
                 diseased: 0,
+
                 averageConfidence: 0,
+
                 mostCommonDisease: "N/A",
+
+                mostCommonDiseaseCount: 0,
+
                 diseaseCounts: {},
+
             };
 
         }
@@ -141,9 +416,14 @@ function Analytics() {
         // HEALTHY COUNT
         // -----------------------------------------------------
 
-      const healthy = history.filter(
-      item => isHealthyPrediction(item.prediction)
-      ).length;
+        const healthy =
+            history.filter(
+                item =>
+                    isHealthyPrediction(
+                        item.prediction
+                    )
+            ).length;
+
 
         // -----------------------------------------------------
         // DISEASE COUNT
@@ -159,21 +439,31 @@ function Analytics() {
 
         const confidenceValues =
             history
-                .map(item =>
-                    Number(item.confidence)
+                .map(
+                    item =>
+                        Number(
+                            item.confidence
+                        )
                 )
-                .filter(value =>
-                    Number.isFinite(value)
+                .filter(
+                    value =>
+                        Number.isFinite(
+                            value
+                        )
                 );
 
 
         const averageConfidence =
             confidenceValues.length > 0
                 ? confidenceValues.reduce(
-                    (sum, value) =>
+                    (
+                        sum,
+                        value
+                    ) =>
                         sum + value,
                     0
-                ) / confidenceValues.length
+                ) /
+                    confidenceValues.length
                 : 0;
 
 
@@ -183,38 +473,57 @@ function Analytics() {
 
         const diseaseCounts = {};
 
-        history.forEach(item => {
 
-            const disease =
-                item.prediction ||
-                "Unknown";
+        history.forEach(
+            item => {
 
-            diseaseCounts[disease] =
-                (diseaseCounts[disease] || 0) + 1;
+                const disease =
+                    item.prediction ||
+                    "Unknown";
 
-        });
+
+                diseaseCounts[disease] =
+                    (
+                        diseaseCounts[disease] ||
+                        0
+                    ) + 1;
+
+            }
+        );
 
 
         // -----------------------------------------------------
-        // MOST FREQUENTLY DETECTED DISEASE
+        // DISEASE ONLY COUNTS
         // -----------------------------------------------------
-        // Healthy is excluded here because this section
-        // should show the most frequently detected disease.
 
-        const diseaseOnlyCounts = Object.entries(
-        diseaseCounts
-        ).filter(
-        ([disease]) =>
-            !isHealthyPrediction(disease)
-    )
+        const diseaseOnlyCounts =
+            Object.entries(
+                diseaseCounts
+            ).filter(
+                ([disease]) =>
+                    !isHealthyPrediction(
+                        disease
+                    )
+            );
 
+
+        // -----------------------------------------------------
+        // SORT DISEASES
+        // -----------------------------------------------------
 
         const sortedDiseases =
             diseaseOnlyCounts.sort(
-                ([, a], [, b]) =>
+                (
+                    [, a],
+                    [, b]
+                ) =>
                     b - a
             );
 
+
+        // -----------------------------------------------------
+        // MOST COMMON DISEASE
+        // -----------------------------------------------------
 
         const mostCommonDisease =
             sortedDiseases.length > 0
@@ -228,23 +537,23 @@ function Analytics() {
                 : 0;
 
 
-       return {
+        return {
 
-        total,
+            total,
 
-        healthy,
+            healthy,
 
-        diseased,
+            diseased,
 
-        averageConfidence,
+            averageConfidence,
 
-        mostCommonDisease,
+            mostCommonDisease,
 
-        mostCommonDiseaseCount,
+            mostCommonDiseaseCount,
 
-        diseaseCounts,
+            diseaseCounts,
 
-    };
+        };
 
     }, [history]);
 
@@ -256,6 +565,7 @@ function Analytics() {
     if (loading) {
 
         return (
+
             <div className="page">
 
                 <div className="page-title">
@@ -288,9 +598,11 @@ function Analytics() {
                         📊
                     </div>
 
+
                     <h2>
                         Loading Analytics...
                     </h2>
+
 
                     <p>
                         Please wait while we
@@ -300,7 +612,9 @@ function Analytics() {
                 </div>
 
             </div>
+
         );
+
     }
 
 
@@ -311,6 +625,7 @@ function Analytics() {
     if (error) {
 
         return (
+
             <div className="page">
 
                 <div className="page-title">
@@ -343,9 +658,11 @@ function Analytics() {
                         ⚠️
                     </div>
 
+
                     <h2>
                         Unable to Load Analytics
                     </h2>
+
 
                     <p>
                         {error}
@@ -353,7 +670,9 @@ function Analytics() {
 
 
                     <button
-                        onClick={fetchHistory}
+                        onClick={
+                            fetchHistory
+                        }
                         style={{
                             marginTop: "18px",
                             padding: "11px 22px",
@@ -371,7 +690,9 @@ function Analytics() {
                 </div>
 
             </div>
+
         );
+
     }
 
 
@@ -382,6 +703,7 @@ function Analytics() {
     if (history.length === 0) {
 
         return (
+
             <div className="page">
 
                 <div className="page-title">
@@ -417,9 +739,11 @@ function Analytics() {
                         📊
                     </div>
 
+
                     <h2>
                         No Analytics Available
                     </h2>
+
 
                     <p
                         style={{
@@ -433,7 +757,9 @@ function Analytics() {
                 </div>
 
             </div>
+
         );
+
     }
 
 
@@ -442,6 +768,7 @@ function Analytics() {
     // =========================================================
 
     return (
+
         <div className="page">
 
             {/* =================================================
@@ -474,10 +801,13 @@ function Analytics() {
 
 
                 <button
-                    onClick={fetchHistory}
+                    onClick={
+                        fetchHistory
+                    }
                     style={{
                         padding: "10px 18px",
-                        border: "1px solid #16a34a",
+                        border:
+                            "1px solid #16a34a",
                         borderRadius: "8px",
                         background: "#ffffff",
                         color: "#15803d",
@@ -674,9 +1004,7 @@ function Analytics() {
                             fontSize: "32px",
                         }}
                     >
-                        {analytics.averageConfidence.toFixed(
-                            2
-                        )}
+                        {analytics.averageConfidence.toFixed(2)}
                         %
                     </h2>
 
@@ -765,18 +1093,14 @@ function Analytics() {
                             b - a
                     )
                     .map(
-                        (
-                            [
-                                disease,
-                                count,
-                            ]
-                        ) => {
+                        ([disease, count]) => {
 
                             const percentage =
                                 (
                                     count /
                                     analytics.total
                                 ) * 100;
+
 
                             return (
 
@@ -806,9 +1130,7 @@ function Analytics() {
 
                                         <span>
                                             {count} (
-                                            {percentage.toFixed(
-                                                1
-                                            )}
+                                            {percentage.toFixed(1)}
                                             %)
                                         </span>
 
@@ -817,10 +1139,8 @@ function Analytics() {
 
                                     <div
                                         style={{
-                                            width:
-                                                "100%",
-                                            height:
-                                                "14px",
+                                            width: "100%",
+                                            height: "14px",
                                             background:
                                                 "#e5e7eb",
                                             borderRadius:
@@ -834,8 +1154,7 @@ function Analytics() {
                                             style={{
                                                 width:
                                                     `${percentage}%`,
-                                                height:
-                                                    "100%",
+                                                height: "100%",
                                                 background:
                                                     "#16a34a",
                                                 borderRadius:
@@ -850,137 +1169,165 @@ function Analytics() {
                                 </div>
 
                             );
+
                         }
                     )}
 
             </div>
-           {/* =================================================
-    DISEASE-WISE ANALYSIS
-================================================= */}
-
-<div
-    style={{
-        background: "#ffffff",
-        borderRadius: "16px",
-        padding: "25px",
-        boxShadow: "0 4px 18px rgba(0,0,0,0.08)",
-        marginBottom: "25px",
-    }}
->
-
-    <h2
-        style={{
-            marginTop: 0,
-            marginBottom: "8px",
-        }}
-    >
-        🦠 Disease-wise Analysis
-    </h2>
-
-    <p
-        style={{
-            color: "#6b7280",
-            marginBottom: "22px",
-        }}
-    >
-      Summary of disease detections across the stored
-      crop analysis history.
-    </p>
 
 
- {Object.entries(analytics.diseaseCounts)
-    .filter(
-        ([disease]) =>
-            !isHealthyPrediction(disease)
-    )
-    .sort(
-        ([, a], [, b]) => b - a
-    )
-        .map(
-            ([disease, count]) => {
+            {/* =================================================
+                DISEASE-WISE ANALYSIS
+            ================================================= */}
 
-                // Disease-wise percentage is calculated
-                // only among disease detections, not healthy results.
-                const percentage =
-                    analytics.diseased > 0
-                        ? (count / analytics.diseased) * 100
-                        : 0;
+            <div
+                style={{
+                    background: "#ffffff",
+                    borderRadius: "16px",
+                    padding: "25px",
+                    boxShadow:
+                        "0 4px 18px rgba(0,0,0,0.08)",
+                    marginBottom: "25px",
+                }}
+            >
 
-                return (
-                    <div
-                        key={disease}
-                        style={{
-                            marginBottom: "22px",
-                        }}
-                    >
+                <h2
+                    style={{
+                        marginTop: 0,
+                        marginBottom: "8px",
+                    }}
+                >
+                    🦠 Disease-wise Analysis
+                </h2>
 
-                        {/* Disease name + count */}
-
-                        <div
-                            style={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                marginBottom: "8px",
-                                gap: "10px",
-                            }}
-                        >
-
-                            <strong
-                                style={{
-                                    fontSize: "16px",
-                                }}
-                            >
-                                {disease}
-                            </strong>
-
-                            <span
-                                style={{
-                                    fontWeight: "600",
-                                    color: "#374151",
-                                    whiteSpace: "nowrap",
-                                }}
-                            >
-                                {count} detection
-                                {count !== 1 ? "s" : ""} (
-                                {percentage.toFixed(1)}%)
-                            </span>
-
-                        </div>
+                <p
+                    style={{
+                        color: "#6b7280",
+                        marginBottom: "22px",
+                    }}
+                >
+                    Summary of disease detections across
+                    the stored crop analysis history.
+                </p>
 
 
-                        {/* Progress bar */}
+                {Object.entries(
+                    analytics.diseaseCounts
+                )
+                    .filter(
+                        ([disease]) =>
+                            !isHealthyPrediction(
+                                disease
+                            )
+                    )
+                    .sort(
+                        ([, a], [, b]) =>
+                            b - a
+                    )
+                    .map(
+                        ([disease, count]) => {
 
-                        <div
-                            style={{
-                                width: "100%",
-                                height: "12px",
-                                background: "#e5e7eb",
-                                borderRadius: "10px",
-                                overflow: "hidden",
-                            }}
-                        >
+                            const percentage =
+                                analytics.diseased > 0
+                                    ? (
+                                        count /
+                                        analytics.diseased
+                                    ) * 100
+                                    : 0;
 
-                            <div
-                                style={{
-                                    width: `${percentage}%`,
-                                    height: "100%",
-                                    background:
-                                        "linear-gradient(90deg, #16a34a, #22c55e)",
-                                    borderRadius: "10px",
-                                    transition:
-                                        "width 0.5s ease",
-                                }}
-                            />
 
-                        </div>
+                            return (
 
-                    </div>
-                );
-            }
-        )}
+                                <div
+                                    key={disease}
+                                    style={{
+                                        marginBottom:
+                                            "22px",
+                                    }}
+                                >
 
-</div>
+                                    <div
+                                        style={{
+                                            display: "flex",
+                                            justifyContent:
+                                                "space-between",
+                                            alignItems:
+                                                "center",
+                                            marginBottom:
+                                                "8px",
+                                            gap: "10px",
+                                        }}
+                                    >
+
+                                        <strong
+                                            style={{
+                                                fontSize:
+                                                    "16px",
+                                            }}
+                                        >
+                                            {disease}
+                                        </strong>
+
+
+                                        <span
+                                            style={{
+                                                fontWeight:
+                                                    "600",
+                                                color:
+                                                    "#374151",
+                                                whiteSpace:
+                                                    "nowrap",
+                                            }}
+                                        >
+                                            {count} detection
+                                            {count !== 1
+                                                ? "s"
+                                                : ""} (
+                                            {percentage.toFixed(1)}
+                                            %)
+                                        </span>
+
+                                    </div>
+
+
+                                    <div
+                                        style={{
+                                            width: "100%",
+                                            height: "12px",
+                                            background:
+                                                "#e5e7eb",
+                                            borderRadius:
+                                                "10px",
+                                            overflow:
+                                                "hidden",
+                                        }}
+                                    >
+
+                                        <div
+                                            style={{
+                                                width:
+                                                    `${percentage}%`,
+                                                height: "100%",
+                                                background:
+                                                    "linear-gradient(90deg, #16a34a, #22c55e)",
+                                                borderRadius:
+                                                    "10px",
+                                                transition:
+                                                    "width 0.5s ease",
+                                            }}
+                                        />
+
+                                    </div>
+
+                                </div>
+
+                            );
+
+                        }
+                    )}
+
+            </div>
+
 
             {/* =================================================
                 HEALTH STATUS
@@ -1101,8 +1448,9 @@ function Analytics() {
                 </div>
 
             </div>
-          
-                       {/* =================================================
+
+
+            {/* =================================================
                 AI CROP HEALTH INSIGHTS
             ================================================= */}
 
@@ -1114,7 +1462,8 @@ function Analytics() {
                     boxShadow:
                         "0 4px 18px rgba(0,0,0,0.08)",
                     marginBottom: "25px",
-                    border: "1px solid #e5e7eb",
+                    border:
+                        "1px solid #e5e7eb",
                 }}
             >
 
@@ -1127,15 +1476,16 @@ function Analytics() {
                     🤖 AI Crop Health Insights
                 </h2>
 
+
                 <p
                     style={{
                         color: "#64748b",
                         marginBottom: "22px",
                     }}
                 >
-                   AgriMind AI summarizes the current
-                   detection history to help understand
-                   overall crop health.
+                    AgriMind AI summarizes the current
+                    detection history to help understand
+                    overall crop health.
                 </p>
 
 
@@ -1146,11 +1496,13 @@ function Analytics() {
                         padding: "18px",
                         borderRadius: "14px",
                         background:
-                            analytics.diseased > analytics.healthy
+                            analytics.diseased >
+                            analytics.healthy
                                 ? "#fff7ed"
                                 : "#f0fdf4",
                         border:
-                            analytics.diseased > analytics.healthy
+                            analytics.diseased >
+                            analytics.healthy
                                 ? "1px solid #fed7aa"
                                 : "1px solid #bbf7d0",
                         marginBottom: "20px",
@@ -1163,10 +1515,12 @@ function Analytics() {
                             marginBottom: "8px",
                         }}
                     >
-                        {analytics.diseased > analytics.healthy
+                        {analytics.diseased >
+                        analytics.healthy
                             ? "⚠️ Attention Required"
                             : "✅ Overall Crop Health Looks Good"}
                     </h3>
+
 
                     <p
                         style={{
@@ -1176,13 +1530,19 @@ function Analytics() {
                         }}
                     >
                         {analytics.total} detection
-                        {analytics.total !== 1 ? "s" : ""} analyzed.
+                        {analytics.total !== 1
+                            ? "s"
+                            : ""} analyzed.
                         {" "}
                         {analytics.healthy} detection
-                        {analytics.healthy !== 1 ? "s" : ""} were
-                        classified as healthy, while{" "}
+                        {analytics.healthy !== 1
+                            ? "s"
+                            : ""} were classified
+                        as healthy, while{" "}
                         {analytics.diseased} detection
-                        {analytics.diseased !== 1 ? "s" : ""} showed
+                        {analytics.diseased !== 1
+                            ? "s"
+                            : ""} showed
                         disease-related conditions.
                     </p>
 
@@ -1198,8 +1558,9 @@ function Analytics() {
                 >
 
                     <h3>
-                       🔎 Most Frequently Detected Disease
+                        🔎 Most Frequently Detected Disease
                     </h3>
+
 
                     <p
                         style={{
@@ -1208,7 +1569,8 @@ function Analytics() {
                             lineHeight: "1.7",
                         }}
                     >
-                        The most frequently detected disease is{" "}
+                        The most frequently detected
+                        disease is{" "}
                         <strong>
                             {analytics.mostCommonDisease}
                         </strong>.
@@ -1228,6 +1590,7 @@ function Analytics() {
                     <h3>
                         ⚠️ Disease Attention
                     </h3>
+
 
                     <p
                         style={{
@@ -1256,6 +1619,7 @@ function Analytics() {
                         🎯 Model Confidence
                     </h3>
 
+
                     <p
                         style={{
                             margin: 0,
@@ -1264,13 +1628,15 @@ function Analytics() {
                         }}
                     >
                         The average AI prediction confidence
-                        across the stored detection history is{" "}
+                        across the stored detection history
+                        is{" "}
                         <strong>
                             {analytics.averageConfidence.toFixed(2)}%
                         </strong>.
                         {" "}
                         Results should still be verified using
-                        crop symptoms and local agricultural guidance.
+                        crop symptoms and local agricultural
+                        guidance.
                     </p>
 
                 </div>
@@ -1283,7 +1649,8 @@ function Analytics() {
                         padding: "18px",
                         borderRadius: "14px",
                         background: "#f0fdf4",
-                        border: "1px solid #bbf7d0",
+                        border:
+                            "1px solid #bbf7d0",
                     }}
                 >
 
@@ -1296,6 +1663,7 @@ function Analytics() {
                         👨‍🌾 Farmer Action
                     </h3>
 
+
                     <p
                         style={{
                             margin: 0,
@@ -1303,15 +1671,16 @@ function Analytics() {
                             lineHeight: "1.7",
                         }}
                     >
-                      Regularly inspect crop plants,
-                      monitor areas showing disease symptoms,
-                      and consult a local agriculture expert
-                      before applying chemical treatment.
+                        Regularly inspect crop plants,
+                        monitor areas showing disease symptoms,
+                        and consult a local agriculture expert
+                        before applying chemical treatment.
                     </p>
 
                 </div>
 
             </div>
+
 
             {/* =================================================
                 FOOTER NOTE
@@ -1326,13 +1695,12 @@ function Analytics() {
                     textAlign: "center",
                 }}
             >
-
                 🤖 Analytics are generated from
                 AgriMind AI detection history.
-
             </div>
 
         </div>
+
     );
 }
 
