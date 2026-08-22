@@ -11,55 +11,74 @@ function History() {
     // Selected detection for detailed view
     const [selectedDetection, setSelectedDetection] = useState(null);
 
-    // =========================================================
-    // FETCH HISTORY
-    // =========================================================
+   // =========================================================
+// FETCH HISTORY
+// =========================================================
 
-    const fetchHistory = async (showRefreshLoader = false) => {
-        try {
-            if (showRefreshLoader) {
-                setRefreshing(true);
-            } else {
-                setLoading(true);
-            }
-
-            setError("");
-
-            const response = await fetch(
-                `${API_BASE_URL}/history`
-            );
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(
-                    data.detail ||
-                    "Failed to load detection history."
-                );
-            }
-
-            setHistory(
-                Array.isArray(data.history)
-                    ? data.history.map(normalizeHistoryItem)
-                    : []
-            );
-
-        } catch (err) {
-            console.error(
-                "History fetch error:",
-                err
-            );
-
-            setError(
-                err.message ||
-                "Unable to connect to AI server."
-            );
-
-        } finally {
-            setLoading(false);
-            setRefreshing(false);
+const fetchHistory = async (showRefreshLoader = false) => {
+    try {
+        if (showRefreshLoader) {
+            setRefreshing(true);
+        } else {
+            setLoading(true);
         }
-    };
+
+        setError("");
+
+        // Get login token from browser storage
+        const token =
+            localStorage.getItem("access_token") ||
+            localStorage.getItem("token");
+
+        // Token not found
+        if (!token) {
+            throw new Error(
+                "Not authenticated. Please login again."
+            );
+        }
+
+        const response = await fetch(
+            `${API_BASE_URL}/history`,
+            {
+                method: "GET",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.detail ||
+                "Failed to load detection history."
+            );
+        }
+
+        setHistory(
+            Array.isArray(data.history)
+                ? data.history.map(normalizeHistoryItem)
+                : []
+        );
+
+    } catch (err) {
+        console.error(
+            "History fetch error:",
+            err
+        );
+
+        setError(
+            err.message ||
+            "Unable to connect to AI server."
+        );
+
+    } finally {
+        setLoading(false);
+        setRefreshing(false);
+    }
+};
 
     // =========================================================
     // LOAD HISTORY
@@ -70,55 +89,71 @@ function History() {
     }, []);
 
     // =========================================================
-    // CLEAR HISTORY
-    // =========================================================
+// CLEAR HISTORY
+// =========================================================
 
-    const handleClearHistory = async () => {
+const handleClearHistory = async () => {
 
-        const confirmDelete = window.confirm(
-            "Are you sure you want to delete all detection history?"
+    const confirmDelete = window.confirm(
+        "Are you sure you want to delete all detection history?"
+    );
+
+    if (!confirmDelete) {
+        return;
+    }
+
+    try {
+
+        setError("");
+
+        // Get login token
+        const token =
+            localStorage.getItem("access_token") ||
+            localStorage.getItem("token");
+
+        // Token not found
+        if (!token) {
+            throw new Error(
+                "Not authenticated. Please login again."
+            );
+        }
+
+        const response = await fetch(
+            `${API_BASE_URL}/history`,
+            {
+                method: "DELETE",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+            }
         );
 
-        if (!confirmDelete) {
-            return;
-        }
+        const data = await response.json();
 
-        try {
-
-            setError("");
-
-            const response = await fetch(
-                `${API_BASE_URL}/history`,
-                {
-                    method: "DELETE",
-                }
-            );
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(
-                    data.detail ||
-                    "Failed to clear history."
-                );
-            }
-
-            setHistory([]);
-
-        } catch (err) {
-
-            console.error(
-                "Clear history error:",
-                err
-            );
-
-            setError(
-                err.message ||
-                "Unable to clear history."
+        if (!response.ok) {
+            throw new Error(
+                data.detail ||
+                "Failed to clear history."
             );
         }
-    };
 
+        // Clear frontend history
+        setHistory([]);
+
+    } catch (err) {
+
+        console.error(
+            "Clear history error:",
+            err
+        );
+
+        setError(
+            err.message ||
+            "Unable to clear history."
+        );
+    }
+};
     // =========================================================
     // PARSE PROBABILITIES
     // =========================================================
