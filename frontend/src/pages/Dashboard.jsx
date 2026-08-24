@@ -90,63 +90,253 @@ function Dashboard() {
     ];
 
 
-    // =========================================================
-    // FETCH DASHBOARD DATA
-    // =========================================================
+   // =========================================================
+// FETCH DASHBOARD DATA
+// =========================================================
 
-    const fetchDashboardData = async (isRefresh = false) => {
-        try {
-            if (isRefresh) {
-                setRefreshing(true);
-            } else {
-                setLoading(true);
-            }
+const fetchDashboardData = async (isRefresh = false) => {
 
-            setError("");
+    try {
 
-            const response = await fetch(
-                "http://127.0.0.1:8000/history"
-            );
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(
-                    data.detail ||
-                    "Failed to load dashboard data."
-                );
-            }
-
-            const records = data.history || [];
-
-            setHistory(records);
-
-            setTotalDetections(
-                data.count ?? records.length
-            );
-
-            if (records.length > 0) {
-                setLatestDetection(records[0]);
-            } else {
-                setLatestDetection(null);
-            }
-
-        } catch (err) {
-            console.error(
-                "Dashboard error:",
-                err
-            );
-
-            setError(
-                err.message ||
-                "Unable to connect to AI server."
-            );
-
-        } finally {
-            setLoading(false);
-            setRefreshing(false);
+        if (isRefresh) {
+            setRefreshing(true);
+        } else {
+            setLoading(true);
         }
-    };
+
+        setError("");
+
+        // =====================================================
+        // GET AUTHENTICATION TOKEN
+        // =====================================================
+
+        const storageKeys = [
+            "access_token",
+            "token",
+            "accessToken",
+            "authToken",
+            "jwt",
+            "auth"
+        ];
+
+        let token = null;
+
+        // Check localStorage and sessionStorage
+        for (const key of storageKeys) {
+
+            const localValue =
+                localStorage.getItem(key);
+
+            if (localValue) {
+
+                try {
+
+                    const parsed =
+                        JSON.parse(localValue);
+
+                    if (
+                        typeof parsed === "string" &&
+                        parsed.length > 20
+                    ) {
+                        token = parsed;
+                        break;
+                    }
+
+                    if (parsed?.access_token) {
+                        token =
+                            parsed.access_token;
+                        break;
+                    }
+
+                    if (parsed?.token) {
+                        token =
+                            parsed.token;
+                        break;
+                    }
+
+                } catch {
+
+                    token = localValue;
+                    break;
+
+                }
+            }
+
+
+            const sessionValue =
+                sessionStorage.getItem(key);
+
+            if (sessionValue) {
+
+                try {
+
+                    const parsed =
+                        JSON.parse(sessionValue);
+
+                    if (
+                        typeof parsed === "string" &&
+                        parsed.length > 20
+                    ) {
+                        token = parsed;
+                        break;
+                    }
+
+                    if (parsed?.access_token) {
+                        token =
+                            parsed.access_token;
+                        break;
+                    }
+
+                    if (parsed?.token) {
+                        token =
+                            parsed.token;
+                        break;
+                    }
+
+                } catch {
+
+                    token = sessionValue;
+                    break;
+
+                }
+            }
+        }
+
+
+        // =====================================================
+        // TOKEN NOT FOUND
+        // =====================================================
+
+        if (!token) {
+
+            throw new Error(
+                "Not authenticated. Please logout and login again."
+            );
+
+        }
+
+
+        console.log(
+            "🔐 Dashboard authentication token found."
+        );
+
+
+        // =====================================================
+        // API REQUEST
+        // =====================================================
+
+        const response = await fetch(
+            "http://127.0.0.1:8000/history",
+            {
+                method: "GET",
+
+                headers: {
+                    "Authorization":
+                        `Bearer ${token}`,
+
+                    "Content-Type":
+                        "application/json"
+                }
+            }
+        );
+
+
+        // =====================================================
+        // RESPONSE
+        // =====================================================
+
+        const data =
+            await response.json();
+
+
+        // =====================================================
+        // API ERROR
+        // =====================================================
+
+        if (!response.ok) {
+
+            if (response.status === 401) {
+
+                throw new Error(
+                    "Authentication expired or invalid. Please logout and login again."
+                );
+
+            }
+
+            throw new Error(
+                data.detail ||
+                "Failed to load dashboard data."
+            );
+
+        }
+
+
+        // =====================================================
+        // HISTORY DATA
+        // =====================================================
+
+        const records =
+            Array.isArray(data.history)
+                ? data.history
+                : [];
+
+
+        // =====================================================
+        // UPDATE STATE
+        // =====================================================
+
+        setHistory(records);
+
+
+        setTotalDetections(
+            data.count ??
+            records.length
+        );
+
+
+        // =====================================================
+        // LATEST DETECTION
+        // =====================================================
+
+        if (records.length > 0) {
+
+            setLatestDetection(
+                records[0]
+            );
+
+        } else {
+
+            setLatestDetection(
+                null
+            );
+
+        }
+
+
+        console.log(
+            "📊 Dashboard history loaded:",
+            records.length
+        );
+
+    } catch (err) {
+
+        console.error(
+            "❌ Dashboard error:",
+            err
+        );
+
+        setError(
+            err.message ||
+            "Unable to connect to AI server."
+        );
+
+    } finally {
+
+        setLoading(false);
+        setRefreshing(false);
+
+    }
+};
 
 
     // =========================================================
