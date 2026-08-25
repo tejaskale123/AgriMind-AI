@@ -36,7 +36,7 @@ The current application supports cotton and soybean disease prediction.
 
 ## Tech Stack
 
-| Layer | Tools |
+| Layer | Technologies |
 |---|---|
 | Frontend | React, Vite, React Router, CSS |
 | Backend | FastAPI, Python, SQLite, Pillow |
@@ -172,6 +172,22 @@ npm.cmd run dev
 npm.cmd run build
 ```
 
+## Authentication
+
+AgriMind AI includes user authentication to protect user-specific application data.
+
+### Authentication Features
+
+- User registration
+- User login
+- Authenticated dashboard access
+- User-specific detection history
+- Protected history APIs
+- Logout functionality
+- Automatic redirect to login for protected pages
+
+The frontend uses authentication state to control access to protected application pages, while the backend validates authenticated users for protected history operations.
+
 ## API Endpoints
 
 | Method | Endpoint | Description |
@@ -220,11 +236,45 @@ The backend checks file type, image size, brightness, contrast, and model confid
 | Route | Page |
 |---|---|
 | `/` | Dashboard |
+| `/login` | Login |
+| `/register` | Register |
 | `/detection` | Disease Detection |
 | `/crops` | Crops |
 | `/analytics` | Analytics |
 | `/history` | History |
 | `/settings` | Settings |
+
+## Application Workflow
+
+The AgriMind AI application follows this workflow:
+
+```text
+User Registration / Login
+        ↓
+Dashboard
+        ↓
+Select Disease Detection
+        ↓
+Select Crop
+        ↓
+Upload or Capture Leaf Image
+        ↓
+Image Quality Validation
+        ↓
+EfficientNet-B0 Model Inference
+        ↓
+Disease Prediction
+        ↓
+Confidence & Class Probabilities
+        ↓
+Disease Recommendation
+        ↓
+Save Detection History
+        ↓
+Analytics & History
+```
+
+The system provides disease information including symptoms, immediate actions, prevention, treatment guidance, spray guidance, and farmer actions where available.
 
 ## ML Workflow
 
@@ -308,6 +358,16 @@ ml/evaluation/reports/model_performance.png
 - Raw, processed, cleaned, split, and inference datasets are stored under `datasets/`.
 - Duplicate reports are stored under `datasets/reports/`.
 - Large dataset folders and model checkpoints can make the repository heavy.
+
+## Application Screenshots
+
+### Dashboard
+
+The dashboard provides an overview of supported crops, AI model status, total detections, and quick access to disease detection.
+
+### Disease Detection
+
+Users can upload or capture a crop leaf image and analyze it using the trained EfficientNet-B0 model.
 
 ## Troubleshooting
 
