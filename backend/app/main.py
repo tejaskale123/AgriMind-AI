@@ -12,9 +12,12 @@ from torchvision import models, transforms
 
 from fastapi import FastAPI, File, UploadFile, HTTPException, Form
 from fastapi import Depends
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+
 from pydantic import BaseModel, EmailStr
+
 from fastapi.middleware.cors import CORSMiddleware
+
 from .auth import (
     create_user,
     authenticate_user,
@@ -66,6 +69,12 @@ SOYBEAN_MODEL_PATH = (
     / "soybean_efficientnet_b0.pth"
 )
 
+MAIZE_MODEL_PATH = (
+    PROJECT_ROOT
+    / "models"
+    / "maize_efficientnet_b0.pth"
+)
+
 COTTON_CLASSES = [
     "Alternaria Leaf Spot",
     "Bacterial Blight",
@@ -82,14 +91,23 @@ SOYBEAN_CLASSES = [
     "Sudden_Death_Syndrome",
 ]
 
+MAIZE_CLASSES = [
+    "Blight",
+    "Common_Rust",
+    "Gray_Leaf_Spot",
+    "Healthy",
+]
+
 MODEL_PATHS = {
     "cotton": MODEL_PATH,
     "soybean": SOYBEAN_MODEL_PATH,
+    "maize": MAIZE_MODEL_PATH,
 }
 
 CROP_CLASSES = {
     "cotton": COTTON_CLASSES,
     "soybean": SOYBEAN_CLASSES,
+    "maize": MAIZE_CLASSES,
 }
 
 
@@ -405,6 +423,49 @@ DISEASE_RECOMMENDATIONS = (
 
 
 # ============================================================
+# FIND DISEASE RECOMMENDATION
+# Handles spaces, underscores, hyphens and case differences
+# ============================================================
+
+def find_recommendation(disease_name):
+
+    if not disease_name:
+        return None
+
+    # Direct match first
+    recommendation = DISEASE_RECOMMENDATIONS.get(
+        disease_name
+    )
+
+    if recommendation is not None:
+        return recommendation
+
+    # Normalize the requested disease name
+    normalized_name = (
+        disease_name
+        .replace("_", " ")
+        .replace("-", " ")
+        .strip()
+        .casefold()
+    )
+
+    # Search all JSON keys using normalized names
+    for key, value in DISEASE_RECOMMENDATIONS.items():
+
+        normalized_key = (
+            str(key)
+            .replace("_", " ")
+            .replace("-", " ")
+            .strip()
+            .casefold()
+        )
+
+        if normalized_key == normalized_name:
+            return value
+
+    return None
+
+# ============================================================
 # INITIALIZE DATABASE
 # ============================================================
 
@@ -440,7 +501,7 @@ class LoginRequest(BaseModel):
 # ============================================================
 
 oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl="/auth/login"
+    tokenUrl="/auth/token"
 )
 
 
@@ -689,6 +750,12 @@ soybean_model = load_model(
     "soybean",
 )
 
+maize_model = load_model(
+    MAIZE_MODEL_PATH,
+    MAIZE_CLASSES,
+    "maize",
+)
+
 
 # ============================================================
 # ROOT API
@@ -730,11 +797,13 @@ def health():
 
         "model_loaded":
             cotton_model is not None
-            and soybean_model is not None,
+            and soybean_model is not None
+            and maize_model is not None,
 
         "models": [
             "cotton_efficientnet_b0",
             "soybean_efficientnet_b0",
+            "maize_efficientnet_b0",
         ],
 
         "crop":
@@ -771,13 +840,14 @@ async def predict(
     if crop not in [
         "cotton",
         "soybean",
+        "maize",
     ]:
 
         raise HTTPException(
             status_code=400,
             detail=(
                 f"Unsupported crop: {crop}. "
-                "Supported crops are cotton and soybean."
+                "Supported crops are cotton, soybean and maize."
             ),
         )
 
@@ -870,6 +940,11 @@ async def predict(
 
         selected_model = soybean_model
         selected_classes = SOYBEAN_CLASSES
+
+    elif crop == "maize":
+
+        selected_model = maize_model
+        selected_classes = MAIZE_CLASSES
 
     else:
 
@@ -1002,18 +1077,9 @@ async def predict(
     # RECOMMENDATION
     # --------------------------------------------------------
 
-    recommendation_key = (
-        predicted_class.replace(
-            "_",
-            " "
-        )
-    )
-
-    recommendation = (
-        DISEASE_RECOMMENDATIONS.get(
-            recommendation_key
-        )
-    )
+    recommendation = find_recommendation(
+    predicted_class
+)
 
 
     # --------------------------------------------------------
@@ -1169,14 +1235,10 @@ def get_history(
             "probabilities":
                 row["probabilities"],
 
-            "recommendation":
-                DISEASE_RECOMMENDATIONS.get(
-                    row["prediction"].replace(
-                        "_",
-                        " "
-                    )
+           "recommendation":
+                find_recommendation(
+                    row["prediction"]
                 ),
-
             "created_at":
                 row["created_at"],
         })
@@ -1254,7 +1316,6 @@ def clear_history(
 # ============================================================
 # DISEASE RECOMMENDATION API
 # ============================================================
-
 @app.get(
     "/recommendation/{disease}"
 )
@@ -1263,51 +1324,39 @@ def get_recommendation(
 ):
 
     disease_name = (
-        disease.replace(
-            "-",
-            " "
-        ).replace(
-            "_",
-            " "
-        )
+        disease
+        .replace("-", " ")
+        .replace("_", " ")
+        .strip()
     )
 
-
-    recommendation = (
-        DISEASE_RECOMMENDATIONS.get(
-            disease_name
-        )
+    recommendation = find_recommendation(
+        disease
     )
-
 
     if recommendation is None:
 
         raise HTTPException(
-
             status_code=404,
-
             detail=(
                 f"No recommendation found "
                 f"for disease: {disease_name}"
             )
         )
 
-
     return {
 
-        "success":
-            True,
+        "success": True,
 
-        "crop":
-            list(CROP_CLASSES.keys()),
+        "crop": list(
+            CROP_CLASSES.keys()
+        ),
 
-        "disease":
-            disease_name,
+        "disease": disease_name,
 
         "recommendation":
             recommendation,
     }
-
 
 # ============================================================
 # REGISTER API
@@ -1370,7 +1419,41 @@ def register(
 
 
 # ============================================================
+# OAUTH2 TOKEN API
+# Used by Swagger UI "Authorize" button.
+# This is intentionally separate from /auth/login because
+# /auth/login accepts JSON for the frontend.
+# ============================================================
+
+@app.post("/auth/token")
+def oauth2_login(
+    form_data: OAuth2PasswordRequestForm = Depends()
+):
+    user = authenticate_user(
+        email=form_data.username,
+        password=form_data.password
+    )
+
+    if user is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid email or password."
+        )
+
+    access_token = create_access_token(
+        user_id=user["id"],
+        email=user["email"]
+    )
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+    }
+
+
+# ============================================================
 # LOGIN API
+# Frontend JSON login endpoint.
 # ============================================================
 
 @app.post("/auth/login")
@@ -1454,9 +1537,8 @@ def get_me(
     )
 ):
 
-    return {
+     return {
 
         "success": True,
-
-        "user": current_user
+         "user": current_user
     }

@@ -1,208 +1,720 @@
 from pathlib import Path
+import argparse
 import json
 
+import torch
+import torch.nn as nn
+
+from torchvision import datasets
+from torchvision import transforms
+from torchvision import models
+
+from torch.utils.data import DataLoader
+
+from sklearn.metrics import (
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    classification_report,
+    confusion_matrix,
+)
+
 import numpy as np
-import matplotlib.pyplot as plt
-from sklearn.metrics import ConfusionMatrixDisplay
 
 
 # ============================================================
 # AGRIMIND AI
-# MODEL EVALUATION VISUALIZATION
+# MODEL EVALUATION PIPELINE
+# ============================================================
+
+
+# ============================================================
+# PROJECT PATHS
 # ============================================================
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
-RESULT_FILE = (
+DATASET_ROOT = (
+    PROJECT_ROOT
+    / "datasets"
+    / "disease"
+)
+
+MODEL_ROOT = (
+    PROJECT_ROOT
+    / "models"
+)
+
+EVALUATION_ROOT = (
     PROJECT_ROOT
     / "ml"
     / "evaluation"
+)
+
+RESULT_FILE = (
+    EVALUATION_ROOT
     / "evaluation_results.json"
 )
 
-REPORT_DIR = (
-    PROJECT_ROOT
-    / "ml"
-    / "evaluation"
-    / "reports"
-)
 
-REPORT_DIR.mkdir(
-    parents=True,
-    exist_ok=True,
+# ============================================================
+# CONFIGURATION
+# ============================================================
+
+IMAGE_SIZE = 224
+
+BATCH_SIZE = 32
+
+
+# ============================================================
+# DEVICE
+# ============================================================
+
+DEVICE = torch.device(
+    "cuda"
+    if torch.cuda.is_available()
+    else "cpu"
 )
 
 
 # ============================================================
-# LOAD RESULTS
+# TEST TRANSFORM
 # ============================================================
 
-with open(
-    RESULT_FILE,
-    "r",
-    encoding="utf-8",
-) as file:
+TEST_TRANSFORM = transforms.Compose(
+    [
+        transforms.Resize(
+            (IMAGE_SIZE, IMAGE_SIZE)
+        ),
 
-    results = json.load(file)
+        transforms.ToTensor(),
 
+        transforms.Normalize(
+            mean=[
+                0.485,
+                0.456,
+                0.406,
+            ],
 
-# ============================================================
-# MODEL INFORMATION
-# ============================================================
-
-classes = results["classes"]
-
-confusion_matrix = np.array(
-    results["confusion_matrix"]
+            std=[
+                0.229,
+                0.224,
+                0.225,
+            ],
+        ),
+    ]
 )
-
-metrics = {
-    "Accuracy": results["accuracy"],
-    "Precision": results["precision"],
-    "Recall": results["recall"],
-    "F1 Score": results["f1_score"],
-}
 
 
 # ============================================================
-# CONFUSION MATRIX
+# LOAD MODEL
 # ============================================================
 
-plt.figure(
-    figsize=(10, 8)
-)
-
-display = ConfusionMatrixDisplay(
-    confusion_matrix=confusion_matrix,
-    display_labels=classes,
-)
-
-display.plot(
-    values_format="d",
-    xticks_rotation=45,
-)
-
-plt.title(
-    "AgriMind AI - Soybean Disease Confusion Matrix"
-)
-
-plt.tight_layout()
-
-confusion_path = (
-    REPORT_DIR
-    / "confusion_matrix.png"
-)
-
-plt.savefig(
-    confusion_path,
-    dpi=300,
-    bbox_inches="tight",
-)
-
-plt.close()
-
-
-# ============================================================
-# MODEL PERFORMANCE
-# ============================================================
-
-plt.figure(
-    figsize=(9, 6)
-)
-
-names = list(metrics.keys())
-values = list(metrics.values())
-
-bars = plt.bar(
-    names,
-    values,
-)
-
-plt.ylim(
-    0,
-    105,
-)
-
-plt.ylabel(
-    "Score (%)"
-)
-
-plt.title(
-    "AgriMind AI - Model Performance"
-)
-
-for bar, value in zip(
-    bars,
-    values,
+def load_model(
+    model_path,
+    num_classes,
 ):
 
-    plt.text(
-        bar.get_x()
-        + bar.get_width() / 2,
-        value + 1,
-        f"{value:.2f}%",
-        ha="center",
-        fontweight="bold",
+    checkpoint = torch.load(
+        model_path,
+        map_location=DEVICE,
+        weights_only=False,
     )
 
-plt.tight_layout()
+    model = models.efficientnet_b0(
+        weights=None
+    )
 
-performance_path = (
-    REPORT_DIR
-    / "model_performance.png"
-)
+    input_features = (
+        model.classifier[1].in_features
+    )
 
-plt.savefig(
-    performance_path,
-    dpi=300,
-    bbox_inches="tight",
-)
+    model.classifier[1] = nn.Linear(
+        input_features,
+        num_classes,
+    )
 
-plt.close()
+    model.load_state_dict(
+        checkpoint["model_state_dict"]
+    )
+
+    model = model.to(
+        DEVICE
+    )
+
+    model.eval()
+
+    return model
 
 
 # ============================================================
-# FINAL MESSAGE
+# LOAD TEST DATA
 # ============================================================
 
-print("=" * 60)
+def load_test_dataset(crop):
 
-print(
-    "AGRIMIND AI - REPORT GENERATION COMPLETE"
-)
+    test_dir = (
+        DATASET_ROOT
+        / crop
+        / "test"
+    )
 
-print("=" * 60)
+    if not test_dir.exists():
 
-print()
+        raise FileNotFoundError(
+            f"Test dataset not found: {test_dir}"
+        )
 
-print(
-    f"Confusion Matrix: {confusion_path}"
-)
+    dataset = datasets.ImageFolder(
+        test_dir,
+        transform=TEST_TRANSFORM,
+    )
 
-print(
-    f"Model Performance: {performance_path}"
-)
+    loader = DataLoader(
+        dataset,
+        batch_size=BATCH_SIZE,
+        shuffle=False,
+        num_workers=0,
+    )
 
-print()
+    return (
+        dataset,
+        loader,
+    )
 
-print(
-    "Accuracy  :", f"{results['accuracy']:.2f}%"
-)
 
-print(
-    "Precision :", f"{results['precision']:.2f}%"
-)
+# ============================================================
+# RUN PREDICTIONS
+# ============================================================
 
-print(
-    "Recall    :", f"{results['recall']:.2f}%"
-)
+def get_predictions(
+    model,
+    loader,
+):
 
-print(
-    "F1 Score  :", f"{results['f1_score']:.2f}%"
-)
+    all_labels = []
 
-print()
+    all_predictions = []
 
-print(
-    "✅ Evaluation graphs generated successfully."
-)
+    all_probabilities = []
+
+    model.eval()
+
+    with torch.no_grad():
+
+        for images, labels in loader:
+
+            images = images.to(
+                DEVICE
+            )
+
+            outputs = model(
+                images
+            )
+
+            probabilities = torch.softmax(
+                outputs,
+                dim=1,
+            )
+
+            predictions = (
+                probabilities.argmax(
+                    dim=1
+                )
+            )
+
+            all_labels.extend(
+                labels.cpu().numpy()
+            )
+
+            all_predictions.extend(
+                predictions.cpu().numpy()
+            )
+
+            all_probabilities.extend(
+                probabilities.cpu().numpy()
+            )
+
+    return (
+        np.array(all_labels),
+        np.array(all_predictions),
+        np.array(all_probabilities),
+    )
+
+
+# ============================================================
+# CALCULATE METRICS
+# ============================================================
+
+def calculate_metrics(
+    labels,
+    predictions,
+):
+
+    accuracy = accuracy_score(
+        labels,
+        predictions,
+    )
+
+    precision = precision_score(
+        labels,
+        predictions,
+        average="weighted",
+        zero_division=0,
+    )
+
+    recall = recall_score(
+        labels,
+        predictions,
+        average="weighted",
+        zero_division=0,
+    )
+
+    f1 = f1_score(
+        labels,
+        predictions,
+        average="weighted",
+        zero_division=0,
+    )
+
+    return (
+        accuracy,
+        precision,
+        recall,
+        f1,
+    )
+
+
+# ============================================================
+# PRINT CONFUSION MATRIX
+# ============================================================
+
+def print_confusion_matrix(
+    matrix,
+    class_names,
+):
+
+    print("\n")
+
+    print(
+        "=" * 70
+    )
+
+    print(
+        "CONFUSION MATRIX"
+    )
+
+    print(
+        "=" * 70
+    )
+
+    print(
+        "\nRows = Actual"
+    )
+
+    print(
+        "Columns = Predicted\n"
+    )
+
+    print(
+        "Classes:"
+    )
+
+    for index, name in enumerate(
+        class_names
+    ):
+
+        print(
+            f"{index}: {name}"
+        )
+
+    print(
+        "\nMatrix:\n"
+    )
+
+    print(
+        matrix
+    )
+
+
+# ============================================================
+# SAVE EVALUATION RESULTS
+# ============================================================
+
+def save_evaluation_results(
+    crop,
+    test_dataset,
+    accuracy,
+    precision,
+    recall,
+    f1,
+    matrix,
+):
+
+    results = {
+
+        "project":
+            "AgriMind AI",
+
+        "crop":
+            crop,
+
+        "model":
+            "EfficientNet-B0",
+
+        "image_size":
+            f"{IMAGE_SIZE}x{IMAGE_SIZE}",
+
+        "test_images":
+            len(test_dataset),
+
+        "accuracy":
+            round(
+                accuracy * 100,
+                2,
+            ),
+
+        "precision":
+            round(
+                precision * 100,
+                2,
+            ),
+
+        "recall":
+            round(
+                recall * 100,
+                2,
+            ),
+
+        "f1_score":
+            round(
+                f1 * 100,
+                2,
+            ),
+
+        "classes":
+            test_dataset.classes,
+
+        "confusion_matrix":
+            matrix.tolist(),
+    }
+
+
+    EVALUATION_ROOT.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+
+    with open(
+        RESULT_FILE,
+        "w",
+        encoding="utf-8",
+    ) as file:
+
+        json.dump(
+            results,
+            file,
+            indent=2,
+        )
+
+
+    print(
+        "\n💾 Evaluation results saved:"
+    )
+
+    print(
+        RESULT_FILE
+    )
+
+
+# ============================================================
+# MAIN EVALUATION
+# ============================================================
+
+def evaluate_model(crop):
+
+    print(
+        "=" * 70
+    )
+
+    print(
+        "🌱 AGRIMIND AI - MODEL EVALUATION"
+    )
+
+    print(
+        "=" * 70
+    )
+
+    print(
+        f"\nCrop: {crop}"
+    )
+
+    print(
+        f"Device: {DEVICE}"
+    )
+
+
+    # --------------------------------------------------------
+    # MODEL PATH
+    # --------------------------------------------------------
+
+    model_path = (
+        MODEL_ROOT
+        / f"{crop}_efficientnet_b0.pth"
+    )
+
+
+    if not model_path.exists():
+
+        print(
+            "\n❌ MODEL NOT FOUND:"
+        )
+
+        print(
+            model_path
+        )
+
+        return
+
+
+    # --------------------------------------------------------
+    # LOAD TEST DATA
+    # --------------------------------------------------------
+
+    (
+        test_dataset,
+        test_loader,
+    ) = load_test_dataset(
+        crop
+    )
+
+
+    print(
+        f"\nTest images: "
+        f"{len(test_dataset)}"
+    )
+
+
+    print(
+        "\nClasses:"
+    )
+
+    for index, name in enumerate(
+        test_dataset.classes
+    ):
+
+        print(
+            f"  {index}: {name}"
+        )
+
+
+    # --------------------------------------------------------
+    # LOAD MODEL
+    # --------------------------------------------------------
+
+    model = load_model(
+        model_path,
+        len(
+            test_dataset.classes
+        ),
+    )
+
+
+    print(
+        "\n✅ Model loaded successfully."
+    )
+
+
+    # --------------------------------------------------------
+    # PREDICTIONS
+    # --------------------------------------------------------
+
+    (
+        labels,
+        predictions,
+        probabilities,
+    ) = get_predictions(
+        model,
+        test_loader,
+    )
+
+
+    # --------------------------------------------------------
+    # METRICS
+    # --------------------------------------------------------
+
+    (
+        accuracy,
+        precision,
+        recall,
+        f1,
+    ) = calculate_metrics(
+        labels,
+        predictions,
+    )
+
+
+    # --------------------------------------------------------
+    # MODEL PERFORMANCE
+    # --------------------------------------------------------
+
+    print("\n")
+
+    print(
+        "=" * 70
+    )
+
+    print(
+        "📊 MODEL PERFORMANCE"
+    )
+
+    print(
+        "=" * 70
+    )
+
+
+    print(
+        f"\nAccuracy  : "
+        f"{accuracy * 100:.2f}%"
+    )
+
+    print(
+        f"Precision : "
+        f"{precision * 100:.2f}%"
+    )
+
+    print(
+        f"Recall    : "
+        f"{recall * 100:.2f}%"
+    )
+
+    print(
+        f"F1 Score  : "
+        f"{f1 * 100:.2f}%"
+    )
+
+
+    # --------------------------------------------------------
+    # CLASSIFICATION REPORT
+    # --------------------------------------------------------
+
+    print("\n")
+
+    print(
+        "=" * 70
+    )
+
+    print(
+        "📋 CLASSIFICATION REPORT"
+    )
+
+    print(
+        "=" * 70
+    )
+
+
+    report = classification_report(
+        labels,
+        predictions,
+        target_names=
+            test_dataset.classes,
+        zero_division=0,
+    )
+
+
+    print(
+        report
+    )
+
+
+    # --------------------------------------------------------
+    # CONFUSION MATRIX
+    # --------------------------------------------------------
+
+    matrix = confusion_matrix(
+        labels,
+        predictions,
+    )
+
+
+    print_confusion_matrix(
+        matrix,
+        test_dataset.classes,
+    )
+
+
+    # --------------------------------------------------------
+    # SAVE RESULTS
+    # --------------------------------------------------------
+
+    save_evaluation_results(
+        crop=crop,
+        test_dataset=test_dataset,
+        accuracy=accuracy,
+        precision=precision,
+        recall=recall,
+        f1=f1,
+        matrix=matrix,
+    )
+
+
+    # --------------------------------------------------------
+    # FINAL
+    # --------------------------------------------------------
+
+    print("\n")
+
+    print(
+        "=" * 70
+    )
+
+    print(
+        "✅ MODEL EVALUATION COMPLETE"
+    )
+
+    print(
+        "=" * 70
+    )
+
+
+# ============================================================
+# COMMAND LINE
+# ============================================================
+
+def main():
+
+    parser = argparse.ArgumentParser(
+        description=(
+            "Evaluate AgriMind AI "
+            "crop disease model"
+        )
+    )
+
+
+    parser.add_argument(
+        "--crop",
+        required=True,
+        help=(
+            "Crop name "
+            "(example: soybean)"
+        ),
+    )
+
+
+    args = parser.parse_args()
+
+
+    evaluate_model(
+        args.crop
+    )
+
+
+# ============================================================
+# ENTRY POINT
+# ============================================================
+
+if __name__ == "__main__":
+
+    main()

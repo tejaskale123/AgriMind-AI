@@ -1,753 +1,457 @@
-import React, { useEffect, useRef, useState } from "react";
-import {
-    useLocation,
-    useNavigate
-} from "react-router-dom";
+    import React, { useEffect, useRef, useState } from "react";
+    import { useLocation, useNavigate } from "react-router-dom";
 
-function DiseaseDetection() {
+    function DiseaseDetection() {
+        const location = useLocation();
+        const navigate = useNavigate();
 
-    const location = useLocation();
-    const navigate = useNavigate();
+        // =========================================================
+        // CROP
+        // =========================================================
 
-    // =========================================================
-    // SELECTED CROP
-    // =========================================================
+        const routeCrop = location.state?.crop || null;
+        const storageCrop = sessionStorage.getItem("selectedCrop") || null;
 
-    const routeCrop = location.state?.crop || null;
-
-    const storageCrop =
-        sessionStorage.getItem("selectedCrop") || null;
-
-    // Route crop gets highest priority
-    const selectedCrop =
-        routeCrop ||
-        storageCrop ||
-        null;
-
-    // =========================================================
-    // DEBUG CROP
-    // =========================================================
-
-    console.log("=================================");
-    console.log("🌱 ROUTE CROP:", routeCrop);
-    console.log("🌱 STORAGE CROP:", storageCrop);
-    console.log("🌱 FINAL SELECTED CROP:", selectedCrop);
-    console.log("=================================");
-
-    if (
-        selectedCrop &&
-        selectedCrop !== "cotton" &&
-        selectedCrop !== "soybean"
-    ) {
-        console.error(
-            "❌ Invalid crop:",
-            selectedCrop
-        );
-    }
-
-    // =========================================================
-    // VALIDATE CROP
-    // =========================================================
+        const selectedCrop = routeCrop || storageCrop || null;
 
     const supportedCrops = [
         "cotton",
-        "soybean"
+        "soybean",
+        "maize"
     ];
 
-    useEffect(() => {
-
-        if (!selectedCrop) {
-
-            console.warn(
-                "⚠️ No crop selected. Redirecting to Crops page."
-            );
-
-            navigate("/crops", {
-                replace: true
-            });
-
-            return;
-        }
-
-        if (!supportedCrops.includes(selectedCrop)) {
-
-            console.warn(
-                "⚠️ Unsupported crop:",
-                selectedCrop
-            );
-
-            navigate("/crops", {
-                replace: true
-            });
-
-            return;
-        }
-
-        // Keep sessionStorage synchronized
-        sessionStorage.setItem(
-            "selectedCrop",
-            selectedCrop
-        );
-
-        console.log(
-            "✅ Crop synchronized:",
-            selectedCrop
-        );
-
-    }, [selectedCrop, navigate]);
-
-
-    // =========================================================
-    // FILE STATE
-    // =========================================================
-
-    const [selectedFile, setSelectedFile] =
-        useState(null);
-
-    const [preview, setPreview] =
-        useState(null);
-
-    const [predictionResult, setPredictionResult] =
-        useState(null);
-
-    const [loading, setLoading] =
-        useState(false);
-
-    const [error, setError] =
-        useState("");
-
-    const [dragActive, setDragActive] =
-        useState(false);
-
-
-    const fileInputRef =
-        useRef(null);
-
-
-    // =========================================================
-    // CAMERA
-    // =========================================================
-
-    const videoRef =
-        useRef(null);
-
-    const streamRef =
-        useRef(null);
-
-    const [cameraOpen, setCameraOpen] =
-        useState(false);
-
-
-    // =========================================================
-    // RECOMMENDATION
-    // =========================================================
-
-    const [recommendation, setRecommendation] =
-        useState(null);
-
-    const [recommendationLoading, setRecommendationLoading] =
-        useState(false);
-
-
-    // =========================================================
-    // FETCH RECOMMENDATION
-    // =========================================================
-
-    const fetchRecommendation = async (
-        prediction
-    ) => {
-
-        if (!prediction) {
-
-            setRecommendation(null);
-
-            return;
-        }
-
-        setRecommendationLoading(true);
-
-        try {
-
-            const response = await fetch(
-                `http://127.0.0.1:8000/recommendation/${encodeURIComponent(
-                    prediction
-                )}`
-            );
-
-            const data =
-                await response.json();
-
-            if (
-                !response.ok ||
-                !data.success
-            ) {
-
-                throw new Error(
-                    data.detail ||
-                    "Recommendation could not be loaded."
-                );
-            }
-
-            setRecommendation(
-                data.recommendation
-            );
-
-        } catch (err) {
-
-            console.error(
-                "❌ Recommendation error:",
-                err
-            );
-
-            setRecommendation(null);
-
-        } finally {
-
-            setRecommendationLoading(
-                false
-            );
-        }
-    };
-
-
-    // =========================================================
-    // FILE VALIDATION
-    // =========================================================
-
-    const processFile = (file) => {
-
-        if (!file) {
-            return;
-        }
-
-        setError("");
-        setPredictionResult(null);
-        setRecommendation(null);
-
-        // Image validation
-
-        if (
-            !file.type.startsWith("image/")
-        ) {
-
-            setError(
-                "Please select a valid crop leaf image."
-            );
-
-            return;
-        }
-
-        // Size validation
-
-        if (
-            file.size >
-            10 * 1024 * 1024
-        ) {
-
-            setError(
-                "Image size must be less than 10 MB."
-            );
-
-            return;
-        }
-
-        // Remove old preview
-
-        if (preview) {
-
-            URL.revokeObjectURL(
-                preview
-            );
-        }
-
-        const imageURL =
-            URL.createObjectURL(file);
-
-        setSelectedFile(file);
-        setPreview(imageURL);
-    };
-
-
-    // =========================================================
-    // IMAGE SELECT
-    // =========================================================
-
-    const handleImageChange = (
-        event
-    ) => {
-
-        const file =
-            event.target.files?.[0];
-
-        processFile(file);
-
-        // Allow same image again
-
-        event.target.value = "";
-    };
-
-
-    // =========================================================
-    // DRAG OVER
-    // =========================================================
-
-    const handleDragOver = (
-        event
-    ) => {
-
-        event.preventDefault();
-        event.stopPropagation();
-
-        setDragActive(true);
-    };
-
-
-    // =========================================================
-    // DRAG LEAVE
-    // =========================================================
-
-    const handleDragLeave = (
-        event
-    ) => {
-
-        event.preventDefault();
-        event.stopPropagation();
-
-        setDragActive(false);
-    };
-
-
-    // =========================================================
-    // DROP
-    // =========================================================
-
-    const handleDrop = (
-        event
-    ) => {
-
-        event.preventDefault();
-        event.stopPropagation();
-
-        setDragActive(false);
-
-        const file =
-            event.dataTransfer.files?.[0];
-
-        processFile(file);
-    };
-
-
-    // =========================================================
-    // START CAMERA
-    // =========================================================
-
-    const startCamera = async () => {
-
-        try {
-
-            setError("");
-
-            if (
-                !navigator.mediaDevices?.getUserMedia
-            ) {
-
-                setError(
-                    "Camera is not supported by this browser."
-                );
-
+      const cropName =
+        selectedCrop === "soybean"
+            ? "Soybean"
+            : selectedCrop === "cotton"
+                ? "Cotton"
+                : selectedCrop === "maize"
+                    ? "Maize"
+                    : "Crop";
+
+        const cropIcon =
+           selectedCrop === "soybean"
+            ? "🌱"
+            : selectedCrop === "maize"
+                ? "🌽"
+                : "🌿";
+
+        // =========================================================
+        // STATE
+        // =========================================================
+
+        const [selectedFile, setSelectedFile] = useState(null);
+        const [preview, setPreview] = useState(null);
+
+        const [predictionResult, setPredictionResult] = useState(null);
+        const [recommendation, setRecommendation] = useState(null);
+
+        const [loading, setLoading] = useState(false);
+        const [recommendationLoading, setRecommendationLoading] =
+            useState(false);
+
+        const [error, setError] = useState("");
+        const [dragActive, setDragActive] = useState(false);
+
+        const [cameraOpen, setCameraOpen] = useState(false);
+
+        const fileInputRef = useRef(null);
+        const videoRef = useRef(null);
+        const streamRef = useRef(null);
+
+        // =========================================================
+        // VALIDATE CROP
+        // =========================================================
+
+        useEffect(() => {
+            if (!selectedCrop) {
+                navigate("/crops", { replace: true });
                 return;
             }
 
-            const stream =
-                await navigator.mediaDevices.getUserMedia(
-                    {
+            if (!supportedCrops.includes(selectedCrop)) {
+                navigate("/crops", { replace: true });
+                return;
+            }
+
+            sessionStorage.setItem("selectedCrop", selectedCrop);
+        }, [selectedCrop, navigate]);
+
+        // =========================================================
+        // AUTH TOKEN
+        // =========================================================
+
+        const getAuthToken = () => {
+            const keys = [
+                "access_token",
+                "token",
+                "accessToken",
+                "authToken",
+                "jwt",
+                "auth"
+            ];
+
+            for (const key of keys) {
+                const localValue = localStorage.getItem(key);
+
+                if (localValue) {
+                    try {
+                        const parsed = JSON.parse(localValue);
+
+                        if (
+                            typeof parsed === "string" &&
+                            parsed.length > 20
+                        ) {
+                            return parsed;
+                        }
+
+                        if (parsed?.access_token) {
+                            return parsed.access_token;
+                        }
+
+                        if (parsed?.token) {
+                            return parsed.token;
+                        }
+                    } catch {
+                        return localValue;
+                    }
+                }
+
+                const sessionValue = sessionStorage.getItem(key);
+
+                if (sessionValue) {
+                    try {
+                        const parsed = JSON.parse(sessionValue);
+
+                        if (
+                            typeof parsed === "string" &&
+                            parsed.length > 20
+                        ) {
+                            return parsed;
+                        }
+
+                        if (parsed?.access_token) {
+                            return parsed.access_token;
+                        }
+
+                        if (parsed?.token) {
+                            return parsed.token;
+                        }
+                    } catch {
+                        return sessionValue;
+                    }
+                }
+            }
+
+            return null;
+        };
+
+        // =========================================================
+        // RECOMMENDATION
+        // =========================================================
+
+        const fetchRecommendation = async (prediction) => {
+            if (!prediction) {
+                setRecommendation(null);
+                return;
+            }
+
+            setRecommendationLoading(true);
+
+            try {
+                const response = await fetch(
+                    `http://127.0.0.1:8000/recommendation/${encodeURIComponent(
+                        prediction
+                    )}`
+                );
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(
+                        data.detail ||
+                        "Recommendation could not be loaded."
+                    );
+                }
+
+                setRecommendation(data.recommendation);
+            } catch (err) {
+                console.error("Recommendation error:", err);
+                setRecommendation(null);
+            } finally {
+                setRecommendationLoading(false);
+            }
+        };
+
+        // =========================================================
+        // FILE PROCESSING
+        // =========================================================
+
+        const processFile = (file) => {
+            if (!file) return;
+
+            setError("");
+            setPredictionResult(null);
+            setRecommendation(null);
+
+            if (!file.type.startsWith("image/")) {
+                setError(
+                    "Please select a valid crop leaf image."
+                );
+                return;
+            }
+
+            if (file.size > 10 * 1024 * 1024) {
+                setError(
+                    "Image size must be less than 10 MB."
+                );
+                return;
+            }
+
+            if (preview) {
+                URL.revokeObjectURL(preview);
+            }
+
+            const imageURL = URL.createObjectURL(file);
+
+            setSelectedFile(file);
+            setPreview(imageURL);
+        };
+
+        const handleImageChange = (event) => {
+            const file = event.target.files?.[0];
+
+            processFile(file);
+
+            event.target.value = "";
+        };
+
+        // =========================================================
+        // DRAG & DROP
+        // =========================================================
+
+        const handleDragOver = (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            setDragActive(true);
+        };
+
+        const handleDragLeave = (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            setDragActive(false);
+        };
+
+        const handleDrop = (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+
+            setDragActive(false);
+
+            const file = event.dataTransfer.files?.[0];
+
+            processFile(file);
+        };
+
+        // =========================================================
+        // CAMERA
+        // =========================================================
+
+        const startCamera = async () => {
+            try {
+                setError("");
+
+                if (!navigator.mediaDevices?.getUserMedia) {
+                    setError(
+                        "Camera is not supported by this browser."
+                    );
+                    return;
+                }
+
+                const stream =
+                    await navigator.mediaDevices.getUserMedia({
                         video: {
                             facingMode: {
                                 ideal: "environment"
                             }
                         },
                         audio: false
-                    }
+                    });
+
+                streamRef.current = stream;
+                setCameraOpen(true);
+            } catch (err) {
+                console.error("Camera error:", err);
+
+                setError(
+                    "Camera access failed. Please allow camera permission and try again."
                 );
 
-            streamRef.current =
-                stream;
-
-            setCameraOpen(true);
-
-        } catch (err) {
-
-            console.error(
-                "❌ Camera error:",
-                err
-            );
-
-            setError(
-                "Camera access failed. Please allow camera permission and try again."
-            );
-
-            setCameraOpen(false);
-        }
-    };
-
-
-    // =========================================================
-    // STOP CAMERA
-    // =========================================================
-
-    const stopCamera = () => {
-
-        if (
-            streamRef.current
-        ) {
-
-            streamRef.current
-                .getTracks()
-                .forEach(
-                    (track) =>
-                        track.stop()
-                );
-
-            streamRef.current =
-                null;
-        }
-
-        if (
-            videoRef.current
-        ) {
-
-            videoRef.current.srcObject =
-                null;
-        }
-
-        setCameraOpen(false);
-    };
-
-
-    // =========================================================
-    // CAPTURE PHOTO
-    // =========================================================
-
-    const capturePhoto = () => {
-
-        const video =
-            videoRef.current;
-
-        if (
-            !video ||
-            !video.videoWidth ||
-            !video.videoHeight
-        ) {
-
-            setError(
-                "Camera is not ready yet. Please wait a moment and try again."
-            );
-
-            return;
-        }
-
-        const canvas =
-            document.createElement(
-                "canvas"
-            );
-
-        canvas.width =
-            video.videoWidth;
-
-        canvas.height =
-            video.videoHeight;
-
-        const context =
-            canvas.getContext("2d");
-
-        if (!context) {
-
-            setError(
-                "Unable to capture the camera image."
-            );
-
-            return;
-        }
-
-        context.drawImage(
-            video,
-            0,
-            0,
-            canvas.width,
-            canvas.height
-        );
-
-        canvas.toBlob(
-            (blob) => {
-
-                if (!blob) {
-
-                    setError(
-                        "Unable to create the captured image."
-                    );
-
-                    return;
-                }
-
-                const file =
-                    new File(
-                        [blob],
-                        "camera-leaf.jpg",
-                        {
-                            type:
-                                "image/jpeg"
-                        }
-                    );
-
-                stopCamera();
-
-                processFile(file);
-            },
-            "image/jpeg",
-            0.92
-        );
-    };
-
-
-    // =========================================================
-    // CONNECT CAMERA
-    // =========================================================
-
-    useEffect(() => {
-
-        if (
-            cameraOpen &&
-            videoRef.current &&
-            streamRef.current
-        ) {
-
-            videoRef.current.srcObject =
-                streamRef.current;
-
-            videoRef.current
-                .play()
-                .catch(
-                    (err) =>
-                        console.warn(
-                            "Camera autoplay warning:",
-                            err
-                        )
-                );
-        }
-
-    }, [cameraOpen]);
-
-
-    // =========================================================
-    // CLEANUP
-    // =========================================================
-
-    useEffect(() => {
-
-        return () => {
-
-            if (preview) {
-
-                URL.revokeObjectURL(
-                    preview
-                );
-            }
-
-            if (
-                streamRef.current
-            ) {
-
-                streamRef.current
-                    .getTracks()
-                    .forEach(
-                        (track) =>
-                            track.stop()
-                    );
+                setCameraOpen(false);
             }
         };
 
-    }, [preview]);
+        const stopCamera = () => {
+            if (streamRef.current) {
+                streamRef.current
+                    .getTracks()
+                    .forEach((track) => track.stop());
 
-
-    // =========================================================
-    // GET SAVED AUTH TOKEN
-    // =========================================================
-    const getAuthToken = () => {
-
-        const storageKeys = [
-            "access_token",
-            "token",
-            "accessToken",
-            "authToken",
-            "jwt",
-            "auth"
-        ];
-
-        for (const key of storageKeys) {
-
-            const localValue = localStorage.getItem(key);
-            if (localValue) {
-                try {
-                    const parsed = JSON.parse(localValue);
-                    if (typeof parsed === "string" && parsed.length > 20) return parsed;
-                    if (parsed?.access_token) return parsed.access_token;
-                    if (parsed?.token) return parsed.token;
-                } catch {
-                    return localValue;
-                }
+                streamRef.current = null;
             }
 
-            const sessionValue = sessionStorage.getItem(key);
-            if (sessionValue) {
-                try {
-                    const parsed = JSON.parse(sessionValue);
-                    if (typeof parsed === "string" && parsed.length > 20) return parsed;
-                    if (parsed?.access_token) return parsed.access_token;
-                    if (parsed?.token) return parsed.token;
-                } catch {
-                    return sessionValue;
-                }
+            if (videoRef.current) {
+                videoRef.current.srcObject = null;
             }
-        }
 
-        const storages = [localStorage, sessionStorage];
-        for (const storage of storages) {
-            for (let index = 0; index < storage.length; index++) {
-                const key = storage.key(index);
-                if (!key) continue;
-                const value = storage.getItem(key);
-                if (!value) continue;
-                try {
-                    const parsed = JSON.parse(value);
-                    if (parsed?.access_token) return parsed.access_token;
-                    if (parsed?.token) return parsed.token;
-                } catch {
-                    // Ignore non-JSON values
-                }
-            }
-        }
+            setCameraOpen(false);
+        };
 
-        return null;
-    };
+        const capturePhoto = () => {
+            const video = videoRef.current;
 
-    // =========================================================
-    // AI PREDICTION
-    // =========================================================
-
-    const handleAnalyze = async () => {
-
-        if (!selectedFile) {
-
-            setError(
-                "Please choose a crop leaf image first."
-            );
-
-            return;
-        }
-
-        if (!selectedCrop) {
-
-            setError(
-                "No crop selected. Please go back to Crops and select Cotton or Soybean."
-            );
-
-            return;
-        }
-
-        if (
-            !supportedCrops.includes(
-                selectedCrop
-            )
-        ) {
-
-            setError(
-                `Unsupported crop: ${selectedCrop}. Supported crops are cotton and soybean.`
-            );
-
-            return;
-        }
-
-        setLoading(true);
-        setError("");
-        setPredictionResult(null);
-        setRecommendation(null);
-
-        try {
-
-            // =================================================
-            // FORM DATA
-            // =================================================
-
-            const formData =
-                new FormData();
-
-            // Image
-
-            formData.append(
-                "file",
-                selectedFile
-            );
-
-            // IMPORTANT:
-            // Send ACTUAL selected crop
-
-            formData.append(
-                "crop",
-                selectedCrop
-            );
-
-
-            // =================================================
-            // DEBUG
-            // =================================================
-
-            console.log(
-                "================================="
-            );
-
-            console.log(
-                "📤 SENDING TO BACKEND"
-            );
-
-            console.log(
-                "📷 File:",
-                selectedFile.name
-            );
-
-            console.log(
-                "🌱 Crop:",
-                selectedCrop
-            );
-
-            console.log(
-                "================================="
-            );
-
-
-            // =================================================
-            // API REQUEST
-            // =================================================
-
-            // =================================================
-            // AUTHENTICATION
-            // =================================================
-
-            const token = getAuthToken();
-
-            if (!token) {
-                throw new Error(
-                    "Not authenticated. Please logout and login again."
+            if (
+                !video ||
+                !video.videoWidth ||
+                !video.videoHeight
+            ) {
+                setError(
+                    "Camera is not ready yet. Please wait a moment and try again."
                 );
+                return;
             }
 
-            console.log("🔐 Authentication token found.");
+            const canvas = document.createElement("canvas");
 
-            // =================================================
-            // API REQUEST
-            // =================================================
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
 
-            const response =
-                await fetch(
+            const context = canvas.getContext("2d");
+
+            if (!context) {
+                setError(
+                    "Unable to capture the camera image."
+                );
+                return;
+            }
+
+            context.drawImage(
+                video,
+                0,
+                0,
+                canvas.width,
+                canvas.height
+            );
+
+            canvas.toBlob(
+                (blob) => {
+                    if (!blob) {
+                        setError(
+                            "Unable to create the captured image."
+                        );
+                        return;
+                    }
+
+                    const file = new File(
+                        [blob],
+                        "camera-leaf.jpg",
+                        {
+                            type: "image/jpeg"
+                        }
+                    );
+
+                    stopCamera();
+                    processFile(file);
+                },
+                "image/jpeg",
+                0.92
+            );
+        };
+
+        useEffect(() => {
+            if (
+                cameraOpen &&
+                videoRef.current &&
+                streamRef.current
+            ) {
+                videoRef.current.srcObject =
+                    streamRef.current;
+
+                videoRef.current
+                    .play()
+                    .catch(() => {});
+            }
+        }, [cameraOpen]);
+
+        useEffect(() => {
+            return () => {
+                if (preview) {
+                    URL.revokeObjectURL(preview);
+                }
+
+                if (streamRef.current) {
+                    streamRef.current
+                        .getTracks()
+                        .forEach((track) =>
+                            track.stop()
+                        );
+                }
+            };
+        }, [preview]);
+
+        // =========================================================
+        // ANALYZE
+        // =========================================================
+
+        const handleAnalyze = async () => {
+            if (!selectedFile) {
+                setError(
+                    "Please choose a crop leaf image first."
+                );
+                return;
+            }
+
+            if (!selectedCrop) {
+                setError(
+                    "No crop selected. Please go back to Crops and select Cotton or Soybean."
+                );
+                return;
+            }
+
+            if (!supportedCrops.includes(selectedCrop)) {
+                setError(
+                    "Unsupported crop. Please select Cotton or Soybean."
+                );
+                return;
+            }
+
+            setLoading(true);
+            setError("");
+            setPredictionResult(null);
+            setRecommendation(null);
+
+            try {
+                const token = getAuthToken();
+
+                if (!token) {
+                    throw new Error(
+                        "Not authenticated. Please logout and login again."
+                    );
+                }
+
+                const formData = new FormData();
+
+                formData.append(
+                    "file",
+                    selectedFile
+                );
+
+                formData.append(
+                    "crop",
+                    selectedCrop
+                );
+
+                const response = await fetch(
                     "http://127.0.0.1:8000/predict",
                     {
                         method: "POST",
@@ -758,2096 +462,1708 @@ function DiseaseDetection() {
                     }
                 );
 
+                let data;
 
-            // =================================================
-            // RESPONSE
-            // =================================================
-
-            let data;
-
-            try {
-
-                data =
-                    await response.json();
-
-            } catch {
-
-                throw new Error(
-                    "Invalid response received from AI server."
-                );
-            }
-
-
-            console.log(
-                "📥 BACKEND RESPONSE:",
-                data
-            );
-
-
-            // =================================================
-            // API ERROR
-            // =================================================
-
-            if (!response.ok) {
-
-                if (response.status === 401) {
+                try {
+                    data = await response.json();
+                } catch {
                     throw new Error(
-                        "Authentication expired or invalid. Please logout and login again."
+                        "Invalid response received from AI server."
                     );
                 }
 
-                throw new Error(
-                    data.detail ||
-                    data.message ||
-                    "Prediction failed."
-                );
-            }
-
-
-            // =================================================
-            // WARNING
-            // =================================================
-
-            if (
-                !data.success &&
-                data.warning
-            ) {
-
-                setPredictionResult(
-                    {
-                        ...data,
-                        crop:
-                            data.crop ||
-                            selectedCrop
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        throw new Error(
+                            "Authentication expired or invalid. Please logout and login again."
+                        );
                     }
+
+                    throw new Error(
+                        data.detail ||
+                        data.message ||
+                        "Prediction failed."
+                    );
+                }
+
+                if (!data.success) {
+                    if (data.warning) {
+                        setPredictionResult({
+                            ...data,
+                            crop:
+                                data.crop ||
+                                selectedCrop
+                        });
+                        return;
+                    }
+
+                    throw new Error(
+                        "AI prediction was not successful."
+                    );
+                }
+
+                const finalResult = {
+                    ...data,
+                    crop:
+                        data.crop ||
+                        selectedCrop
+                };
+
+                setPredictionResult(finalResult);
+
+                await fetchRecommendation(
+                    data.prediction
+                );
+            } catch (err) {
+                console.error(
+                    "Prediction error:",
+                    err
                 );
 
-                setRecommendation(null);
-
-                return;
-            }
-
-
-            // =================================================
-            // SUCCESS VALIDATION
-            // =================================================
-
-            if (!data.success) {
-
-                throw new Error(
-                    "AI prediction was not successful."
+                setError(
+                    err.message ||
+                    "Unable to connect to AI server."
                 );
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        // =========================================================
+        // RESET
+        // =========================================================
+
+        const handleReset = () => {
+            stopCamera();
+
+            if (preview) {
+                URL.revokeObjectURL(preview);
             }
 
-
-            // =================================================
-            // IMPORTANT
-            // FORCE SELECTED CROP IN RESULT
-            // =================================================
-
-            const finalResult = {
-
-                ...data,
-
-                crop:
-                    data.crop ||
-                    selectedCrop
-            };
-
-
-            console.log(
-                "🌱 FINAL RESULT CROP:",
-                finalResult.crop
-            );
-
-
-            setPredictionResult(
-                finalResult
-            );
-
-
-            // =================================================
-            // RECOMMENDATION
-            // =================================================
-
-            await fetchRecommendation(
-                data.prediction
-            );
-
-        } catch (err) {
-
-            console.error(
-                "❌ Prediction error:",
-                err
-            );
-
-            setError(
-                err.message ||
-                "Unable to connect to AI server."
-            );
-
-        } finally {
-
+            setSelectedFile(null);
+            setPreview(null);
+            setPredictionResult(null);
+            setRecommendation(null);
+            setError("");
             setLoading(false);
-        }
-    };
+            setRecommendationLoading(false);
+            setDragActive(false);
+        };
 
+        // =========================================================
+        // RESULT HELPERS
+        // =========================================================
 
-    // =========================================================
-    // RESET
-    // =========================================================
+        const prediction =
+            predictionResult?.prediction || "";
 
-    const handleReset = () => {
+        const confidenceValue = Number(
+            predictionResult?.confidence || 0
+        );
 
-        stopCamera();
+        const isHealthy =
+            prediction
+                .toLowerCase()
+                .includes("healthy");
 
-        if (preview) {
+        const confidenceThreshold = 70;
 
-            URL.revokeObjectURL(
-                preview
+        const isLowConfidence =
+            Boolean(predictionResult) &&
+            (
+                Number.isNaN(confidenceValue) ||
+                confidenceValue <
+                    confidenceThreshold
             );
-        }
 
-        setSelectedFile(null);
-        setPreview(null);
-        setPredictionResult(null);
-        setRecommendation(null);
-        setError("");
-        setLoading(false);
-        setRecommendationLoading(false);
-        setDragActive(false);
-    };
-
-
-    // =========================================================
-    // RESULT DATA
-    // =========================================================
-
-    const isHealthy =
-        predictionResult?.prediction
-            ?.toLowerCase() ===
-        "healthy";
-
-    const CONFIDENCE_THRESHOLD =
-        70;
-
-    const confidenceValue =
-        Number(
-            predictionResult?.confidence ??
-            0
+        const displayCropName = String(
+            predictionResult?.crop ||
+            selectedCrop ||
+            "cotton"
+        ).replace(
+            /^./,
+            (char) => char.toUpperCase()
         );
 
-    const isLowConfidence =
-        Boolean(predictionResult) &&
-        (
-            Number.isNaN(
-                confidenceValue
-            ) ||
-            confidenceValue <
-                CONFIDENCE_THRESHOLD
-        );
+        // =========================================================
+        // UI
+        // =========================================================
 
+        return (
+            <div className="disease-page">
 
-    // =========================================================
-    // DISPLAY CROP NAME
-    // =========================================================
+                <style>{`
 
-    // =========================================================
-// DISPLAY CROP NAME
-// =========================================================
+                    * {
+                        box-sizing: border-box;
+                    }
 
-    const displayCropName = String(
-        predictionResult?.crop ||
-        selectedCrop ||
-        "cotton"
-    ).replace(
-        /^./,
-        (char) => char.toUpperCase()
-    );
+                    .disease-page {
+                        min-height: 100%;
+                        max-width: 1450px;
+                        margin: 0 auto;
+                        padding: 34px 36px 70px;
+                        color: #14251b;
+                        background:
+                            radial-gradient(
+                                circle at 90% 0%,
+                                rgba(34,197,94,.07),
+                                transparent 30%
+                            );
+                    }
 
+                    .disease-header {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: flex-start;
+                        gap: 25px;
+                        margin-bottom: 28px;
+                    }
 
-    // =========================================================
-    // RENDER
-    // =========================================================
+                    .disease-title-row {
+                        display: flex;
+                        align-items: center;
+                        gap: 14px;
+                    }
 
-    return (
+                    .disease-title-icon {
+                        width: 55px;
+                        height: 55px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        border-radius: 16px;
+                        background: #dcfce7;
+                        font-size: 28px;
+                        box-shadow: 0 8px 20px rgba(22,163,74,.08);
+                    }
 
-        <div
-            className="page"
-            style={{
-                maxWidth:
-                    "1400px",
-                margin:
-                    "0 auto",
-                paddingBottom:
-                    "50px"
-            }}
-        >
+                    .disease-header h1 {
+                        margin: 0;
+                        font-size: 34px;
+                        line-height: 1.1;
+                        font-weight: 900;
+                        letter-spacing: -1px;
+                    }
 
-            {/* =====================================================
-                HEADER
-            ===================================================== */}
+                    .disease-header p {
+                        margin: 8px 0 0;
+                        color: #718096;
+                        font-size: 14px;
+                    }
 
-            <div
-                className="page-title"
-                style={{
-                    marginBottom:
-                        "28px"
-                }}
-            >
+                    .crop-badge {
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 8px;
+                        padding: 10px 15px;
+                        border-radius: 999px;
+                        background: #ecfdf3;
+                        border: 1px solid #bbf7d0;
+                        color: #15803d;
+                        font-size: 13px;
+                        font-weight: 800;
+                        white-space: nowrap;
+                    }
 
-                <h1
-                    style={{
-                        fontSize:
-                            "34px",
-                        marginBottom:
-                            "8px"
-                    }}
-                >
-                    🌱 Disease Detection
-                </h1>
+                    .disease-layout {
+                        display: grid;
+                        grid-template-columns: minmax(0, 1.55fr) minmax(300px, .75fr);
+                        gap: 22px;
+                        align-items: stretch;
+                    }
 
-                <p>
-                    Upload a clear{" "}
-                    {selectedCrop ===
-                    "soybean"
-                        ? "soybean"
-                        : "cotton"}{" "}
-                    leaf image and let
-                    AgriMind AI analyze it
-                    using EfficientNet-B0.
-                </p>
+                    .disease-card {
+                        background: #ffffff;
+                        border: 1px solid #e2ebe5;
+                        border-radius: 22px;
+                        box-shadow: 0 8px 28px rgba(15,60,30,.055);
+                    }
 
-            </div>
+                    .upload-panel {
+                        padding: 30px;
+                    }
 
+                    .panel-heading {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        gap: 15px;
+                        margin-bottom: 22px;
+                    }
 
-            {/* =====================================================
-                UPLOAD SECTION
-            ===================================================== */}
+                    .panel-heading h2 {
+                        margin: 0;
+                        font-size: 21px;
+                        font-weight: 850;
+                    }
 
-            {!predictionResult && (
+                    .panel-heading span {
+                        color: #718096;
+                        font-size: 12px;
+                    }
 
-                <div
-                    className="detection-container"
-                    style={{
-                        display:
-                            "grid",
-                        gridTemplateColumns:
-                            "minmax(0, 1.6fr) minmax(300px, 0.8fr)",
-                        gap:
-                            "24px",
-                        alignItems:
-                            "stretch"
-                    }}
-                >
+                    .upload-zone {
+                        min-height: 300px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        flex-direction: column;
+                        padding: 35px;
+                        border: 2px dashed #9ee6b5;
+                        border-radius: 19px;
+                        background: linear-gradient(
+                            180deg,
+                            #fbfffc,
+                            #f3fff6
+                        );
+                        cursor: pointer;
+                        transition: .2s ease;
+                        text-align: center;
+                    }
 
-                    {/* =================================================
-                        UPLOAD CARD
-                    ================================================= */}
+                    .upload-zone:hover,
+                    .upload-zone.active {
+                        border-color: #16a34a;
+                        background: #f0fdf4;
+                        transform: translateY(-1px);
+                    }
 
-                    <div
-                        className="upload-card"
-                        style={{
-                            background:
-                                "#ffffff",
-                            border:
-                                "1px solid #e5e7eb",
-                            borderRadius:
-                                "22px",
-                            padding:
-                                "38px",
-                            textAlign:
-                                "center",
-                            boxShadow:
-                                "0 10px 30px rgba(0,0,0,0.05)"
-                        }}
-                    >
+                    .upload-icon {
+                        width: 72px;
+                        height: 72px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        border-radius: 20px;
+                        background: #dcfce7;
+                        font-size: 34px;
+                        margin-bottom: 17px;
+                    }
 
-                        {!preview ? (
+                    .upload-zone h3 {
+                        margin: 0 0 7px;
+                        font-size: 20px;
+                        font-weight: 850;
+                    }
 
-                            <>
+                    .upload-zone p {
+                        margin: 0;
+                        color: #718096;
+                        font-size: 13px;
+                    }
 
-                                <div
-                                    style={{
-                                        width:
-                                            "78px",
-                                        height:
-                                            "78px",
-                                        margin:
-                                            "0 auto 18px",
-                                        borderRadius:
-                                            "20px",
-                                        background:
-                                            "#dcfce7",
-                                        display:
-                                            "flex",
-                                        alignItems:
-                                            "center",
-                                        justifyContent:
-                                            "center",
-                                        fontSize:
-                                            "38px"
-                                    }}
-                                >
-                                    📷
-                                </div>
+                    .browse-text {
+                        margin-top: 18px;
+                        padding: 11px 18px;
+                        border-radius: 10px;
+                        background: #15803d;
+                        color: white;
+                        font-size: 13px;
+                        font-weight: 800;
+                    }
 
+                    .upload-meta {
+                        display: flex;
+                        justify-content: center;
+                        gap: 18px;
+                        flex-wrap: wrap;
+                        margin-top: 16px;
+                        color: #718096;
+                        font-size: 12px;
+                    }
 
-                                <h2
-                                    style={{
-                                        fontSize:
-                                            "26px",
-                                        marginBottom:
-                                            "10px"
-                                    }}
-                                >
-                                    Upload{" "}
-                                    {selectedCrop ===
-                                    "soybean"
-                                        ? "Soybean"
-                                        : "Cotton"}{" "}
-                                    Leaf Image
-                                </h2>
+                    .camera-button {
+                        margin-top: 18px;
+                        height: 43px;
+                        padding: 0 18px;
+                        border: 1px solid #bfdbfe;
+                        border-radius: 11px;
+                        background: #eff6ff;
+                        color: #1d4ed8;
+                        font-weight: 800;
+                        cursor: pointer;
+                    }
 
+                    .preview-wrap {
+                        padding: 20px;
+                        border-radius: 18px;
+                        background: #f8faf9;
+                        border: 1px solid #e2ebe5;
+                    }
 
-                                <p
-                                    style={{
-                                        color:
-                                            "#6b7280",
-                                        marginBottom:
-                                            "25px"
-                                    }}
-                                >
-                                    Upload a clear
-                                    image of a{" "}
-                                    {selectedCrop ===
-                                    "soybean"
-                                        ? "soybean"
-                                        : "cotton"}{" "}
-                                    leaf for AI
-                                    analysis.
+                    .preview-image {
+                        width: 100%;
+                        max-height: 430px;
+                        object-fit: contain;
+                        display: block;
+                        border-radius: 15px;
+                        background: #eef2f0;
+                    }
+
+                    .file-name {
+                        margin-top: 12px;
+                        padding: 11px 13px;
+                        border-radius: 10px;
+                        background: white;
+                        border: 1px solid #e5ebe7;
+                        color: #64748b;
+                        font-size: 12px;
+                        word-break: break-word;
+                    }
+
+                    .action-row {
+                        display: flex;
+                        gap: 11px;
+                        flex-wrap: wrap;
+                        margin-top: 18px;
+                    }
+
+                    .primary-button {
+                        height: 46px;
+                        padding: 0 20px;
+                        border: none;
+                        border-radius: 11px;
+                        background: linear-gradient(
+                            135deg,
+                            #15803d,
+                            #16a34a
+                        );
+                        color: white;
+                        font-weight: 850;
+                        cursor: pointer;
+                        box-shadow: 0 7px 17px rgba(22,163,74,.2);
+                    }
+
+                    .primary-button:hover {
+                        transform: translateY(-1px);
+                    }
+
+                    .primary-button:disabled {
+                        background: #94a3b8;
+                        cursor: wait;
+                        box-shadow: none;
+                    }
+
+                    .secondary-button {
+                        height: 46px;
+                        padding: 0 18px;
+                        border: 1px solid #d7e2db;
+                        border-radius: 11px;
+                        background: white;
+                        color: #334155;
+                        font-weight: 750;
+                        cursor: pointer;
+                    }
+
+                    .camera-panel {
+                        margin-top: 18px;
+                        padding: 16px;
+                        border-radius: 17px;
+                        background: #0f172a;
+                    }
+
+                    .camera-panel h3 {
+                        margin: 0 0 12px;
+                        color: white;
+                        font-size: 15px;
+                    }
+
+                    .camera-video {
+                        width: 100%;
+                        max-height: 390px;
+                        object-fit: cover;
+                        border-radius: 13px;
+                        background: black;
+                    }
+
+                    .camera-actions {
+                        display: flex;
+                        justify-content: center;
+                        gap: 10px;
+                        flex-wrap: wrap;
+                        margin-top: 13px;
+                    }
+
+                    .camera-capture {
+                        height: 42px;
+                        padding: 0 18px;
+                        border: none;
+                        border-radius: 10px;
+                        background: #22c55e;
+                        color: white;
+                        font-weight: 800;
+                        cursor: pointer;
+                    }
+
+                    .info-panel {
+                        padding: 28px;
+                    }
+
+                    .info-panel h2 {
+                        margin: 0 0 26px;
+                        font-size: 21px;
+                        font-weight: 850;
+                    }
+
+                    .workflow-step {
+                        display: flex;
+                        gap: 13px;
+                        margin-bottom: 25px;
+                    }
+
+                    .step-number {
+                        width: 39px;
+                        height: 39px;
+                        min-width: 39px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        border-radius: 12px;
+                        background: #dcfce7;
+                        color: #15803d;
+                        font-weight: 900;
+                    }
+
+                    .workflow-step h3 {
+                        margin: 0 0 5px;
+                        font-size: 15px;
+                    }
+
+                    .workflow-step p {
+                        margin: 0;
+                        color: #718096;
+                        font-size: 12px;
+                        line-height: 1.6;
+                    }
+
+                    .model-box {
+                        margin-top: 10px;
+                        padding: 16px;
+                        border-radius: 15px;
+                        background: #f0fdf4;
+                        border: 1px solid #bbf7d0;
+                    }
+
+                    .model-box-label {
+                        color: #64748b;
+                        font-size: 11px;
+                        font-weight: 800;
+                        text-transform: uppercase;
+                        letter-spacing: .7px;
+                    }
+
+                    .model-box strong {
+                        display: block;
+                        margin-top: 5px;
+                        color: #15803d;
+                        font-size: 17px;
+                    }
+
+                    .error-box {
+                        margin-top: 20px;
+                        padding: 15px 17px;
+                        border: 1px solid #fecaca;
+                        border-radius: 13px;
+                        background: #fff7f7;
+                        color: #991b1b;
+                        font-size: 13px;
+                    }
+
+                    .result-card {
+                        margin-top: 25px;
+                        padding: 30px;
+                    }
+
+                    .result-header {
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                        gap: 15px;
+                        flex-wrap: wrap;
+                        margin-bottom: 22px;
+                    }
+
+                    .result-header h2 {
+                        margin: 0;
+                        font-size: 25px;
+                    }
+
+                    .result-header p {
+                        margin: 5px 0 0;
+                        color: #718096;
+                        font-size: 13px;
+                    }
+
+                    .complete-badge {
+                        padding: 8px 13px;
+                        border-radius: 999px;
+                        background: #dcfce7;
+                        color: #15803d;
+                        font-size: 12px;
+                        font-weight: 850;
+                    }
+
+                    .result-grid {
+                        display: grid;
+                        grid-template-columns: repeat(3, 1fr);
+                        gap: 14px;
+                    }
+
+                    .result-box {
+                        padding: 18px;
+                        border-radius: 15px;
+                        background: #f8fafc;
+                        border: 1px solid #e2e8f0;
+                    }
+
+                    .result-box.green {
+                        background: #f0fdf4;
+                        border-color: #bbf7d0;
+                    }
+
+                    .result-box.orange {
+                        background: #fff7ed;
+                        border-color: #fed7aa;
+                    }
+
+                    .result-box.blue {
+                        background: #eff6ff;
+                        border-color: #bfdbfe;
+                    }
+
+                    .result-label {
+                        color: #64748b;
+                        font-size: 11px;
+                        font-weight: 800;
+                        text-transform: uppercase;
+                        letter-spacing: .6px;
+                    }
+
+                    .result-value {
+                        margin-top: 7px;
+                        font-size: 20px;
+                        font-weight: 900;
+                    }
+
+                    .green-text {
+                        color: #15803d;
+                    }
+
+                    .orange-text {
+                        color: #c2410c;
+                    }
+
+                    .blue-text {
+                        color: #1d4ed8;
+                    }
+
+                    .recommendation {
+                        margin-top: 22px;
+                        padding: 23px;
+                        border-radius: 18px;
+                        background: #f8fafc;
+                        border: 1px solid #e2e8f0;
+                    }
+
+                    .recommendation h2 {
+                        margin: 0 0 5px;
+                        font-size: 20px;
+                    }
+
+                    .recommendation h3 {
+                        margin: 15px 0 8px;
+                        font-size: 16px;
+                    }
+
+                    .recommendation ul {
+                        margin: 0;
+                        padding-left: 22px;
+                        color: #334155;
+                        line-height: 1.75;
+                        font-size: 13px;
+                    }
+
+                    .severity {
+                        display: inline-block;
+                        margin-top: 8px;
+                        padding: 6px 11px;
+                        border-radius: 999px;
+                        background: #fef3c7;
+                        color: #92400e;
+                        font-size: 11px;
+                        font-weight: 800;
+                    }
+
+                    .action-info {
+                        margin-top: 16px;
+                        padding: 15px;
+                        border-radius: 13px;
+                        background: #fff7ed;
+                        border: 1px solid #fed7aa;
+                    }
+
+                    .prevention-info {
+                        margin-top: 16px;
+                        padding: 15px;
+                        border-radius: 13px;
+                        background: #f0fdf4;
+                        border: 1px solid #bbf7d0;
+                    }
+
+                    .spray-info {
+                        margin-top: 16px;
+                        padding: 15px;
+                        border-radius: 13px;
+                        background: #eff6ff;
+                        border: 1px solid #bfdbfe;
+                    }
+
+                    .low-confidence {
+                        margin-top: 22px;
+                        padding: 22px;
+                        border-radius: 17px;
+                        background: #fffbeb;
+                        border: 1px solid #fde68a;
+                        color: #78350f;
+                    }
+
+                    .low-confidence h2 {
+                        margin: 0 0 8px;
+                        color: #92400e;
+                        font-size: 20px;
+                    }
+
+                    .confidence-warning {
+                        margin: 14px 0;
+                        padding: 12px;
+                        border-radius: 10px;
+                        background: #fef3c7;
+                        color: #92400e;
+                        font-size: 13px;
+                        font-weight: 750;
+                    }
+
+                    .probabilities {
+                        margin-top: 25px;
+                        padding: 22px;
+                        border-radius: 18px;
+                        background: white;
+                        border: 1px solid #e2ebe5;
+                    }
+
+                    .probabilities h2 {
+                        margin: 0 0 20px;
+                        font-size: 20px;
+                    }
+
+                    .probability-row {
+                        margin-bottom: 16px;
+                    }
+
+                    .probability-label {
+                        display: flex;
+                        justify-content: space-between;
+                        margin-bottom: 7px;
+                        font-size: 13px;
+                    }
+
+                    .progress {
+                        width: 100%;
+                        height: 9px;
+                        overflow: hidden;
+                        border-radius: 999px;
+                        background: #e5e7eb;
+                    }
+
+                    .progress-fill {
+                        height: 100%;
+                        border-radius: 999px;
+                        background: #22c55e;
+                        transition: width .5s ease;
+                    }
+
+                    .result-footer {
+                        display: flex;
+                        justify-content: center;
+                        margin-top: 25px;
+                    }
+
+                    .another-button {
+                        height: 46px;
+                        padding: 0 22px;
+                        border: none;
+                        border-radius: 11px;
+                        background: #15803d;
+                        color: white;
+                        font-weight: 850;
+                        cursor: pointer;
+                    }
+
+                    @media (max-width: 1050px) {
+                        .disease-layout {
+                            grid-template-columns: 1fr;
+                        }
+                    }
+
+                    @media (max-width: 750px) {
+                        .disease-page {
+                            padding: 24px 18px 50px;
+                        }
+
+                        .disease-header {
+                            flex-direction: column;
+                        }
+
+                        .result-grid {
+                            grid-template-columns: 1fr;
+                        }
+
+                        .upload-panel,
+                        .info-panel,
+                        .result-card {
+                            padding: 22px;
+                        }
+
+                        .disease-header h1 {
+                            font-size: 28px;
+                        }
+                    }
+
+                    @media (max-width: 500px) {
+                        .disease-title-row {
+                            align-items: flex-start;
+                        }
+
+                        .disease-title-icon {
+                            width: 46px;
+                            height: 46px;
+                            font-size: 23px;
+                        }
+
+                        .upload-zone {
+                            min-height: 250px;
+                            padding: 25px 15px;
+                        }
+
+                        .action-row button {
+                            width: 100%;
+                        }
+                    }
+
+                `}</style>
+
+                {/* =====================================================
+                    HEADER
+                ===================================================== */}
+
+                <header className="disease-header">
+
+                    <div>
+
+                        <div className="disease-title-row">
+
+                            <div className="disease-title-icon">
+                                {cropIcon}
+                            </div>
+
+                            <div>
+
+                                <h1>
+                                    Disease Detection
+                                </h1>
+
+                                <p>
+                                    AI-powered crop leaf
+                                    disease analysis
                                 </p>
 
+                            </div>
 
-                                {/* DRAG DROP */}
+                        </div>
 
-                                <div
-                                    onDragOver={
-                                        handleDragOver
-                                    }
-                                    onDragLeave={
-                                        handleDragLeave
-                                    }
-                                    onDrop={
-                                        handleDrop
-                                    }
-                                    onClick={() =>
-                                        fileInputRef
-                                            .current
-                                            ?.click()
-                                    }
-                                    style={{
-                                        border:
-                                            dragActive
-                                                ? "2px solid #16a34a"
-                                                : "2px dashed #bbf7d0",
-                                        borderRadius:
-                                            "18px",
-                                        padding:
-                                            "35px 20px",
-                                        background:
-                                            dragActive
-                                                ? "#f0fdf4"
-                                                : "#f8fffa",
-                                        cursor:
-                                            "pointer",
-                                        transition:
-                                            "0.2s"
-                                    }}
-                                >
+                    </div>
 
-                                    <div
-                                        style={{
-                                            fontSize:
-                                                "32px",
-                                            marginBottom:
-                                                "10px"
-                                        }}
-                                    >
-                                        📤
-                                    </div>
+                    <div className="crop-badge">
+                        {cropIcon}
+                        {cropName}
+                        <span>• AI Ready</span>
+                    </div>
 
-                                    <strong
-                                        style={{
-                                            display:
-                                                "block",
-                                            fontSize:
-                                                "17px",
-                                            marginBottom:
-                                                "7px"
-                                        }}
-                                    >
-                                        Drag & drop
-                                        your image
-                                        here
-                                    </strong>
+                </header>
 
-                                    <span
-                                        style={{
-                                            color:
-                                                "#6b7280",
-                                            fontSize:
-                                                "14px"
-                                        }}
-                                    >
-                                        or click to
-                                        browse
+                {/* =====================================================
+                    MAIN UPLOAD AREA
+                ===================================================== */}
+
+                {!predictionResult && (
+
+                    <div className="disease-layout">
+
+                        {/* =================================================
+                            UPLOAD
+                        ================================================= */}
+
+                        <section className="disease-card upload-panel">
+
+                            <div className="panel-heading">
+
+                                <div>
+                                    <h2>
+                                        Analyze {cropName} Leaf
+                                    </h2>
+
+                                    <span>
+                                        Upload or capture an
+                                        image
                                     </span>
-
-                                    <input
-                                        ref={
-                                            fileInputRef
-                                        }
-                                        type="file"
-                                        accept="image/jpeg,image/png,image/webp"
-                                        hidden
-                                        onChange={
-                                            handleImageChange
-                                        }
-                                    />
-
                                 </div>
 
+                                <span>
+                                    Max 10 MB
+                                </span>
 
-                                {/* CAMERA */}
+                            </div>
 
-                                <div
-                                    style={{
-                                        marginTop:
-                                            "18px",
-                                        display:
-                                            "flex",
-                                        justifyContent:
-                                            "center"
-                                    }}
-                                >
+                            {!preview ? (
 
-                                    <button
-                                        type="button"
-                                        onClick={
-                                            startCamera
-                                        }
-                                        disabled={
-                                            cameraOpen
-                                        }
-                                        style={{
-                                            padding:
-                                                "13px 22px",
-                                            border:
-                                                "none",
-                                            borderRadius:
-                                                "11px",
-                                            background:
-                                                cameraOpen
-                                                    ? "#9ca3af"
-                                                    : "#2563eb",
-                                            color:
-                                                "#ffffff",
-                                            fontSize:
-                                                "15px",
-                                            fontWeight:
-                                                "700",
-                                            cursor:
-                                                cameraOpen
-                                                    ? "not-allowed"
-                                                    : "pointer"
-                                        }}
-                                    >
-                                        📷 Use Camera
-                                    </button>
-
-                                </div>
-
-
-                                {/* LIVE CAMERA */}
-
-                                {cameraOpen && (
+                                <>
 
                                     <div
-                                        style={{
-                                            marginTop:
-                                                "22px",
-                                            padding:
-                                                "18px",
-                                            borderRadius:
-                                                "18px",
-                                            background:
-                                                "#f8fafc",
-                                            border:
-                                                "1px solid #e5e7eb"
-                                        }}
+                                        className={`upload-zone ${
+                                            dragActive
+                                                ? "active"
+                                                : ""
+                                        }`}
+                                        onDragOver={
+                                            handleDragOver
+                                        }
+                                        onDragLeave={
+                                            handleDragLeave
+                                        }
+                                        onDrop={
+                                            handleDrop
+                                        }
+                                        onClick={() =>
+                                            fileInputRef.current?.click()
+                                        }
                                     >
+
+                                        <div className="upload-icon">
+                                            📷
+                                        </div>
 
                                         <h3>
-                                            📷 Live Camera
+                                            Drop your leaf image here
                                         </h3>
 
-                                        <video
-                                            ref={
-                                                videoRef
+                                        <p>
+                                            Drag & drop your
+                                            image or select
+                                            one from your
+                                            computer
+                                        </p>
+
+                                        <div className="browse-text">
+                                            Choose Image
+                                        </div>
+
+                                        <input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept="image/jpeg,image/png,image/webp"
+                                            hidden
+                                            onChange={
+                                                handleImageChange
                                             }
-                                            autoPlay
-                                            playsInline
-                                            muted
-                                            style={{
-                                                width:
-                                                    "100%",
-                                                maxWidth:
-                                                    "720px",
-                                                maxHeight:
-                                                    "430px",
-                                                objectFit:
-                                                    "cover",
-                                                display:
-                                                    "block",
-                                                margin:
-                                                    "12px auto 0",
-                                                borderRadius:
-                                                    "16px",
-                                                background:
-                                                    "#111827"
-                                            }}
                                         />
 
-                                        <div
-                                            style={{
-                                                display:
-                                                    "flex",
-                                                justifyContent:
-                                                    "center",
-                                                gap:
-                                                    "12px",
-                                                flexWrap:
-                                                    "wrap",
-                                                marginTop:
-                                                    "16px"
-                                            }}
+                                    </div>
+
+                                    <div className="upload-meta">
+
+                                        <span>
+                                            ✓ JPG / PNG / WEBP
+                                        </span>
+
+                                        <span>
+                                            ✓ Up to 10 MB
+                                        </span>
+
+                                        <span>
+                                            ✓ Clear leaf image
+                                        </span>
+
+                                    </div>
+
+                                    <div
+                                        style={{
+                                            textAlign:
+                                                "center"
+                                        }}
+                                    >
+
+                                        <button
+                                            type="button"
+                                            className="camera-button"
+                                            onClick={
+                                                startCamera
+                                            }
+                                            disabled={
+                                                cameraOpen
+                                            }
                                         >
+                                            📷 Use Camera
+                                        </button>
 
-                                            <button
-                                                type="button"
-                                                onClick={
-                                                    capturePhoto
-                                                }
-                                                style={{
-                                                    padding:
-                                                        "13px 24px",
-                                                    border:
-                                                        "none",
-                                                    borderRadius:
-                                                        "11px",
-                                                    background:
-                                                        "#16a34a",
-                                                    color:
-                                                        "#ffffff",
-                                                    fontWeight:
-                                                        "700",
-                                                    cursor:
-                                                        "pointer"
-                                                }}
-                                            >
-                                                📸 Capture
-                                                Photo
-                                            </button>
+                                    </div>
 
-                                            <button
-                                                type="button"
-                                                onClick={
-                                                    stopCamera
-                                                }
-                                                style={{
-                                                    padding:
-                                                        "13px 22px",
-                                                    border:
-                                                        "1px solid #d1d5db",
-                                                    borderRadius:
-                                                        "11px",
-                                                    background:
-                                                        "#ffffff",
-                                                    color:
-                                                        "#374151",
-                                                    fontWeight:
-                                                        "600",
-                                                    cursor:
-                                                        "pointer"
-                                                }}
-                                            >
-                                                ✕ Cancel
-                                            </button>
+                                    {cameraOpen && (
 
+                                        <div className="camera-panel">
+
+                                            <h3>
+                                                Live Camera
+                                            </h3>
+
+                                            <video
+                                                ref={videoRef}
+                                                autoPlay
+                                                playsInline
+                                                muted
+                                                className="camera-video"
+                                            />
+
+                                            <div className="camera-actions">
+
+                                                <button
+                                                    type="button"
+                                                    className="camera-capture"
+                                                    onClick={
+                                                        capturePhoto
+                                                    }
+                                                >
+                                                    📸 Capture Photo
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    className="secondary-button"
+                                                    onClick={
+                                                        stopCamera
+                                                    }
+                                                >
+                                                    Cancel
+                                                </button>
+
+                                            </div>
+
+                                        </div>
+
+                                    )}
+
+                                </>
+
+                            ) : (
+
+                                <>
+
+                                    <div className="preview-wrap">
+
+                                        <img
+                                            src={preview}
+                                            alt={`${cropName} leaf`}
+                                            className="preview-image"
+                                        />
+
+                                        <div className="file-name">
+                                            📄 {selectedFile?.name}
                                         </div>
 
                                     </div>
 
-                                )}
+                                    <div className="action-row">
 
-
-                                <div
-                                    style={{
-                                        marginTop:
-                                            "18px",
-                                        fontSize:
-                                            "13px",
-                                        color:
-                                            "#6b7280"
-                                    }}
-                                >
-                                    JPG, JPEG, PNG,
-                                    WEBP • Maximum
-                                    10 MB
-                                </div>
-
-                            </>
-
-                        ) : (
-
-                            <>
-
-                                <h2
-                                    style={{
-                                        fontSize:
-                                            "24px",
-                                        marginBottom:
-                                            "18px"
-                                    }}
-                                >
-                                    🖼️ Selected Leaf
-                                    Image
-                                </h2>
-
-
-                                <div
-                                    style={{
-                                        position:
-                                            "relative",
-                                        maxWidth:
-                                            "620px",
-                                        margin:
-                                            "0 auto"
-                                    }}
-                                >
-
-                                    <img
-                                        src={preview}
-                                        alt={`${displayCropName} leaf`}
-                                        style={{
-                                            width:
-                                                "100%",
-                                            maxHeight:
-                                                "390px",
-                                            objectFit:
-                                                "contain",
-                                            borderRadius:
-                                                "18px",
-                                            display:
-                                                "block",
-                                            background:
-                                                "#f3f4f6",
-                                            border:
-                                                "1px solid #e5e7eb"
-                                        }}
-                                    />
-
-                                </div>
-
-
-                                <div
-                                    style={{
-                                        marginTop:
-                                            "15px",
-                                        padding:
-                                            "12px 15px",
-                                        borderRadius:
-                                            "10px",
-                                        background:
-                                            "#f8fafc",
-                                        color:
-                                            "#475569",
-                                        fontSize:
-                                            "14px",
-                                        wordBreak:
-                                            "break-word"
-                                    }}
-                                >
-                                    📄{" "}
-                                    {selectedFile?.name}
-                                </div>
-
-
-                                {/* ANALYZE */}
-
-                                <div
-                                    style={{
-                                        display:
-                                            "flex",
-                                        justifyContent:
-                                            "center",
-                                        gap:
-                                            "12px",
-                                        flexWrap:
-                                            "wrap",
-                                        marginTop:
-                                            "22px"
-                                    }}
-                                >
-
-                                    <button
-                                        type="button"
-                                        onClick={
-                                            handleAnalyze
-                                        }
-                                        disabled={
-                                            loading
-                                        }
-                                        style={{
-                                            padding:
-                                                "14px 28px",
-                                            border:
-                                                "none",
-                                            borderRadius:
-                                                "12px",
-                                            background:
+                                        <button
+                                            type="button"
+                                            className="primary-button"
+                                            onClick={
+                                                handleAnalyze
+                                            }
+                                            disabled={
                                                 loading
-                                                    ? "#9ca3af"
-                                                    : "#16a34a",
-                                            color:
-                                                "#ffffff",
-                                            fontSize:
-                                                "16px",
-                                            fontWeight:
-                                                "700",
-                                            cursor:
+                                            }
+                                        >
+                                            {loading
+                                                ? "🔄 AI Analyzing..."
+                                                : "🧠 Analyze with AI"}
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            className="secondary-button"
+                                            onClick={
+                                                handleReset
+                                            }
+                                            disabled={
                                                 loading
-                                                    ? "not-allowed"
-                                                    : "pointer"
-                                        }}
-                                    >
-                                        {loading
-                                            ? "🔄 Analyzing..."
-                                            : "🧠 Analyze with AgriMind AI"}
-                                    </button>
+                                            }
+                                        >
+                                            ↻ Choose Another
+                                        </button>
 
-
-                                    <button
-                                        type="button"
-                                        onClick={
-                                            handleReset
-                                        }
-                                        disabled={
-                                            loading
-                                        }
-                                        style={{
-                                            padding:
-                                                "14px 24px",
-                                            border:
-                                                "1px solid #d1d5db",
-                                            borderRadius:
-                                                "12px",
-                                            background:
-                                                "#ffffff",
-                                            color:
-                                                "#374151",
-                                            fontSize:
-                                                "15px",
-                                            fontWeight:
-                                                "600",
-                                            cursor:
-                                                loading
-                                                    ? "not-allowed"
-                                                    : "pointer"
-                                        }}
-                                    >
-                                        ↻ Reset
-                                    </button>
-
-                                </div>
-
-
-                                {loading && (
-
-                                    <div
-                                        style={{
-                                            marginTop:
-                                                "20px",
-                                            padding:
-                                                "15px",
-                                            borderRadius:
-                                                "12px",
-                                            background:
-                                                "#f0fdf4",
-                                            color:
-                                                "#166534"
-                                        }}
-                                    >
-                                        🤖 EfficientNet-B0
-                                        is analyzing
-                                        your{" "}
-                                        {selectedCrop}
-                                        leaf image...
                                     </div>
 
-                                )}
-
-                            </>
-
-                        )}
-
-                    </div>
-
-
-                    {/* =================================================
-                        HOW IT WORKS
-                    ================================================= */}
-
-                    <div
-                        className="info-card"
-                        style={{
-                            background:
-                                "#ffffff",
-                            border:
-                                "1px solid #e5e7eb",
-                            borderRadius:
-                                "22px",
-                            padding:
-                                "32px",
-                            boxShadow:
-                                "0 10px 30px rgba(0,0,0,0.05)"
-                        }}
-                    >
-
-                        <h2
-                            style={{
-                                fontSize:
-                                    "25px",
-                                marginBottom:
-                                    "28px"
-                            }}
-                        >
-                            🔍 How AgriMind AI Works
-                        </h2>
-
-
-                        <div
-                            style={{
-                                display:
-                                    "flex",
-                                gap:
-                                    "15px",
-                                marginBottom:
-                                    "25px"
-                            }}
-                        >
-
-                            <div
-                                style={{
-                                    minWidth:
-                                        "42px",
-                                    height:
-                                        "42px",
-                                    borderRadius:
-                                        "50%",
-                                    background:
-                                        "#dcfce7",
-                                    color:
-                                        "#15803d",
-                                    display:
-                                        "flex",
-                                    alignItems:
-                                        "center",
-                                    justifyContent:
-                                        "center",
-                                    fontWeight:
-                                        "800"
-                                }}
-                            >
-                                1
-                            </div>
-
-                            <div>
-                                <h3>
-                                    Upload Image
-                                </h3>
-
-                                <p
-                                    style={{
-                                        color:
-                                            "#6b7280"
-                                    }}
-                                >
-                                    Upload a clear
-                                    crop leaf
-                                    photograph.
-                                </p>
-                            </div>
-
-                        </div>
-
-
-                        <div
-                            style={{
-                                display:
-                                    "flex",
-                                gap:
-                                    "15px",
-                                marginBottom:
-                                    "25px"
-                            }}
-                        >
-
-                            <div
-                                style={{
-                                    minWidth:
-                                        "42px",
-                                    height:
-                                        "42px",
-                                    borderRadius:
-                                        "50%",
-                                    background:
-                                        "#dcfce7",
-                                    color:
-                                        "#15803d",
-                                    display:
-                                        "flex",
-                                    alignItems:
-                                        "center",
-                                    justifyContent:
-                                        "center",
-                                    fontWeight:
-                                        "800"
-                                }}
-                            >
-                                2
-                            </div>
-
-                            <div>
-                                <h3>
-                                    AI Analysis
-                                </h3>
-
-                                <p
-                                    style={{
-                                        color:
-                                            "#6b7280"
-                                    }}
-                                >
-                                    EfficientNet-B0
-                                    analyzes visual
-                                    leaf patterns.
-                                </p>
-                            </div>
-
-                        </div>
-
-
-                        <div
-                            style={{
-                                display:
-                                    "flex",
-                                gap:
-                                    "15px",
-                                marginBottom:
-                                    "25px"
-                            }}
-                        >
-
-                            <div
-                                style={{
-                                    minWidth:
-                                        "42px",
-                                    height:
-                                        "42px",
-                                    borderRadius:
-                                        "50%",
-                                    background:
-                                        "#dcfce7",
-                                    color:
-                                        "#15803d",
-                                    display:
-                                        "flex",
-                                    alignItems:
-                                        "center",
-                                    justifyContent:
-                                        "center",
-                                    fontWeight:
-                                        "800"
-                                }}
-                            >
-                                3
-                            </div>
-
-                            <div>
-                                <h3>
-                                    Get Result
-                                </h3>
-
-                                <p
-                                    style={{
-                                        color:
-                                            "#6b7280"
-                                    }}
-                                >
-                                    View the predicted
-                                    disease and
-                                    confidence.
-                                </p>
-                            </div>
-
-                        </div>
-
-
-                        <div
-                            style={{
-                                marginTop:
-                                    "30px",
-                                padding:
-                                    "18px",
-                                borderRadius:
-                                    "14px",
-                                background:
-                                    "#f0fdf4",
-                                border:
-                                    "1px solid #bbf7d0"
-                            }}
-                        >
-
-                            <strong>
-                                🧠 AI Model
-                            </strong>
-
-                            <p
-                                style={{
-                                    marginTop:
-                                        "5px",
-                                    color:
-                                        "#166534"
-                                }}
-                            >
-                                EfficientNet-B0
-                            </p>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            )}
-
-
-            {/* =====================================================
-                ERROR
-            ===================================================== */}
-
-            {error && (
-
-                <div
-                    style={{
-                        marginTop:
-                            "24px",
-                        padding:
-                            "18px 20px",
-                        borderRadius:
-                            "14px",
-                        background:
-                            "#fef2f2",
-                        border:
-                            "1px solid #fecaca",
-                        color:
-                            "#991b1b"
-                    }}
-                >
-
-                    <strong>
-                        ⚠️ Analysis Error
-                    </strong>
-
-                    <div
-                        style={{
-                            marginTop:
-                                "6px"
-                        }}
-                    >
-                        {error}
-                    </div>
-
-                </div>
-
-            )}
-
-
-            {/* =====================================================
-                RESULT
-            ===================================================== */}
-
-            {predictionResult && (
-
-                <div
-                    style={{
-                        marginTop:
-                            "28px",
-                        background:
-                            "#ffffff",
-                        border:
-                            "1px solid #e5e7eb",
-                        borderRadius:
-                            "22px",
-                        padding:
-                            "32px",
-                        boxShadow:
-                            "0 10px 30px rgba(0,0,0,0.05)"
-                    }}
-                >
-
-                    {/* RESULT HEADER */}
-
-                    <div
-                        style={{
-                            display:
-                                "flex",
-                            justifyContent:
-                                "space-between",
-                            alignItems:
-                                "center",
-                            gap:
-                                "15px",
-                            flexWrap:
-                                "wrap",
-                            marginBottom:
-                                "24px"
-                        }}
-                    >
-
-                        <div>
-
-                            <h2
-                                style={{
-                                    fontSize:
-                                        "28px",
-                                    marginBottom:
-                                        "5px"
-                                }}
-                            >
-                                🧠 AI Detection Result
-                            </h2>
-
-                            <p
-                                style={{
-                                    color:
-                                        "#6b7280"
-                                }}
-                            >
-                                Analysis completed
-                                successfully
-                            </p>
-
-                        </div>
-
-
-                        <div
-                            style={{
-                                padding:
-                                    "9px 16px",
-                                borderRadius:
-                                    "999px",
-                                background:
-                                    "#dcfce7",
-                                color:
-                                    "#166534",
-                                fontWeight:
-                                    "700"
-                            }}
-                        >
-                            ✓ AI Analysis Complete
-                        </div>
-
-                    </div>
-
-
-                    {/* RESULT SUMMARY */}
-
-                    <div
-                        style={{
-                            display:
-                                "grid",
-                            gridTemplateColumns:
-                                "repeat(auto-fit, minmax(220px, 1fr))",
-                            gap:
-                                "16px",
-                            marginBottom:
-                                "28px"
-                        }}
-                    >
-
-                        {/* CROP */}
-
-                        <div
-                            style={{
-                                padding:
-                                    "20px",
-                                borderRadius:
-                                    "16px",
-                                background:
-                                    "#f8fafc",
-                                border:
-                                    "1px solid #e5e7eb"
-                            }}
-                        >
-
-                            <div
-                                style={{
-                                    color:
-                                        "#64748b",
-                                    fontSize:
-                                        "14px"
-                                }}
-                            >
-                                🌱 Crop
-                            </div>
-
-                            <strong
-                                style={{
-                                    display:
-                                        "block",
-                                    fontSize:
-                                        "21px",
-                                    marginTop:
-                                        "7px"
-                                }}
-                            >
-                                {displayCropName}
-                            </strong>
-
-                        </div>
-
-
-                        {/* PREDICTION */}
-
-                        <div
-                            style={{
-                                padding:
-                                    "20px",
-                                borderRadius:
-                                    "16px",
-                                background:
-                                    isHealthy
-                                        ? "#f0fdf4"
-                                        : "#fff7ed",
-                                border:
-                                    isHealthy
-                                        ? "1px solid #bbf7d0"
-                                        : "1px solid #fed7aa"
-                            }}
-                        >
-
-                            <div
-                                style={{
-                                    color:
-                                        "#64748b",
-                                    fontSize:
-                                        "14px"
-                                }}
-                            >
-                                🦠 Predicted Condition
-                            </div>
-
-                            <strong
-                                style={{
-                                    display:
-                                        "block",
-                                    fontSize:
-                                        "22px",
-                                    color:
-                                        isHealthy
-                                            ? "#15803d"
-                                            : "#c2410c",
-                                    marginTop:
-                                        "7px"
-                                }}
-                            >
-                                {
-                                    predictionResult.prediction
-                                }
-                            </strong>
-
-                        </div>
-
-
-                        {/* CONFIDENCE */}
-
-                        <div
-                            style={{
-                                padding:
-                                    "20px",
-                                borderRadius:
-                                    "16px",
-                                background:
-                                    "#eff6ff",
-                                border:
-                                    "1px solid #bfdbfe"
-                            }}
-                        >
-
-                            <div
-                                style={{
-                                    color:
-                                        "#64748b",
-                                    fontSize:
-                                        "14px"
-                                }}
-                            >
-                                🎯 Confidence
-                            </div>
-
-                            <strong
-                                style={{
-                                    display:
-                                        "block",
-                                    fontSize:
-                                        "25px",
-                                    color:
-                                        "#1d4ed8",
-                                    marginTop:
-                                        "7px"
-                                }}
-                            >
-                                {
-                                    predictionResult.confidence
-                                }%
-                            </strong>
-
-                        </div>
-
-                    </div>
-
-
-                    {/* =================================================
-                        LOW CONFIDENCE
-                    ================================================= */}
-
-                    {isLowConfidence ? (
-
-                        <div
-                            style={{
-                                padding:
-                                    "25px",
-                                borderRadius:
-                                    "18px",
-                                background:
-                                    "#fffbeb",
-                                border:
-                                    "1px solid #fde68a",
-                                marginBottom:
-                                    "28px"
-                            }}
-                        >
-
-                            <h2
-                                style={{
-                                    marginBottom:
-                                        "10px",
-                                    color:
-                                        "#92400e"
-                                }}
-                            >
-                                ⚠️ Low Confidence
-                                Prediction
-                            </h2>
-
-                            <p
-                                style={{
-                                    color:
-                                        "#78350f",
-                                    lineHeight:
-                                        "1.7"
-                                }}
-                            >
-                                AgriMind AI is not
-                                confident enough
-                                in this prediction
-                                to provide a
-                                disease
-                                recommendation.
-                            </p>
-
-                            <div
-                                style={{
-                                    padding:
-                                        "14px 16px",
-                                    borderRadius:
-                                        "12px",
-                                    background:
-                                        "#fef3c7",
-                                    color:
-                                        "#92400e",
-                                    marginBottom:
-                                        "15px",
-                                    fontWeight:
-                                        "600"
-                                }}
-                            >
-                                Current confidence:{" "}
-                                {confidenceValue ||
-                                    0}
-                                % • Required
-                                confidence:{" "}
-                                {
-                                    CONFIDENCE_THRESHOLD
-                                }%
-                            </div>
-
-                            <ul
-                                style={{
-                                    paddingLeft:
-                                        "22px",
-                                    lineHeight:
-                                        "1.8",
-                                    color:
-                                        "#78350f"
-                                }}
-                            >
-                                <li>
-                                    Upload a clearer
-                                    leaf image.
-                                </li>
-
-                                <li>
-                                    Keep the complete
-                                    leaf visible.
-                                </li>
-
-                                <li>
-                                    Avoid blurry,
-                                    dark or distant
-                                    images.
-                                </li>
-
-                                <li>
-                                    Make sure the image
-                                    is a supported crop.
-                                </li>
-
-                                <li>
-                                    Do not rely on a
-                                    low-confidence
-                                    prediction alone.
-                                </li>
-                            </ul>
-
-                        </div>
-
-                    ) : recommendationLoading ? (
-
-                        <div
-                            style={{
-                                padding:
-                                    "25px",
-                                borderRadius:
-                                    "18px",
-                                background:
-                                    "#f8fafc",
-                                border:
-                                    "1px solid #e2e8f0",
-                                marginBottom:
-                                    "28px",
-                                textAlign:
-                                    "center"
-                            }}
-                        >
-                            Loading AI
-                            recommendation...
-                        </div>
-
-                    ) : recommendation ? (
-
-                        <div
-                            style={{
-                                padding:
-                                    "25px",
-                                borderRadius:
-                                    "18px",
-                                background:
-                                    "#f8fafc",
-                                border:
-                                    "1px solid #e2e8f0",
-                                marginBottom:
-                                    "28px"
-                            }}
-                        >
+                                    {loading && (
+
+                                        <div
+                                            style={{
+                                                marginTop:
+                                                    "16px",
+                                                padding:
+                                                    "13px",
+                                                borderRadius:
+                                                    "11px",
+                                                background:
+                                                    "#f0fdf4",
+                                                color:
+                                                    "#166534",
+                                                fontSize:
+                                                    "13px",
+                                                textAlign:
+                                                    "center"
+                                            }}
+                                        >
+                                            🤖 EfficientNet-B0
+                                            is analyzing
+                                            your {cropName}
+                                            leaf...
+                                        </div>
+
+                                    )}
+
+                                </>
+
+                            )}
+
+                        </section>
+
+                        {/* =================================================
+                            HOW IT WORKS
+                        ================================================= */}
+
+                        <aside className="disease-card info-panel">
 
                             <h2>
-                                💡 AI Recommendation
+                                🤖 How AI Detection Works
                             </h2>
 
-                            <h3
-                                style={{
-                                    fontSize:
-                                        "22px"
-                                }}
-                            >
-                                {
-                                    predictionResult.prediction
-                                }
-                            </h3>
+                            <div className="workflow-step">
 
-                            <div
-                                style={{
-                                    display:
-                                        "inline-block",
-                                    padding:
-                                        "6px 12px",
-                                    borderRadius:
-                                        "999px",
-                                    background:
-                                        "#fef3c7",
-                                    color:
-                                        "#92400e",
-                                    fontWeight:
-                                        "700",
-                                    fontSize:
-                                        "13px",
-                                    marginBottom:
-                                        "15px"
-                                }}
-                            >
-                                Severity:{" "}
-                                {
-                                    recommendation.severity ||
-                                    "Not specified"
-                                }
-                            </div>
+                                <div className="step-number">
+                                    1
+                                </div>
 
-
-                            {/* SYMPTOMS */}
-
-                            <div
-                                style={{
-                                    marginBottom:
-                                        "20px"
-                                }}
-                            >
-
-                                <h3>
-                                    🌿 Symptoms
-                                </h3>
-
-                                <ul
-                                    style={{
-                                        paddingLeft:
-                                            "22px",
-                                        lineHeight:
-                                            "1.8",
-                                        color:
-                                            "#334155"
-                                    }}
-                                >
-
-                                    {(
-                                        recommendation.symptoms ||
-                                        []
-                                    ).map(
-                                        (
-                                            item,
-                                            index
-                                        ) => (
-
-                                            <li
-                                                key={
-                                                    index
-                                                }
-                                            >
-                                                {item}
-                                            </li>
-
-                                        )
-                                    )}
-
-                                </ul>
-
-                            </div>
-
-
-                            {/* IMMEDIATE ACTION */}
-
-                            {recommendation.immediate_action &&
-                                recommendation.immediate_action.length >
-                                    0 && (
-
-                                    <div
-                                        style={{
-                                            marginTop:
-                                                "20px",
-                                            marginBottom:
-                                                "20px",
-                                            padding:
-                                                "18px",
-                                            borderRadius:
-                                                "14px",
-                                            background:
-                                                "#fff7ed",
-                                            border:
-                                                "1px solid #fed7aa"
-                                        }}
-                                    >
-
-                                        <h3
-                                            style={{
-                                                color:
-                                                    "#9a3412"
-                                            }}
-                                        >
-                                            ⚡ Immediate
-                                            Action
-                                        </h3>
-
-                                        <ul
-                                            style={{
-                                                paddingLeft:
-                                                    "22px",
-                                                lineHeight:
-                                                    "1.8",
-                                                color:
-                                                    "#7c2d12"
-                                            }}
-                                        >
-
-                                            {recommendation.immediate_action.map(
-                                                (
-                                                    item,
-                                                    index
-                                                ) => (
-
-                                                    <li
-                                                        key={
-                                                            index
-                                                        }
-                                                    >
-                                                        {item}
-                                                    </li>
-
-                                                )
-                                            )}
-
-                                        </ul>
-
-                                    </div>
-
-                                )}
-
-
-                            {/* PREVENTION */}
-
-                            <div>
-
-                                <h3>
-                                    🛡️ Prevention
-                                </h3>
-
-                                <ul
-                                    style={{
-                                        paddingLeft:
-                                            "22px",
-                                        lineHeight:
-                                            "1.8",
-                                        color:
-                                            "#334155"
-                                    }}
-                                >
-
-                                    {(
-                                        recommendation.prevention ||
-                                        []
-                                    ).map(
-                                        (
-                                            item,
-                                            index
-                                        ) => (
-
-                                            <li
-                                                key={
-                                                    index
-                                                }
-                                            >
-                                                {item}
-                                            </li>
-
-                                        )
-                                    )}
-
-                                </ul>
-
-                            </div>
-
-
-                            {/* SPRAY GUIDANCE */}
-
-                            {recommendation.spray_guidance &&
-                                recommendation.spray_guidance.length >
-                                    0 && (
-
-                                    <div
-                                        style={{
-                                            marginTop:
-                                                "20px",
-                                            marginBottom:
-                                                "20px",
-                                            padding:
-                                                "18px",
-                                            borderRadius:
-                                                "14px",
-                                            background:
-                                                "#eff6ff",
-                                            border:
-                                                "1px solid #bfdbfe"
-                                        }}
-                                    >
-
-                                        <h3
-                                            style={{
-                                                color:
-                                                    "#1d4ed8"
-                                            }}
-                                        >
-                                            Spray Guidance
-                                        </h3>
-
-                                        <ul
-                                            style={{
-                                                paddingLeft:
-                                                    "22px",
-                                                lineHeight:
-                                                    "1.8",
-                                                color:
-                                                    "#1e3a8a"
-                                            }}
-                                        >
-
-                                            {recommendation.spray_guidance.map(
-                                                (
-                                                    item,
-                                                    index
-                                                ) => (
-
-                                                    <li
-                                                        key={
-                                                            index
-                                                        }
-                                                    >
-                                                        {item}
-                                                    </li>
-
-                                                )
-                                            )}
-
-                                        </ul>
-
-                                    </div>
-
-                                )}
-
-
-                            {/* TREATMENT */}
-
-                            <div
-                                style={{
-                                    marginTop:
-                                        "20px"
-                                }}
-                            >
-
-                                <h3>
-                                    Treatment /
-                                    What You Should Do
-                                </h3>
-
-                                <ul
-                                    style={{
-                                        paddingLeft:
-                                            "22px",
-                                        lineHeight:
-                                            "1.8",
-                                        color:
-                                            "#334155"
-                                    }}
-                                >
-
-                                    {(
-                                        recommendation.treatment ||
-                                        []
-                                    ).map(
-                                        (
-                                            item,
-                                            index
-                                        ) => (
-
-                                            <li
-                                                key={
-                                                    index
-                                                }
-                                            >
-                                                {item}
-                                            </li>
-
-                                        )
-                                    )}
-
-                                </ul>
-
-                            </div>
-
-
-                            {/* FARMER ACTION */}
-
-                            {recommendation.farmer_action && (
-
-                                <div
-                                    style={{
-                                        marginTop:
-                                            "20px",
-                                        padding:
-                                            "16px 18px",
-                                        borderRadius:
-                                            "14px",
-                                        background:
-                                            "#f0fdf4",
-                                        border:
-                                            "1px solid #bbf7d0"
-                                    }}
-                                >
+                                <div>
 
                                     <h3>
-                                        Farmer Action
+                                        Upload Leaf Image
                                     </h3>
 
-                                    <p
-                                        style={{
-                                            margin:
-                                                0,
-                                            color:
-                                                "#166534",
-                                            lineHeight:
-                                                "1.7"
-                                        }}
-                                    >
-                                        {
-                                            recommendation.farmer_action
-                                        }
+                                    <p>
+                                        Upload a clear
+                                        photograph of the
+                                        crop leaf.
                                     </p>
 
                                 </div>
 
-                            )}
+                            </div>
 
-                        </div>
+                            <div className="workflow-step">
 
-                    ) : (
+                                <div className="step-number">
+                                    2
+                                </div>
 
-                        <div
-                            style={{
-                                padding:
-                                    "25px",
-                                borderRadius:
-                                    "18px",
-                                background:
-                                    "#f8fafc",
-                                border:
-                                    "1px solid #e2e8f0",
-                                marginBottom:
-                                    "28px"
-                            }}
-                        >
-                            Recommendation could
-                            not be loaded for this
-                            prediction.
-                        </div>
+                                <div>
 
-                    )}
+                                    <h3>
+                                        AI Analysis
+                                    </h3>
 
+                                    <p>
+                                        EfficientNet-B0
+                                        analyzes visual
+                                        patterns in the
+                                        image.
+                                    </p>
 
-                    {/* =================================================
-                        CLASS PROBABILITIES
-                    ================================================= */}
+                                </div>
 
-                    {predictionResult.probabilities && (
+                            </div>
 
-                        <div
-                            style={{
-                                marginBottom:
-                                    "28px"
-                            }}
-                        >
+                            <div className="workflow-step">
 
-                            <h2
-                                style={{
-                                    marginBottom:
-                                        "20px"
-                                }}
-                            >
-                                📊 Class Probabilities
-                            </h2>
+                                <div className="step-number">
+                                    3
+                                </div>
 
+                                <div>
 
-                            {Object.entries(
-                                predictionResult.probabilities
-                            ).map(
-                                (
-                                    [
-                                        disease,
-                                        probability
-                                    ]
-                                ) => {
+                                    <h3>
+                                        Get Result
+                                    </h3>
 
-                                    const isTop =
-                                        disease ===
-                                        predictionResult.prediction;
+                                    <p>
+                                        Receive the predicted
+                                        condition and
+                                        confidence score.
+                                    </p>
 
-                                    return (
+                                </div>
 
-                                        <div
-                                            key={
-                                                disease
-                                            }
-                                            style={{
-                                                marginBottom:
-                                                    "17px"
-                                            }}
-                                        >
+                            </div>
 
-                                            <div
-                                                style={{
-                                                    display:
-                                                        "flex",
-                                                    justifyContent:
-                                                        "space-between",
-                                                    marginBottom:
-                                                        "7px"
-                                                }}
-                                            >
+                            <div className="model-box">
 
-                                                <span
-                                                    style={{
-                                                        fontWeight:
-                                                            isTop
-                                                                ? "700"
-                                                                : "500"
-                                                    }}
-                                                >
-                                                    {
-                                                        disease
-                                                    }
-                                                </span>
+                                <div className="model-box-label">
+                                    AI MODEL
+                                </div>
 
-                                                <strong>
-                                                    {
-                                                        probability
-                                                    }%
-                                                </strong>
+                                <strong>
+                                    EfficientNet-B0
+                                </strong>
 
-                                            </div>
+                                <div
+                                    style={{
+                                        marginTop:
+                                            "5px",
+                                        color:
+                                            "#64748b",
+                                        fontSize:
+                                            "11px"
+                                    }}
+                                >
+                                    Crop disease
+                                    classification
+                                </div>
 
+                            </div>
 
-                                            <div
-                                                style={{
-                                                    width:
-                                                        "100%",
-                                                    height:
-                                                        "11px",
-                                                    background:
-                                                        "#e5e7eb",
-                                                    borderRadius:
-                                                        "999px",
-                                                    overflow:
-                                                        "hidden"
-                                                }}
-                                            >
-
-                                                <div
-                                                    style={{
-                                                        width:
-                                                            `${probability}%`,
-                                                        height:
-                                                            "100%",
-                                                        background:
-                                                            isTop
-                                                                ? "#16a34a"
-                                                                : "#86efac",
-                                                        borderRadius:
-                                                            "999px",
-                                                        transition:
-                                                            "width 0.5s ease"
-                                                    }}
-                                                />
-
-                                            </div>
-
-                                        </div>
-                                    );
-                                }
-                            )}
-
-                        </div>
-
-                    )}
-
-
-                    {/* =================================================
-                        ANALYZE ANOTHER
-                    ================================================= */}
-
-                    <div
-                        style={{
-                            textAlign:
-                                "center",
-                            paddingTop:
-                                "10px"
-                        }}
-                    >
-
-                        <button
-                            type="button"
-                            onClick={
-                                handleReset
-                            }
-                            style={{
-                                padding:
-                                    "14px 28px",
-                                border:
-                                    "none",
-                                borderRadius:
-                                    "12px",
-                                background:
-                                    "#15803d",
-                                color:
-                                    "#ffffff",
-                                fontSize:
-                                    "16px",
-                                fontWeight:
-                                    "700",
-                                cursor:
-                                    "pointer"
-                            }}
-                        >
-                            🔄 Analyze Another
-                            Image
-                        </button>
+                        </aside>
 
                     </div>
 
-                </div>
+                )}
 
-            )}
+                {/* =====================================================
+                    ERROR
+                ===================================================== */}
 
-        </div>
-    );
-}
+                {error && (
 
-export default DiseaseDetection;
+                    <div className="error-box">
+
+                        <strong>
+                            ⚠️ Something went wrong
+                        </strong>
+
+                        <div
+                            style={{
+                                marginTop: "5px"
+                            }}
+                        >
+                            {error}
+                        </div>
+
+                    </div>
+
+                )}
+
+                {/* =====================================================
+                    RESULT
+                ===================================================== */}
+
+                {predictionResult && (
+
+                    <section className="disease-card result-card">
+
+                        <div className="result-header">
+
+                            <div>
+
+                                <h2>
+                                    🧠 AI Detection Result
+                                </h2>
+
+                                <p>
+                                    Analysis completed
+                                </p>
+
+                            </div>
+
+                            <div className="complete-badge">
+                                ✓ Analysis Complete
+                            </div>
+
+                        </div>
+
+                        {/* SUMMARY */}
+
+                        <div className="result-grid">
+
+                            <div className="result-box">
+
+                                <div className="result-label">
+                                    Crop
+                                </div>
+
+                                <div className="result-value">
+                                    {cropIcon}{" "}
+                                    {displayCropName}
+                                </div>
+
+                            </div>
+
+                            <div
+                                className={`result-box ${
+                                    isHealthy
+                                        ? "green"
+                                        : "orange"
+                                }`}
+                            >
+
+                                <div className="result-label">
+                                    Predicted Condition
+                                </div>
+
+                                <div
+                                    className={`result-value ${
+                                        isHealthy
+                                            ? "green-text"
+                                            : "orange-text"
+                                    }`}
+                                >
+                                    {isHealthy
+                                        ? "🌿"
+                                        : "🦠"}{" "}
+                                    {prediction}
+                                </div>
+
+                            </div>
+
+                            <div className="result-box blue">
+
+                                <div className="result-label">
+                                    Confidence
+                                </div>
+
+                                <div className="result-value blue-text">
+                                    🎯{" "}
+                                    {confidenceValue.toFixed(2)}%
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        {/* LOW CONFIDENCE */}
+
+                        {isLowConfidence ? (
+
+                            <div className="low-confidence">
+
+                                <h2>
+                                    ⚠️ Low Confidence Prediction
+                                </h2>
+
+                                <p>
+                                    AgriMind AI is not
+                                    confident enough in
+                                    this prediction to
+                                    provide a disease
+                                    recommendation.
+                                </p>
+
+                                <div className="confidence-warning">
+                                    Current confidence:{" "}
+                                    {confidenceValue.toFixed(2)}%
+                                    {" • "}
+                                    Required:{" "}
+                                    {confidenceThreshold}%
+                                </div>
+
+                                <ul>
+                                    <li>
+                                        Upload a clearer
+                                        leaf image.
+                                    </li>
+
+                                    <li>
+                                        Keep the complete
+                                        leaf visible.
+                                    </li>
+
+                                    <li>
+                                        Avoid blurry or
+                                        dark images.
+                                    </li>
+
+                                    <li>
+                                        Make sure the crop
+                                        is correct.
+                                    </li>
+
+                                    <li>
+                                        Do not rely on a
+                                        low-confidence
+                                        result alone.
+                                    </li>
+                                </ul>
+
+                            </div>
+
+                        ) : recommendationLoading ? (
+
+                            <div className="recommendation">
+
+                                <div
+                                    style={{
+                                        textAlign:
+                                            "center",
+                                        color:
+                                            "#64748b"
+                                    }}
+                                >
+                                    🤖 Loading AI
+                                    recommendation...
+                                </div>
+
+                            </div>
+
+                        ) : recommendation ? (
+
+                            <div className="recommendation">
+
+                                <h2>
+                                    💡 AI Recommendation
+                                </h2>
+
+                                <h3>
+                                    {prediction}
+                                </h3>
+
+                                <span className="severity">
+                                    Severity:{" "}
+                                    {recommendation.severity ||
+                                        "Not specified"}
+                                </span>
+
+                                {recommendation.symptoms?.length >
+                                    0 && (
+
+                                    <div>
+
+                                        <h3>
+                                            🌿 Symptoms
+                                        </h3>
+
+                                        <ul>
+                                            {recommendation.symptoms.map(
+                                                (item, index) => (
+                                                    <li
+                                                        key={
+                                                            index
+                                                        }
+                                                    >
+                                                        {item}
+                                                    </li>
+                                                )
+                                            )}
+                                        </ul>
+
+                                    </div>
+
+                                )}
+
+                                {recommendation.immediate_action?.length >
+                                    0 && (
+
+                                    <div className="action-info">
+
+                                        <h3>
+                                            ⚡ Immediate Action
+                                        </h3>
+
+                                        <ul>
+                                            {recommendation.immediate_action.map(
+                                                (item, index) => (
+                                                    <li
+                                                        key={
+                                                            index
+                                                        }
+                                                    >
+                                                        {item}
+                                                    </li>
+                                                )
+                                            )}
+                                        </ul>
+
+                                    </div>
+
+                                )}
+
+                                {recommendation.prevention?.length >
+                                    0 && (
+
+                                    <div className="prevention-info">
+
+                                        <h3>
+                                            🛡️ Prevention
+                                        </h3>
+
+                                        <ul>
+                                            {recommendation.prevention.map(
+                                                (item, index) => (
+                                                    <li
+                                                        key={
+                                                            index
+                                                        }
+                                                    >
+                                                        {item}
+                                                    </li>
+                                                )
+                                            )}
+                                        </ul>
+
+                                    </div>
+
+                                )}
+
+                                {recommendation.spray_guidance?.length >
+                                    0 && (
+
+                                    <div className="spray-info">
+
+                                        <h3>
+                                            💧 Spray Guidance
+                                        </h3>
+
+                                        <ul>
+                                            {recommendation.spray_guidance.map(
+                                                (item, index) => (
+                                                    <li
+                                                        key={
+                                                            index
+                                                        }
+                                                    >
+                                                        {item}
+                                                    </li>
+                                                )
+                                            )}
+                                        </ul>
+
+                                    </div>
+
+                                )}
+
+                                {recommendation.treatment?.length >
+                                    0 && (
+
+                                    <div>
+
+                                        <h3>
+                                            🩺 Treatment / What
+                                            You Should Do
+                                        </h3>
+
+                                        <ul>
+                                            {recommendation.treatment.map(
+                                                (item, index) => (
+                                                    <li
+                                                        key={
+                                                            index
+                                                        }
+                                                    >
+                                                        {item}
+                                                    </li>
+                                                )
+                                            )}
+                                        </ul>
+
+                                    </div>
+
+                                )}
+
+                                {recommendation.farmer_action && (
+
+                                    <div className="prevention-info">
+
+                                        <h3>
+                                            👨‍🌾 Farmer Action
+                                        </h3>
+
+                                        <p
+                                            style={{
+                                                margin:
+                                                    0,
+                                                color:
+                                                    "#166534",
+                                                fontSize:
+                                                    "13px",
+                                                lineHeight:
+                                                    "1.7"
+                                            }}
+                                        >
+                                            {
+                                                recommendation.farmer_action
+                                            }
+                                        </p>
+
+                                    </div>
+
+                                )}
+
+                            </div>
+
+                        ) : (
+
+                            <div className="recommendation">
+
+                                <div
+                                    style={{
+                                        color:
+                                            "#64748b"
+                                    }}
+                                >
+                                    Recommendation could
+                                    not be loaded for this
+                                    prediction.
+                                </div>
+
+                            </div>
+
+                        )}
+
+                        {/* =================================================
+                            PROBABILITIES
+                        ================================================= */}
+
+                    {predictionResult.probabilities &&
+                        localStorage.getItem("agrimind_show_probabilities") !== "false" && (
+
+                            <div className="probabilities">
+
+                                <h2>
+                                    📊 AI Class Probabilities
+                                </h2>
+
+                                {Object.entries(
+                                    predictionResult.probabilities
+                                ).map(
+                                    (
+                                        [
+                                            disease,
+                                            probability
+                                        ]
+                                    ) => {
+
+                                        const value =
+                                            Number(
+                                                probability
+                                            );
+
+                                        const isTop =
+                                            disease ===
+                                            prediction;
+
+                                        return (
+
+                                            <div
+                                                className="probability-row"
+                                                key={
+                                                    disease
+                                                }
+                                            >
+
+                                                <div className="probability-label">
+
+                                                    <span
+                                                        style={{
+                                                            fontWeight:
+                                                                isTop
+                                                                    ? 800
+                                                                    : 500
+                                                        }}
+                                                    >
+                                                        {disease}
+                                                    </span>
+
+                                                    <strong>
+                                                        {value.toFixed(
+                                                            2
+                                                        )}%
+                                                    </strong>
+
+                                                </div>
+
+                                                <div className="progress">
+
+                                                    <div
+                                                        className="progress-fill"
+                                                        style={{
+                                                            width:
+                                                                `${Math.min(
+                                                                    Math.max(
+                                                                        value,
+                                                                        0
+                                                                    ),
+                                                                    100
+                                                                )}%`,
+                                                            background:
+                                                                isTop
+                                                                    ? "#16a34a"
+                                                                    : "#86efac"
+                                                        }}
+                                                    />
+
+                                                </div>
+
+                                            </div>
+
+                                        );
+                                    }
+                                )}
+
+                            </div>
+
+                        )}
+
+                        {/* =================================================
+                            ANALYZE ANOTHER
+                        ================================================= */}
+
+                        <div className="result-footer">
+
+                            <button
+                                type="button"
+                                className="another-button"
+                                onClick={
+                                    handleReset
+                                }
+                            >
+                                🔄 Analyze Another Image
+                            </button>
+
+                        </div>
+
+                    </section>
+
+                )}
+
+            </div>
+        );
+    }
+
+    export default DiseaseDetection;

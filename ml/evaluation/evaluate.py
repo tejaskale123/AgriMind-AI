@@ -488,6 +488,51 @@ def evaluate_model(crop):
 
 
     # --------------------------------------------------------
+    # SAVE EVALUATION RESULTS
+    # --------------------------------------------------------
+
+    result_file = (
+        PROJECT_ROOT
+        / "ml"
+        / "evaluation"
+        / "evaluation_results.json"
+    )
+
+    evaluation_results = {
+        "project": "AgriMind AI",
+        "crop": crop,
+        "model": "EfficientNet-B0",
+        "image_size": "224x224",
+        "test_images": len(test_dataset),
+        "accuracy": round(accuracy * 100, 2),
+        "precision": round(precision * 100, 2),
+        "recall": round(recall * 100, 2),
+        "f1_score": round(f1 * 100, 2),
+        "classes": test_dataset.classes,
+        "confusion_matrix": matrix.tolist(),
+    }
+
+    with open(
+        result_file,
+        "w",
+        encoding="utf-8",
+    ) as file:
+
+        import json
+
+        json.dump(
+            evaluation_results,
+            file,
+            indent=2,
+        )
+
+    print()
+    print(
+        f"💾 Evaluation results saved: {result_file}"
+    )
+
+
+    # --------------------------------------------------------
     # Final
     # --------------------------------------------------------
 

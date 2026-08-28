@@ -1,20 +1,22 @@
 # AgriMind AI
 
-AgriMind AI is a smart agriculture disease-detection project. It uses a React + Vite frontend, a FastAPI backend, PyTorch EfficientNet-B0 models, SQLite history storage, and JSON-based disease recommendations to help identify crop leaf diseases from uploaded images.
+AgriMind AI is a full-stack smart agriculture project for crop leaf disease detection. It combines a React + Vite frontend, a FastAPI backend, JWT authentication, SQLite storage, and PyTorch EfficientNet-B0 models to help farmers identify cotton and soybean leaf diseases from uploaded or captured images.
 
-The current application supports cotton and soybean disease prediction.
+The application supports authenticated users, protected dashboard access, image quality validation, model inference, disease recommendations, detection history, and analytics.
 
 ## Key Features
 
-- Upload or capture a crop leaf image from the web app
-- Select the crop before prediction
-- Predict disease using trained EfficientNet-B0 models
-- Validate image quality before inference
-- Return confidence score, confidence level, and per-class probabilities
-- Show disease symptoms, treatment, prevention, spray guidance, and farmer actions
-- Save prediction history in SQLite
-- View dashboard, analytics, crop info, detection history, and settings pages
-- Includes ML scripts for dataset cleaning, duplicate detection, splitting, training, inference, and evaluation
+- User registration and login
+- Protected frontend pages with automatic login redirect
+- Upload or capture crop leaf images from the web app
+- Select crop before prediction
+- Cotton and soybean disease prediction using EfficientNet-B0
+- Image quality checks for file type, size, brightness, contrast, and confidence
+- Confidence score, confidence level, and class probability output
+- Disease guidance with symptoms, treatment, prevention, spray guidance, and farmer actions where available
+- User-specific detection history stored in SQLite
+- Dashboard, disease detection, crops, analytics, history, and settings pages
+- ML utilities for dataset validation, duplicate detection, cleaning, splitting, training, inference, and evaluation
 
 ## Supported Crops And Classes
 
@@ -40,6 +42,7 @@ The current application supports cotton and soybean disease prediction.
 |---|---|
 | Frontend | React, Vite, React Router, CSS |
 | Backend | FastAPI, Python, SQLite, Pillow |
+| Authentication | JWT, bcrypt, python-jose |
 | Machine Learning | PyTorch, Torchvision, EfficientNet-B0 |
 | Data Processing | NumPy, Pandas, scikit-learn, imagehash |
 | Evaluation | Matplotlib, Seaborn |
@@ -50,28 +53,30 @@ The current application supports cotton and soybean disease prediction.
 AgriMind-AI/
 |-- backend/
 |   |-- app/
-|   |   |-- main.py
-|   |   `-- main_backup.py
+|   |   |-- auth.py
+|   |   `-- main.py
 |   `-- data/
 |       |-- agrimind_history.db
-|       |-- disease_recommendations.json
-|       `-- disease_recommendations_backup.json
-|-- datasets/
-|   |-- crop/
-|   |-- disease/
-|   |-- inference/
-|   |-- processed/
-|   |-- raw/
-|   |-- reports/
-|   `-- tabular/
+|       `-- disease_recommendations.json
 |-- docs/
 |   `-- DATASET_SOURCES.md
 |-- frontend/
 |   |-- public/
 |   |-- src/
 |   |   |-- components/
+|   |   |   `-- Sidebar.jsx
 |   |   |-- pages/
+|   |   |   |-- Analytics.jsx
+|   |   |   |-- Crops.jsx
+|   |   |   |-- Dashboard.jsx
+|   |   |   |-- DiseaseDetection.jsx
+|   |   |   |-- History.jsx
+|   |   |   |-- Login.jsx
+|   |   |   |-- Register.jsx
+|   |   |   `-- Settings.jsx
 |   |   |-- App.jsx
+|   |   |-- App.css
+|   |   |-- index.css
 |   |   `-- main.jsx
 |   |-- package.json
 |   `-- vite.config.js
@@ -85,7 +90,9 @@ AgriMind-AI/
 |   |-- soybean_efficientnet_b0.pth
 |   `-- soybean_efficientnet_b0_baseline_98_18.pth
 |-- tests/
+|   `-- sample_soybean.jpg
 |-- requirements.txt
+|-- project_extraction.txt
 `-- README.md
 ```
 
@@ -115,7 +122,6 @@ Install Python dependencies:
 
 ```bash
 pip install -r requirements.txt
-pip install fastapi uvicorn python-multipart
 ```
 
 Start the FastAPI backend:
@@ -180,40 +186,74 @@ AgriMind AI includes user authentication to protect user-specific application da
 
 - User registration
 - User login
+- JWT access token storage in the frontend
 - Authenticated dashboard access
 - User-specific detection history
-- Protected history APIs
+- Protected prediction and history APIs
 - Logout functionality
 - Automatic redirect to login for protected pages
 
-The frontend uses authentication state to control access to protected application pages, while the backend validates authenticated users for protected history operations.
+The frontend stores the logged-in user's token in `localStorage` as `access_token` and stores user details as `user`. Protected API requests use a Bearer token.
 
 ## API Endpoints
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/` | API status, model name, supported crops, and classes |
-| `GET` | `/health` | Backend health, model loading status, available models, and device |
-| `POST` | `/predict` | Predict disease from an uploaded image |
-| `GET` | `/history` | Return saved prediction history |
-| `DELETE` | `/history` | Clear prediction history |
-| `GET` | `/recommendation/{disease}` | Return disease recommendation details |
+| Method | Endpoint | Auth Required | Description |
+|---|---|---:|---|
+| `GET` | `/` | No | API status, model name, supported crops, and classes |
+| `GET` | `/health` | No | Backend health, model loading status, available models, and device |
+| `POST` | `/auth/register` | No | Create a user account |
+| `POST` | `/auth/login` | No | Login and return an access token |
+| `GET` | `/auth/me` | Yes | Return the current authenticated user payload |
+| `POST` | `/predict` | Yes | Predict disease from an uploaded image |
+| `GET` | `/history` | Yes | Return the logged-in user's prediction history |
+| `DELETE` | `/history` | Yes | Clear the logged-in user's prediction history |
+| `GET` | `/recommendation/{disease}` | No | Return disease recommendation details |
+
+### Register Request
+
+`POST /auth/register`
+
+```json
+{
+  "full_name": "Test Farmer",
+  "email": "farmer@example.com",
+  "password": "secret123"
+}
+```
+
+### Login Request
+
+`POST /auth/login`
+
+```json
+{
+  "email": "farmer@example.com",
+  "password": "secret123"
+}
+```
+
+Successful login responses include:
+
+- `success`
+- `message`
+- `access_token`
+- `token_type`
+- `user`
 
 ### Prediction Request
 
-`POST /predict` expects multipart form data.
+`POST /predict` expects multipart form data and a Bearer token.
 
 ```text
 file: JPG, PNG, or WEBP image
 crop: cotton or soybean
 ```
 
-If `crop` is not sent, the backend defaults to `cotton`.
-
 Example with curl:
 
 ```bash
 curl -X POST "http://127.0.0.1:8000/predict" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
   -F "file=@leaf.jpg" \
   -F "crop=soybean"
 ```
@@ -233,16 +273,16 @@ The backend checks file type, image size, brightness, contrast, and model confid
 
 ## Frontend Pages
 
-| Route | Page |
-|---|---|
-| `/` | Dashboard |
-| `/login` | Login |
-| `/register` | Register |
-| `/detection` | Disease Detection |
-| `/crops` | Crops |
-| `/analytics` | Analytics |
-| `/history` | History |
-| `/settings` | Settings |
+| Route | Page | Access |
+|---|---|---|
+| `/login` | Login | Public |
+| `/register` | Register | Public |
+| `/` | Dashboard | Protected |
+| `/detection` | Disease Detection | Protected |
+| `/crops` | Crops | Protected |
+| `/analytics` | Analytics | Protected |
+| `/history` | History | Protected |
+| `/settings` | Settings | Protected |
 
 ## Application Workflow
 
@@ -250,28 +290,17 @@ The AgriMind AI application follows this workflow:
 
 ```text
 User Registration / Login
-        ↓
-Dashboard
-        ↓
-Select Disease Detection
-        ↓
-Select Crop
-        ↓
-Upload or Capture Leaf Image
-        ↓
-Image Quality Validation
-        ↓
-EfficientNet-B0 Model Inference
-        ↓
-Disease Prediction
-        ↓
-Confidence & Class Probabilities
-        ↓
-Disease Recommendation
-        ↓
-Save Detection History
-        ↓
-Analytics & History
+-> Dashboard
+-> Select Disease Detection
+-> Select Crop
+-> Upload or Capture Leaf Image
+-> Image Quality Validation
+-> EfficientNet-B0 Model Inference
+-> Disease Prediction
+-> Confidence & Class Probabilities
+-> Disease Recommendation
+-> Save Detection History
+-> Analytics & History
 ```
 
 The system provides disease information including symptoms, immediate actions, prevention, treatment guidance, spray guidance, and farmer actions where available.
@@ -342,13 +371,20 @@ ml/evaluation/reports/model_performance.png
 
 | File | Purpose |
 |---|---|
-| `backend/app/main.py` | FastAPI app for prediction, history, health checks, and recommendations |
+| `backend/app/main.py` | FastAPI app for auth, prediction, history, health checks, and recommendations |
+| `backend/app/auth.py` | Password hashing, user lookup, and JWT helpers |
 | `backend/data/disease_recommendations.json` | Disease guidance returned by the recommendation API |
-| `backend/data/agrimind_history.db` | SQLite database for detection history |
-| `frontend/src/App.jsx` | Frontend route configuration |
-| `frontend/src/pages/DiseaseDetection.jsx` | Main image upload and prediction UI |
+| `backend/data/agrimind_history.db` | SQLite database for users and detection history |
+| `frontend/src/App.jsx` | Frontend route configuration and protected route handling |
+| `frontend/src/components/Sidebar.jsx` | Main app navigation and logout UI |
+| `frontend/src/pages/Login.jsx` | User login page |
+| `frontend/src/pages/Register.jsx` | User registration page |
 | `frontend/src/pages/Dashboard.jsx` | Dashboard and overview UI |
+| `frontend/src/pages/DiseaseDetection.jsx` | Main image upload, capture, crop selection, and prediction UI |
+| `frontend/src/pages/Crops.jsx` | Supported crop information |
 | `frontend/src/pages/Analytics.jsx` | Analytics UI based on prediction history |
+| `frontend/src/pages/History.jsx` | User detection history UI |
+| `frontend/src/pages/Settings.jsx` | Application settings UI |
 | `ml/training/train.py` | Model training script |
 | `ml/inference/predict.py` | Local model inference script |
 
@@ -369,14 +405,22 @@ The dashboard provides an overview of supported crops, AI model status, total de
 
 Users can upload or capture a crop leaf image and analyze it using the trained EfficientNet-B0 model.
 
+### Analytics
+
+The analytics page summarizes detection activity and crop disease trends from saved history.
+
+### History
+
+The history page shows saved prediction records for the logged-in user.
+
 ## Troubleshooting
 
-### Backend cannot import FastAPI or multipart support
+### Backend cannot import a package
 
-Install the missing packages:
+Install dependencies again:
 
 ```bash
-pip install fastapi uvicorn python-multipart
+pip install -r requirements.txt
 ```
 
 ### Model not loaded
@@ -399,6 +443,18 @@ http://127.0.0.1:8000
 ```
 
 The frontend pages currently call the FastAPI API at this local address.
+
+### Protected pages redirect to login
+
+Login again so the frontend can store a valid `access_token` in `localStorage`.
+
+### Prediction returns unauthorized
+
+Make sure the request includes:
+
+```text
+Authorization: Bearer YOUR_ACCESS_TOKEN
+```
 
 ### Low confidence or image quality warning
 

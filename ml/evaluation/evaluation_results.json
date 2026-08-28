@@ -1,25 +1,43 @@
 {
   "project": "AgriMind AI",
-  "crop": "soybean",
+  "crop": "maize",
   "model": "EfficientNet-B0",
   "image_size": "224x224",
-  "test_images": 55,
-  "accuracy": 98.18,
-  "precision": 98.33,
-  "recall": 98.18,
-  "f1_score": 98.18,
+  "test_images": 422,
+  "accuracy": 97.87,
+  "precision": 97.89,
+  "recall": 97.87,
+  "f1_score": 97.87,
   "classes": [
-    "Bacterial Blight",
-    "Cercospora Leaf Blight",
-    "Healthy",
-    "Rust",
-    "Sudden Death Syndrome"
+    "Blight",
+    "Common_Rust",
+    "Gray_Leaf_Spot",
+    "Healthy"
   ],
   "confusion_matrix": [
-    [10, 0, 0, 1, 0],
-    [0, 11, 0, 0, 0],
-    [0, 0, 11, 0, 0],
-    [0, 0, 0, 11, 0],
-    [0, 0, 0, 0, 11]
+    [
+      113,
+      0,
+      3,
+      0
+    ],
+    [
+      1,
+      129,
+      1,
+      0
+    ],
+    [
+      4,
+      0,
+      54,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      117
+    ]
   ]
 }

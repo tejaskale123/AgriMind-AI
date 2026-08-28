@@ -1358,3 +1358,376 @@ html[data-theme="dark"] .settings-message {
         width: 100%;
     }
 }
+
+
+/* =========================================================
+   AGRIMIND AI - SIDEBAR FINAL UI
+========================================================= */
+
+.sidebar-navigation {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.menu-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.sidebar-user {
+    margin-top: 18px;
+
+    padding: 15px;
+
+    background: #f8faf9;
+
+    border: 1px solid #e8eee9;
+
+    border-radius: 16px;
+}
+
+.sidebar-user-info {
+    display: flex;
+
+    align-items: center;
+
+    gap: 11px;
+}
+
+.sidebar-avatar {
+    width: 40px;
+    height: 40px;
+
+    min-width: 40px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background:
+        linear-gradient(
+            135deg,
+            #166534,
+            #22c55e
+        );
+
+    color: #ffffff;
+
+    font-size: 15px;
+
+    font-weight: 800;
+
+    box-shadow:
+        0 5px 12px rgba(22, 163, 74, 0.18);
+}
+
+.sidebar-user-details {
+    min-width: 0;
+
+    flex: 1;
+}
+
+.sidebar-user-name {
+    color: #17211b;
+
+    font-size: 13px;
+
+    font-weight: 700;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+}
+
+.sidebar-user-role {
+    margin-top: 2px;
+
+    color: #7b857e;
+
+    font-size: 11px;
+
+    font-weight: 500;
+}
+
+.sidebar-logout {
+    width: 100%;
+
+    height: 38px;
+
+    margin-top: 12px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 7px;
+
+    border: 1px solid #fecaca;
+
+    border-radius: 10px;
+
+    background: #fff7f7;
+
+    color: #dc2626;
+
+    font-family: inherit;
+
+    font-size: 12px;
+
+    font-weight: 700;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.sidebar-logout:hover {
+    background: #fef2f2;
+
+    border-color: #fca5a5;
+
+    transform: translateY(-1px);
+}
+
+.sidebar-logout:active {
+    transform: translateY(0);
+}
+
+
+/* =========================================================
+   DARK MODE
+========================================================= */
+
+html.agrimind-dark .sidebar-user {
+    background: #172033;
+
+    border-color: #334155;
+}
+
+html.agrimind-dark .sidebar-user-name {
+    color: #f8fafc;
+}
+
+html.agrimind-dark .sidebar-user-role {
+    color: #94a3b8;
+}
+
+html.agrimind-dark .sidebar-logout {
+    background: #2a1717;
+
+    border-color: #7f1d1d;
+
+    color: #fca5a5;
+}
+
+html.agrimind-dark .sidebar-logout:hover {
+    background: #3b1818;
+
+    border-color: #991b1b;
+}
+
+
+/* =========================================================
+   MOBILE SIDEBAR
+========================================================= */
+
+@media (max-width: 750px) {
+
+    .sidebar-navigation {
+        gap: 18px;
+    }
+
+    .sidebar-user {
+        padding: 8px;
+
+        display: flex;
+
+        justify-content: center;
+    }
+
+    .sidebar-user-info {
+        justify-content: center;
+    }
+
+    .sidebar-user-details,
+    .sidebar-logout {
+        display: none;
+    }
+
+}
+
+/* =========================================================
+   AGRIMIND AI - SIDEBAR USER CARD FINAL FIX
+========================================================= */
+
+.sidebar .sidebar-user {
+    margin-top: 18px;
+    padding: 14px;
+
+    background: #f8faf9;
+
+    border: 1px solid #e5ebe7;
+
+    border-radius: 16px;
+
+    box-sizing: border-box;
+}
+
+.sidebar .sidebar-user-info {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+}
+
+.sidebar .sidebar-avatar {
+    width: 40px;
+    height: 40px;
+
+    min-width: 40px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background: linear-gradient(
+        135deg,
+        #166534,
+        #22c55e
+    );
+
+    color: #ffffff;
+
+    font-size: 15px;
+    font-weight: 800;
+
+    box-shadow:
+        0 5px 12px rgba(22, 163, 74, 0.18);
+}
+
+.sidebar .sidebar-user-details {
+    min-width: 0;
+    flex: 1;
+}
+
+.sidebar .sidebar-user-name {
+    color: #17211b;
+
+    font-size: 13px;
+    font-weight: 700;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sidebar .sidebar-user-role {
+    margin-top: 2px;
+
+    color: #7b857e;
+
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.sidebar .sidebar-logout {
+    width: 100%;
+    height: 38px;
+
+    margin-top: 12px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 7px;
+
+    border: 1px solid #fecaca;
+    border-radius: 10px;
+
+    background: #fff7f7;
+    color: #dc2626;
+
+    font-family: inherit;
+
+    font-size: 12px;
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.sidebar .sidebar-logout:hover {
+    background: #fef2f2;
+
+    border-color: #fca5a5;
+
+    transform: translateY(-1px);
+}
+
+.sidebar .sidebar-logout:active {
+    transform: translateY(0);
+}
+
+
+/* =========================================================
+   DARK MODE
+========================================================= */
+
+html.agrimind-dark .sidebar .sidebar-user {
+    background: #172033;
+    border-color: #334155;
+}
+
+html.agrimind-dark .sidebar .sidebar-user-name {
+    color: #f8fafc;
+}
+
+html.agrimind-dark .sidebar .sidebar-user-role {
+    color: #94a3b8;
+}
+
+html.agrimind-dark .sidebar .sidebar-logout {
+    background: #2a1717;
+    border-color: #7f1d1d;
+    color: #fca5a5;
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 750px) {
+
+    .sidebar .sidebar-user {
+        padding: 8px;
+        display: flex;
+        justify-content: center;
+    }
+
+    .sidebar .sidebar-user-info {
+        justify-content: center;
+    }
+
+    .sidebar .sidebar-user-details,
+    .sidebar .sidebar-logout {
+        display: none;
+    }
+}

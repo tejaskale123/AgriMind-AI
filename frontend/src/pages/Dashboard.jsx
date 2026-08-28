@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 
 function Dashboard() {
     // =========================================================
-    // LOGGED-IN USER
+    // USER
     // =========================================================
 
     const storedUser = localStorage.getItem("user");
@@ -10,9 +10,7 @@ function Dashboard() {
     let user = null;
 
     try {
-        user = storedUser
-            ? JSON.parse(storedUser)
-            : null;
+        user = storedUser ? JSON.parse(storedUser) : null;
     } catch {
         user = null;
     }
@@ -24,10 +22,8 @@ function Dashboard() {
         "Farmer";
 
     const userInitial =
-        userName
-            .trim()
-            .charAt(0)
-            .toUpperCase();
+        userName.trim().charAt(0).toUpperCase() || "F";
+
 
     // =========================================================
     // STATE
@@ -48,7 +44,6 @@ function Dashboard() {
     // =========================================================
     // SUPPORTED CROPS
     // =========================================================
-    // Cotton is now enabled because your Cotton model is working.
 
     const supportedCrops = [
         {
@@ -90,253 +85,151 @@ function Dashboard() {
     ];
 
 
-   // =========================================================
-// FETCH DASHBOARD DATA
-// =========================================================
+    // =========================================================
+    // FETCH HISTORY
+    // =========================================================
 
-const fetchDashboardData = async (isRefresh = false) => {
+    const fetchDashboardData = async (isRefresh = false) => {
+        try {
+            if (isRefresh) {
+                setRefreshing(true);
+            } else {
+                setLoading(true);
+            }
 
-    try {
+            setError("");
 
-        if (isRefresh) {
-            setRefreshing(true);
-        } else {
-            setLoading(true);
-        }
+            const storageKeys = [
+                "access_token",
+                "token",
+                "accessToken",
+                "authToken",
+                "jwt",
+                "auth"
+            ];
 
-        setError("");
+            let token = null;
 
-        // =====================================================
-        // GET AUTHENTICATION TOKEN
-        // =====================================================
+            for (const key of storageKeys) {
+                const localValue = localStorage.getItem(key);
 
-        const storageKeys = [
-            "access_token",
-            "token",
-            "accessToken",
-            "authToken",
-            "jwt",
-            "auth"
-        ];
+                if (localValue) {
+                    try {
+                        const parsed = JSON.parse(localValue);
 
-        let token = null;
+                        if (
+                            typeof parsed === "string" &&
+                            parsed.length > 20
+                        ) {
+                            token = parsed;
+                            break;
+                        }
 
-        // Check localStorage and sessionStorage
-        for (const key of storageKeys) {
+                        if (parsed?.access_token) {
+                            token = parsed.access_token;
+                            break;
+                        }
 
-            const localValue =
-                localStorage.getItem(key);
-
-            if (localValue) {
-
-                try {
-
-                    const parsed =
-                        JSON.parse(localValue);
-
-                    if (
-                        typeof parsed === "string" &&
-                        parsed.length > 20
-                    ) {
-                        token = parsed;
+                        if (parsed?.token) {
+                            token = parsed.token;
+                            break;
+                        }
+                    } catch {
+                        token = localValue;
                         break;
                     }
+                }
 
-                    if (parsed?.access_token) {
-                        token =
-                            parsed.access_token;
+                const sessionValue = sessionStorage.getItem(key);
+
+                if (sessionValue) {
+                    try {
+                        const parsed = JSON.parse(sessionValue);
+
+                        if (
+                            typeof parsed === "string" &&
+                            parsed.length > 20
+                        ) {
+                            token = parsed;
+                            break;
+                        }
+
+                        if (parsed?.access_token) {
+                            token = parsed.access_token;
+                            break;
+                        }
+
+                        if (parsed?.token) {
+                            token = parsed.token;
+                            break;
+                        }
+                    } catch {
+                        token = sessionValue;
                         break;
                     }
-
-                    if (parsed?.token) {
-                        token =
-                            parsed.token;
-                        break;
-                    }
-
-                } catch {
-
-                    token = localValue;
-                    break;
-
                 }
             }
 
-
-            const sessionValue =
-                sessionStorage.getItem(key);
-
-            if (sessionValue) {
-
-                try {
-
-                    const parsed =
-                        JSON.parse(sessionValue);
-
-                    if (
-                        typeof parsed === "string" &&
-                        parsed.length > 20
-                    ) {
-                        token = parsed;
-                        break;
-                    }
-
-                    if (parsed?.access_token) {
-                        token =
-                            parsed.access_token;
-                        break;
-                    }
-
-                    if (parsed?.token) {
-                        token =
-                            parsed.token;
-                        break;
-                    }
-
-                } catch {
-
-                    token = sessionValue;
-                    break;
-
-                }
+            if (!token) {
+                throw new Error(
+                    "Not authenticated. Please logout and login again."
+                );
             }
-        }
 
-
-        // =====================================================
-        // TOKEN NOT FOUND
-        // =====================================================
-
-        if (!token) {
-
-            throw new Error(
-                "Not authenticated. Please logout and login again."
+            const response = await fetch(
+                "http://127.0.0.1:8000/history",
+                {
+                    method: "GET",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json"
+                    }
+                }
             );
 
-        }
+            const data = await response.json();
 
-
-        console.log(
-            "🔐 Dashboard authentication token found."
-        );
-
-
-        // =====================================================
-        // API REQUEST
-        // =====================================================
-
-        const response = await fetch(
-            "http://127.0.0.1:8000/history",
-            {
-                method: "GET",
-
-                headers: {
-                    "Authorization":
-                        `Bearer ${token}`,
-
-                    "Content-Type":
-                        "application/json"
+            if (!response.ok) {
+                if (response.status === 401) {
+                    throw new Error(
+                        "Authentication expired or invalid. Please logout and login again."
+                    );
                 }
-            }
-        );
-
-
-        // =====================================================
-        // RESPONSE
-        // =====================================================
-
-        const data =
-            await response.json();
-
-
-        // =====================================================
-        // API ERROR
-        // =====================================================
-
-        if (!response.ok) {
-
-            if (response.status === 401) {
 
                 throw new Error(
-                    "Authentication expired or invalid. Please logout and login again."
+                    data.detail ||
+                    "Failed to load dashboard data."
                 );
-
             }
 
-            throw new Error(
-                data.detail ||
-                "Failed to load dashboard data."
-            );
-
-        }
-
-
-        // =====================================================
-        // HISTORY DATA
-        // =====================================================
-
-        const records =
-            Array.isArray(data.history)
+            const records = Array.isArray(data.history)
                 ? data.history
                 : [];
 
+            setHistory(records);
 
-        // =====================================================
-        // UPDATE STATE
-        // =====================================================
-
-        setHistory(records);
-
-
-        setTotalDetections(
-            data.count ??
-            records.length
-        );
-
-
-        // =====================================================
-        // LATEST DETECTION
-        // =====================================================
-
-        if (records.length > 0) {
-
-            setLatestDetection(
-                records[0]
+            setTotalDetections(
+                data.count ?? records.length
             );
 
-        } else {
-
             setLatestDetection(
-                null
+                records.length > 0
+                    ? records[0]
+                    : null
             );
 
+        } catch (err) {
+            console.error("Dashboard error:", err);
+
+            setError(
+                err.message ||
+                "Unable to connect to AI server."
+            );
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
         }
-
-
-        console.log(
-            "📊 Dashboard history loaded:",
-            records.length
-        );
-
-    } catch (err) {
-
-        console.error(
-            "❌ Dashboard error:",
-            err
-        );
-
-        setError(
-            err.message ||
-            "Unable to connect to AI server."
-        );
-
-    } finally {
-
-        setLoading(false);
-        setRefreshing(false);
-
-    }
-};
+    };
 
 
     // =========================================================
@@ -349,13 +242,11 @@ const fetchDashboardData = async (isRefresh = false) => {
 
 
     // =========================================================
-    // HEALTHY DETECTION CHECK
+    // HEALTH CHECK
     // =========================================================
 
     const isHealthyPrediction = (prediction) => {
-        if (!prediction) {
-            return false;
-        }
+        if (!prediction) return false;
 
         const value = prediction
             .toString()
@@ -371,56 +262,41 @@ const fetchDashboardData = async (isRefresh = false) => {
 
 
     // =========================================================
-    // REAL ANALYTICS
+    // ANALYTICS
     // =========================================================
 
     const healthyCount = useMemo(() => {
-        return history.filter(
-            item =>
-                isHealthyPrediction(
-                    item.prediction
-                )
+        return history.filter((item) =>
+            isHealthyPrediction(item.prediction)
         ).length;
     }, [history]);
 
 
     const diseaseCount = useMemo(() => {
-        return history.filter(
-            item =>
-                !isHealthyPrediction(
-                    item.prediction
-                )
+        return history.filter((item) =>
+            !isHealthyPrediction(item.prediction)
         ).length;
     }, [history]);
 
 
     const averageConfidence = useMemo(() => {
-        if (history.length === 0) {
-            return "0.00";
-        }
+        if (!history.length) return "0.00";
 
         const total = history.reduce(
             (sum, item) =>
-                sum + Number(
-                    item.confidence || 0
-                ),
+                sum + Number(item.confidence || 0),
             0
         );
 
         return (
             total / history.length
         ).toFixed(2);
-
     }, [history]);
 
 
-    // =========================================================
-    // AI AVAILABLE CROPS
-    // =========================================================
-
     const availableCropCount = useMemo(() => {
         return supportedCrops.filter(
-            crop => crop.available
+            (crop) => crop.available
         ).length;
     }, []);
 
@@ -430,29 +306,19 @@ const fetchDashboardData = async (isRefresh = false) => {
     // =========================================================
 
     const searchResults = useMemo(() => {
-        const query = search
-            .trim()
-            .toLowerCase();
+        const query = search.trim().toLowerCase();
 
-        if (!query) {
-            return [];
-        }
+        if (!query) return [];
 
         const results = [];
 
-
-        // -----------------------------------------------------
-        // CROP SEARCH
-        // -----------------------------------------------------
-
-        supportedCrops.forEach(crop => {
+        supportedCrops.forEach((crop) => {
             if (
                 crop.name
                     .toLowerCase()
                     .includes(query)
             ) {
                 results.push({
-                    type: "crop",
                     icon: crop.icon,
                     title: crop.name,
                     description: crop.status,
@@ -463,12 +329,7 @@ const fetchDashboardData = async (isRefresh = false) => {
             }
         });
 
-
-        // -----------------------------------------------------
-        // DETECTION HISTORY SEARCH
-        // -----------------------------------------------------
-
-        history.forEach(item => {
+        history.forEach((item) => {
             const prediction =
                 item.prediction || "";
 
@@ -484,7 +345,6 @@ const fetchDashboardData = async (isRefresh = false) => {
                     .includes(query)
             ) {
                 results.push({
-                    type: "detection",
                     icon: "🧠",
                     title: prediction,
                     description:
@@ -495,11 +355,6 @@ const fetchDashboardData = async (isRefresh = false) => {
                 });
             }
         });
-
-
-        // -----------------------------------------------------
-        // FEATURE SEARCH
-        // -----------------------------------------------------
 
         const features = [
             {
@@ -536,7 +391,7 @@ const fetchDashboardData = async (isRefresh = false) => {
             }
         ];
 
-        features.forEach(feature => {
+        features.forEach((feature) => {
             if (
                 feature.keyword.includes(query) ||
                 feature.title
@@ -548,7 +403,6 @@ const fetchDashboardData = async (isRefresh = false) => {
         });
 
         return results.slice(0, 8);
-
     }, [search, history]);
 
 
@@ -562,18 +416,16 @@ const fetchDashboardData = async (isRefresh = false) => {
 
 
     // =========================================================
-    // DATE FORMAT
+    // DATE
     // =========================================================
 
     const formatDate = (dateValue) => {
         if (!dateValue) {
-            return "No date available";
+            return "No detections yet";
         }
 
         try {
-            return new Date(
-                dateValue
-            ).toLocaleString(
+            return new Date(dateValue).toLocaleString(
                 "en-IN",
                 {
                     dateStyle: "medium",
@@ -586,10 +438,6 @@ const fetchDashboardData = async (isRefresh = false) => {
     };
 
 
-    // =========================================================
-    // LATEST DETECTION COLOR
-    // =========================================================
-
     const latestIsHealthy =
         isHealthyPrediction(
             latestDetection?.prediction
@@ -601,698 +449,1063 @@ const fetchDashboardData = async (isRefresh = false) => {
     // =========================================================
 
     return (
-        <div className="dashboard-pro">
-
-            {/* =================================================
-                PROFESSIONAL DASHBOARD STYLES
-            ================================================= */}
+        <div className="agrimind-dashboard">
 
             <style>{`
 
-                .dashboard-pro {
+                /* =================================================
+                   BASE
+                ================================================= */
+
+                .agrimind-dashboard {
+                    min-height: 100%;
                     width: 100%;
-                    max-width: 1450px;
+                    max-width: 1500px;
                     margin: 0 auto;
-                    padding: 28px 34px 60px;
+                    padding: 30px 34px 70px;
+                    color: #10261a;
                     box-sizing: border-box;
-                    color: #14231a;
+                    background:
+                        radial-gradient(
+                            circle at 85% 5%,
+                            rgba(34,197,94,.05),
+                            transparent 30%
+                        );
                 }
 
-                .dashboard-pro * {
+                .agrimind-dashboard * {
                     box-sizing: border-box;
                 }
 
-                /* HEADER */
 
-                .dashboard-header {
+                /* =================================================
+                   HEADER
+                ================================================= */
+
+                .am-header {
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
-                    gap: 25px;
-                    margin-bottom: 28px;
+                    gap: 24px;
+                    margin-bottom: 26px;
                 }
+                
+                .am-dashboard-label {
+                display: inline-block;
 
-                .dashboard-title h1 {
+                margin-bottom: 8px;
+
+                color: #16a34a;
+
+                font-size: 10px;
+
+                font-weight: 850;
+
+                letter-spacing: 1.8px;
+
+                line-height: 1;
+            }
+                .am-heading h1 {
                     margin: 0;
-                    font-size: 34px;
-                    font-weight: 800;
-                    letter-spacing: -0.8px;
+                    font-size: 36px;
+                    line-height: 1.1;
+                    font-weight: 850;
+                    letter-spacing: -1.2px;
                 }
 
-                .dashboard-title p {
-                    margin: 7px 0 0;
-                    color: #64748b;
+                .am-heading p {
+                    margin: 8px 0 0;
+                    color: #718096;
                     font-size: 15px;
                 }
 
-                .header-actions {
+                .am-header-actions {
                     display: flex;
                     align-items: center;
-                    gap: 12px;
+                    gap: 10px;
                 }
 
-                .search-wrapper {
+                .am-search {
                     position: relative;
-                    width: 290px;
+                    width: 300px;
                 }
 
-                .search-box {
-                    width: 100%;
-                    height: 44px;
-                    border: 1px solid #dbe4df;
-                    border-radius: 12px;
-                    background: #ffffff;
+                .am-search-box {
+                    height: 46px;
                     display: flex;
                     align-items: center;
-                    padding: 0 14px;
-                    gap: 9px;
-                    box-shadow: 0 3px 12px rgba(0,0,0,0.04);
+                    gap: 10px;
+                    padding: 0 15px;
+                    background: #ffffff;
+                    border: 1px solid #dce8e1;
+                    border-radius: 13px;
+                    box-shadow:
+                        0 4px 16px rgba(15, 60, 30, .04);
                 }
 
-                .search-box input {
-                    border: none;
-                    outline: none;
-                    width: 100%;
-                    font-size: 14px;
-                    color: #1f2937;
-                    background: transparent;
-                }
-
-                .search-icon {
+                .am-search-box span {
                     font-size: 17px;
                 }
 
-                .refresh-button {
-                    height: 44px;
-                    border: 1px solid #16a34a;
-                    color: #15803d;
-                    background: white;
-                    border-radius: 12px;
-                    padding: 0 16px;
-                    cursor: pointer;
-                    font-weight: 700;
-                    transition: 0.2s;
+                .am-search-box input {
+                    width: 100%;
+                    border: none;
+                    outline: none;
+                    background: transparent;
+                    font-size: 14px;
+                    color: #16271d;
                 }
 
-                .refresh-button:hover {
+                .am-refresh {
+                    height: 46px;
+                    padding: 0 17px;
+                    border-radius: 13px;
+                    border: 1px solid #22a653;
+                    background: #ffffff;
+                    color: #15803d;
+                    font-weight: 750;
+                    cursor: pointer;
+                    transition: .2s ease;
+                }
+
+                .am-refresh:hover {
                     background: #f0fdf4;
                     transform: translateY(-1px);
                 }
 
-                .profile-button {
-                    width: 44px;
-                    height: 44px;
-                    border-radius: 50%;
-                    border: none;
-                    background: #16a34a;
-                    color: white;
-                    font-weight: 800;
-                    font-size: 16px;
+                .am-refresh:disabled {
+                    opacity: .65;
+                    cursor: wait;
                 }
 
-                /* SEARCH RESULTS */
+                .am-profile {
+                    width: 46px;
+                    height: 46px;
+                    border: none;
+                    border-radius: 50%;
+                    background:
+                        linear-gradient(
+                            145deg,
+                            #22c55e,
+                            #079447
+                        );
+                    color: white;
+                    font-weight: 850;
+                    font-size: 16px;
+                    box-shadow:
+                        0 6px 16px rgba(22,163,74,.22);
+                }
 
-                .search-results {
+
+                /* =================================================
+                   SEARCH RESULTS
+                ================================================= */
+
+                .am-search-results {
                     position: absolute;
-                    top: 52px;
+                    top: 54px;
                     left: 0;
                     width: 100%;
-                    background: white;
-                    border: 1px solid #e2e8f0;
-                    border-radius: 14px;
-                    box-shadow: 0 14px 35px rgba(0,0,0,0.12);
                     z-index: 100;
                     overflow: hidden;
+                    background: white;
+                    border: 1px solid #e2ebe5;
+                    border-radius: 14px;
+                    box-shadow:
+                        0 18px 40px rgba(0,0,0,.13);
                 }
 
-                .search-result {
-                    padding: 12px 14px;
+                .am-search-result {
                     display: flex;
                     gap: 11px;
+                    padding: 12px 14px;
                     cursor: pointer;
-                    border-bottom: 1px solid #f1f5f9;
+                    border-bottom: 1px solid #f1f5f3;
                 }
 
-                .search-result:last-child {
+                .am-search-result:last-child {
                     border-bottom: none;
                 }
 
-                .search-result:hover {
+                .am-search-result:hover {
                     background: #f0fdf4;
                 }
 
-                .search-result-icon {
+                .am-search-result-icon {
                     font-size: 20px;
                 }
 
-                .search-result-title {
-                    font-weight: 700;
+                .am-search-result-title {
+                    font-size: 14px;
+                    font-weight: 750;
+                }
+
+                .am-search-result-description {
+                    margin-top: 3px;
+                    font-size: 12px;
+                    color: #718096;
+                }
+
+
+                /* =================================================
+                   ERROR
+                ================================================= */
+
+                .am-error {
+                    margin-bottom: 22px;
+                    padding: 14px 17px;
+                    border: 1px solid #fecaca;
+                    border-radius: 13px;
+                    background: #fff7f7;
+                    color: #991b1b;
                     font-size: 14px;
                 }
 
-                .search-result-description {
-                    font-size: 12px;
-                    color: #64748b;
-                    margin-top: 3px;
-                }
 
-                /* ERROR */
+                /* =================================================
+                   STAT CARDS
+                ================================================= */
 
-                .dashboard-error {
-                    margin-bottom: 22px;
-                    padding: 14px 17px;
-                    border-radius: 13px;
-                    background: #fef2f2;
-                    color: #991b1b;
-                    border: 1px solid #fecaca;
-                }
-
-                /* STATS */
-
-                .dashboard-stat-grid {
+                .am-stat-grid {
                     display: grid;
                     grid-template-columns:
                         repeat(4, minmax(0, 1fr));
-                    gap: 18px;
-                    margin-bottom: 25px;
+                    gap: 17px;
                 }
 
-                .dashboard-stat {
-                    background: #ffffff;
-                    border: 1px solid #e5ebe7;
-                    border-radius: 17px;
-                    padding: 21px;
+                .am-stat {
                     display: flex;
                     align-items: center;
-                    gap: 16px;
+                    gap: 15px;
+                    min-height: 112px;
+                    padding: 20px;
+                    background: rgba(255,255,255,.96);
+                    border: 1px solid #e3ebe6;
+                    border-radius: 18px;
                     box-shadow:
-                        0 5px 20px rgba(20,50,30,0.06);
-                    transition: 0.2s;
+                        0 5px 22px rgba(15,60,30,.055);
+                    transition: .2s ease;
                 }
 
-                .dashboard-stat:hover {
-                    transform: translateY(-2px);
+                .am-stat:hover {
+                    transform: translateY(-3px);
                     box-shadow:
-                        0 9px 25px rgba(20,50,30,0.09);
+                        0 12px 28px rgba(15,60,30,.09);
                 }
 
-                .stat-icon-pro {
-                    width: 52px;
-                    height: 52px;
-                    min-width: 52px;
-                    border-radius: 14px;
+                .am-stat-icon {
+                    width: 54px;
+                    height: 54px;
+                    min-width: 54px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    font-size: 25px;
+                    border-radius: 15px;
                     background: #ecfdf3;
+                    font-size: 25px;
                 }
 
-                .stat-label {
+                .am-stat-label {
                     margin: 0 0 5px;
-                    color: #64748b;
-                    font-size: 13px;
-                    font-weight: 600;
-                }
-
-                .stat-value {
-                    margin: 0;
-                    font-size: 23px;
-                    font-weight: 800;
-                    color: #14231a;
-                }
-
-                .stat-value.green {
-                    color: #15803d;
-                }
-
-                .stat-value.red {
-                    color: #dc2626;
-                }
-
-                /* HERO */
-
-                .hero-pro {
-                    position: relative;
-                    overflow: hidden;
-                    border-radius: 22px;
-                    padding: 42px 45px;
-                    min-height: 285px;
-                    background:
-                        linear-gradient(
-                            135deg,
-                            #087f3d 0%,
-                            #16a34a 52%,
-                            #21b65d 100%
-                        );
-                    color: white;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    box-shadow:
-                        0 12px 35px rgba(21,128,61,0.20);
-                }
-
-                .hero-pro::after {
-                    content: "";
-                    position: absolute;
-                    width: 360px;
-                    height: 360px;
-                    right: -130px;
-                    top: -150px;
-                    border-radius: 50%;
-                    background: rgba(255,255,255,0.08);
-                }
-
-                .hero-content {
-                    position: relative;
-                    z-index: 2;
-                    max-width: 700px;
-                }
-
-                .hero-label {
+                    color: #718096;
                     font-size: 12px;
-                    letter-spacing: 2.2px;
-                    font-weight: 800;
-                    opacity: 0.85;
+                    font-weight: 700;
                 }
 
-                .hero-content h2 {
-                    margin: 12px 0 12px;
-                    font-size: 38px;
-                    line-height: 1.15;
+                .am-stat-value {
+                    margin: 0;
+                    color: #10261a;
+                    font-size: 23px;
+                    line-height: 1;
                     font-weight: 850;
                 }
 
-                .hero-content p {
-                    max-width: 610px;
-                    margin: 0;
-                    line-height: 1.65;
-                    font-size: 15px;
-                    color: rgba(255,255,255,0.9);
+                .am-green {
+                    color: #159447;
                 }
 
-                .hero-button {
-                    margin-top: 25px;
-                    border: none;
-                    background: white;
-                    color: #15803d;
-                    padding: 13px 20px;
-                    border-radius: 11px;
-                    font-weight: 800;
-                    cursor: pointer;
-                    font-size: 14px;
-                    box-shadow: 0 5px 15px rgba(0,0,0,0.12);
-                    transition: 0.2s;
+                .am-red {
+                    color: #dc2626;
                 }
 
-                .hero-button:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 8px 18px rgba(0,0,0,0.16);
+
+                /* =================================================
+                   HERO
+                ================================================= */
+
+                .am-hero {
+                    position: relative;
+                    overflow: hidden;
+                    min-height: 300px;
+                    margin-top: 22px;
+                    padding: 45px 48px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    border-radius: 24px;
+                    background:
+                        linear-gradient(
+                            135deg,
+                            #087a3a 0%,
+                            #119447 45%,
+                            #21b85f 100%
+                        );
+                    color: white;
+                    box-shadow:
+                        0 18px 40px rgba(21,128,61,.19);
                 }
 
-                .hero-visual {
+                .am-hero::before {
+                    content: "";
+                    position: absolute;
+                    width: 430px;
+                    height: 430px;
+                    right: -160px;
+                    top: -190px;
+                    border-radius: 50%;
+                    background: rgba(255,255,255,.08);
+                }
+
+                .am-hero::after {
+                    content: "";
+                    position: absolute;
+                    width: 260px;
+                    height: 260px;
+                    right: 90px;
+                    bottom: -210px;
+                    border-radius: 50%;
+                    border: 1px solid rgba(255,255,255,.12);
+                }
+
+                .am-hero-content {
                     position: relative;
                     z-index: 2;
+                    max-width: 720px;
+                }
+
+                .am-hero-label {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 7px;
+                    font-size: 12px;
+                    font-weight: 850;
+                    letter-spacing: 2.1px;
+                    opacity: .9;
+                }
+
+                .am-hero-label::before {
+                    content: "";
+                    width: 25px;
+                    height: 2px;
+                    background: #bbf7d0;
+                }
+
+                .am-hero h2 {
+                    margin: 14px 0 14px;
+                    font-size: 40px;
+                    line-height: 1.1;
+                    letter-spacing: -1.1px;
+                    font-weight: 900;
+                }
+
+                .am-hero p {
+                    max-width: 620px;
+                    margin: 0;
+                    color: rgba(255,255,255,.91);
+                    font-size: 15px;
+                    line-height: 1.7;
+                }
+
+                .am-primary-button {
+                    margin-top: 25px;
+                    height: 46px;
+                    padding: 0 20px;
+                    border: none;
+                    border-radius: 12px;
+                    background: white;
+                    color: #118343;
+                    font-size: 14px;
+                    font-weight: 850;
+                    cursor: pointer;
+                    box-shadow:
+                        0 7px 18px rgba(0,0,0,.14);
+                    transition: .2s ease;
+                }
+
+                .am-primary-button:hover {
+                    transform: translateY(-2px);
+                    box-shadow:
+                        0 11px 23px rgba(0,0,0,.18);
+                }
+
+                .am-hero-art {
+                    position: relative;
+                    z-index: 2;
+                    margin-right: 45px;
                     font-size: 125px;
-                    opacity: 0.95;
-                    margin-right: 40px;
+                    filter:
+                        drop-shadow(
+                            0 12px 12px rgba(0,0,0,.12)
+                        );
                 }
 
-                /* SECTION */
 
-                .dashboard-section {
-                    margin-top: 30px;
+                /* =================================================
+                   SECTIONS
+                ================================================= */
+
+                .am-section {
+                    margin-top: 32px;
                 }
 
-                .section-heading {
+                .am-section-head {
                     margin-bottom: 15px;
                 }
 
-                .section-heading h2 {
+                .am-section-head h2 {
                     margin: 0;
                     font-size: 24px;
-                    font-weight: 800;
+                    letter-spacing: -.4px;
+                    font-weight: 850;
                 }
 
-                .section-heading p {
+                .am-section-head p {
                     margin: 6px 0 0;
-                    color: #64748b;
+                    color: #718096;
                     font-size: 14px;
                 }
 
-                /* OVERVIEW */
 
-                .overview-grid {
+                /* =================================================
+                   OVERVIEW
+                ================================================= */
+
+                .am-overview {
                     display: grid;
                     grid-template-columns:
                         repeat(3, minmax(0, 1fr));
-                    gap: 18px;
+                    gap: 17px;
                 }
 
-                /* LATEST */
 
-                .latest-card {
-                    margin-top: 25px;
+                /* =================================================
+                   LATEST DETECTION
+                ================================================= */
+
+                .am-latest {
+                    padding: 24px;
                     background: white;
-                    border: 1px solid #e5ebe7;
-                    border-radius: 18px;
-                    padding: 25px;
+                    border: 1px solid #e3ebe6;
+                    border-radius: 19px;
                     box-shadow:
-                        0 5px 20px rgba(0,0,0,0.055);
+                        0 5px 22px rgba(15,60,30,.05);
                 }
 
-                .latest-header {
+                .am-latest-header {
                     display: flex;
-                    justify-content: space-between;
                     align-items: center;
-                    gap: 15px;
+                    justify-content: space-between;
+                    gap: 20px;
                 }
 
-                .latest-title {
+                .am-latest-title {
                     margin: 0;
                     font-size: 20px;
-                    font-weight: 800;
+                    font-weight: 850;
                 }
 
-                .latest-date {
+                .am-latest-date {
                     margin: 5px 0 0;
-                    color: #64748b;
+                    color: #718096;
                     font-size: 13px;
                 }
 
-                .history-button {
+                .am-history-button {
+                    height: 40px;
+                    padding: 0 14px;
                     border: none;
+                    border-radius: 10px;
                     background: #ecfdf3;
                     color: #15803d;
-                    padding: 10px 15px;
-                    border-radius: 10px;
-                    font-weight: 700;
+                    font-size: 13px;
+                    font-weight: 800;
                     cursor: pointer;
                 }
 
-                .latest-result {
+                .am-latest-result {
                     margin-top: 18px;
-                    padding: 20px;
-                    border-radius: 14px;
+                    padding: 21px;
+                    border: 1px solid #bbf7d0;
+                    border-radius: 15px;
                     background: #f0fdf4;
-                    border: 1px solid #dcfce7;
                 }
 
-                .latest-result.disease {
-                    background: #fff7ed;
+                .am-latest-result.disease {
                     border-color: #fed7aa;
+                    background: #fff7ed;
                 }
 
-                .latest-grid {
+                .am-latest-grid {
                     display: grid;
                     grid-template-columns:
                         repeat(3, 1fr);
                     gap: 20px;
                 }
 
-                .latest-item-label {
-                    color: #64748b;
-                    font-size: 12px;
-                    font-weight: 700;
-                    text-transform: uppercase;
-                    letter-spacing: 0.5px;
-                }
-
-                .latest-item-value {
-                    margin-top: 6px;
-                    font-size: 17px;
+                .am-detail-label {
+                    color: #718096;
+                    font-size: 11px;
                     font-weight: 800;
+                    letter-spacing: .7px;
+                    text-transform: uppercase;
                 }
 
-                .latest-item-value.green {
-                    color: #15803d;
+                .am-detail-value {
+                    margin-top: 6px;
+                    font-size: 16px;
+                    font-weight: 850;
                 }
 
-                .latest-item-value.red {
-                    color: #dc2626;
-                }
 
-                /* CROP GRID */
+                /* =================================================
+                   CROP CARDS
+                ================================================= */
 
-                .crop-grid {
+                .am-crop-grid {
                     display: grid;
                     grid-template-columns:
                         repeat(3, minmax(0, 1fr));
-                    gap: 18px;
+                    gap: 17px;
                 }
 
-                .crop-card {
-                    background: white;
-                    border: 1px solid #e5ebe7;
-                    border-radius: 17px;
+                .am-crop-card {
                     padding: 21px;
-                    box-shadow:
-                        0 4px 16px rgba(0,0,0,0.045);
-                    transition: 0.2s;
+                    background: white;
+                    border: 1px solid #e3ebe6;
+                    border-radius: 18px;
                     cursor: pointer;
+                    transition: .2s ease;
                 }
 
-                .crop-card:hover {
+                .am-crop-card:hover {
                     transform: translateY(-3px);
                     border-color: #86efac;
                     box-shadow:
-                        0 9px 24px rgba(21,128,61,0.10);
+                        0 12px 28px rgba(21,128,61,.09);
                 }
 
-                .crop-top {
+                .am-crop-top {
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
+                    gap: 10px;
                 }
 
-                .crop-icon {
-                    width: 48px;
-                    height: 48px;
-                    border-radius: 13px;
-                    background: #ecfdf3;
+                .am-crop-icon {
+                    width: 49px;
+                    height: 49px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
+                    border-radius: 14px;
+                    background: #ecfdf3;
                     font-size: 26px;
                 }
 
-                .crop-status {
-                    font-size: 11px;
-                    font-weight: 800;
+                .am-crop-status {
                     padding: 6px 9px;
                     border-radius: 20px;
                     background: #ecfdf3;
                     color: #15803d;
+                    font-size: 10px;
+                    font-weight: 850;
                 }
 
-                .crop-status.soon {
+                .am-crop-status.soon {
                     background: #f1f5f9;
                     color: #64748b;
                 }
 
-                .crop-card h3 {
-                    margin: 16px 0 5px;
+                .am-crop-card h3 {
+                    margin: 16px 0 6px;
                     font-size: 18px;
+                    font-weight: 850;
                 }
 
-                .crop-card p {
+                .am-crop-card p {
+                    min-height: 40px;
                     margin: 0;
-                    color: #64748b;
+                    color: #718096;
                     font-size: 13px;
+                    line-height: 1.55;
                 }
 
-                .crop-action {
+                .am-crop-action {
                     margin-top: 17px;
                     color: #16a34a;
-                    font-size: 20px;
-                    font-weight: 800;
+                    font-size: 14px;
+                    font-weight: 850;
                 }
 
-                /* HOW IT WORKS */
 
-                .process-grid {
+                /* =================================================
+                   HOW IT WORKS
+                ================================================= */
+
+                .am-process {
                     display: grid;
                     grid-template-columns:
                         repeat(3, minmax(0, 1fr));
-                    gap: 18px;
+                    gap: 17px;
                 }
 
-                .process-card {
-                    background: white;
-                    border: 1px solid #e5ebe7;
-                    border-radius: 17px;
-                    padding: 24px;
+                .am-process-card {
                     position: relative;
+                    padding: 24px;
+                    background: white;
+                    border: 1px solid #e3ebe6;
+                    border-radius: 18px;
                 }
 
-                .process-number {
-                    width: 40px;
-                    height: 40px;
-                    border-radius: 12px;
-                    background: #dcfce7;
-                    color: #15803d;
+                .am-number {
+                    width: 42px;
+                    height: 42px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    font-weight: 900;
                     margin-bottom: 17px;
+                    border-radius: 12px;
+                    background: #dcfce7;
+                    color: #15803d;
+                    font-weight: 900;
                 }
 
-                .process-card h3 {
+                .am-process-card h3 {
                     margin: 0 0 8px;
                     font-size: 17px;
+                    font-weight: 850;
                 }
 
-                .process-card p {
+                .am-process-card p {
                     margin: 0;
-                    color: #64748b;
-                    line-height: 1.55;
+                    color: #718096;
                     font-size: 13px;
+                    line-height: 1.6;
                 }
 
-                /* QUICK ACTIONS */
 
-                .quick-grid-pro {
+                /* =================================================
+                   QUICK ACTIONS
+                ================================================= */
+
+                .am-quick {
                     display: grid;
                     grid-template-columns:
                         repeat(3, minmax(0, 1fr));
-                    gap: 18px;
+                    gap: 17px;
                 }
 
-                .quick-card-pro {
-                    background: white;
-                    border: 1px solid #e5ebe7;
-                    border-radius: 17px;
+                .am-quick-card {
                     padding: 23px;
+                    background: white;
+                    border: 1px solid #e3ebe6;
+                    border-radius: 18px;
                     cursor: pointer;
-                    transition: 0.2s;
+                    transition: .2s ease;
                 }
 
-                .quick-card-pro:hover {
+                .am-quick-card:hover {
                     transform: translateY(-3px);
                     border-color: #86efac;
                     box-shadow:
-                        0 9px 24px rgba(21,128,61,0.09);
+                        0 12px 28px rgba(21,128,61,.09);
                 }
 
-                .quick-card-icon {
-                    font-size: 29px;
-                    margin-bottom: 13px;
+                .am-quick-icon {
+                    width: 48px;
+                    height: 48px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin-bottom: 15px;
+                    border-radius: 14px;
+                    background: #ecfdf3;
+                    font-size: 24px;
                 }
 
-                .quick-card-pro h3 {
+                .am-quick-card h3 {
                     margin: 0 0 7px;
                     font-size: 17px;
+                    font-weight: 850;
                 }
 
-                .quick-card-pro p {
+                .am-quick-card p {
                     margin: 0;
-                    color: #64748b;
+                    color: #718096;
                     font-size: 13px;
                     line-height: 1.55;
                 }
 
-                .quick-arrow {
+                .am-quick-arrow {
                     display: block;
                     margin-top: 15px;
                     color: #16a34a;
-                    font-size: 20px;
-                    font-weight: 800;
+                    font-size: 14px;
+                    font-weight: 850;
                 }
 
-                /* EMPTY */
 
-                .empty-dashboard {
+                /* =================================================
+                   EMPTY
+                ================================================= */
+
+                .am-empty {
                     padding: 30px;
                     text-align: center;
-                    background: #f8fafc;
-                    border-radius: 15px;
-                    color: #64748b;
+                    color: #718096;
+                    background: #f8faf9;
+                    border-radius: 14px;
                 }
 
-                /* RESPONSIVE */
 
-                @media (max-width: 1100px) {
-                    .dashboard-stat-grid {
-                        grid-template-columns:
-                            repeat(2, 1fr);
+                /* =================================================
+                   RESPONSIVE
+                ================================================= */
+
+                @media (max-width: 1150px) {
+                    .am-stat-grid {
+                        grid-template-columns: repeat(2, 1fr);
                     }
 
-                    .crop-grid {
-                        grid-template-columns:
-                            repeat(2, 1fr);
+                    .am-crop-grid {
+                        grid-template-columns: repeat(2, 1fr);
                     }
 
-                    .quick-grid-pro {
-                        grid-template-columns:
-                            repeat(2, 1fr);
+                    .am-quick {
+                        grid-template-columns: repeat(2, 1fr);
                     }
                 }
 
-                @media (max-width: 800px) {
-                    .dashboard-pro {
-                        padding: 20px;
+                @media (max-width: 850px) {
+                    .agrimind-dashboard {
+                        padding: 22px 20px 50px;
                     }
 
-                    .dashboard-header {
+                    .am-header {
                         flex-direction: column;
                         align-items: stretch;
                     }
 
-                    .header-actions {
+                    .am-header-actions {
                         width: 100%;
                     }
 
-                    .search-wrapper {
+                    .am-search {
                         flex: 1;
                         width: auto;
                     }
 
-                    .hero-pro {
-                        padding: 30px;
+                    .am-hero {
+                        padding: 34px;
                     }
 
-                    .hero-content h2 {
-                        font-size: 30px;
+                    .am-hero h2 {
+                        font-size: 32px;
                     }
 
-                    .hero-visual {
+                    .am-hero-art {
                         display: none;
                     }
 
-                    .overview-grid,
-                    .process-grid {
-                        grid-template-columns: 1fr;
-                    }
-
-                    .latest-grid {
+                    .am-overview,
+                    .am-process {
                         grid-template-columns: 1fr;
                     }
                 }
 
                 @media (max-width: 600px) {
-                    .dashboard-stat-grid,
-                    .crop-grid,
-                    .quick-grid-pro {
+                    .am-stat-grid,
+                    .am-crop-grid,
+                    .am-quick {
                         grid-template-columns: 1fr;
                     }
 
-                    .dashboard-title h1 {
-                        font-size: 28px;
+                    .am-header-actions {
+                        flex-wrap: wrap;
                     }
 
-                    .refresh-button {
-                        display: none;
+                    .am-search {
+                        width: 100%;
+                        flex-basis: 100%;
                     }
 
-                    .hero-content h2 {
+                    .am-heading h1 {
+                        font-size: 29px;
+                    }
+
+                    .am-hero {
+                        padding: 28px 24px;
+                    }
+
+                    .am-hero h2 {
                         font-size: 27px;
                     }
 
-                    .latest-header {
+                    .am-latest-header {
                         flex-direction: column;
                         align-items: flex-start;
+                    }
+
+                    .am-latest-grid {
+                        grid-template-columns: 1fr;
+                    }
+
+                    .am-refresh {
+                        flex: 1;
+                    }
+                }
+
+                /* =================================================
+                   STEP 5 - AGRIMIND HERO UI
+                ================================================= */
+
+                .am-hero {
+                    min-height: 335px;
+                    padding: 46px 50px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 30px;
+                    border-radius: 26px;
+                    overflow: hidden;
+                    background:
+                        linear-gradient(
+                            135deg,
+                            #075f2c 0%,
+                            #087a3a 35%,
+                            #16a34a 70%,
+                            #22c55e 100%
+                        );
+                    box-shadow:
+                        0 18px 40px rgba(
+                            21,
+                            128,
+                            61,
+                            0.20
+                        );
+                    position: relative;
+                }
+
+                .am-hero::before {
+                    content: "";
+                    position: absolute;
+                    width: 430px;
+                    height: 430px;
+                    right: -150px;
+                    top: -240px;
+                    border-radius: 50%;
+                    background:
+                        rgba(
+                            255,
+                            255,
+                            255,
+                            0.08
+                        );
+                    pointer-events: none;
+                }
+
+                .am-hero::after {
+                    content: "";
+                    position: absolute;
+                    width: 240px;
+                    height: 240px;
+                    right: 80px;
+                    bottom: -190px;
+                    border-radius: 50%;
+                    border:
+                        1px solid
+                        rgba(
+                            255,
+                            255,
+                            255,
+                            0.14
+                        );
+                    pointer-events: none;
+                }
+
+                .am-hero-content {
+                    position: relative;
+                    z-index: 2;
+                    max-width: 760px;
+                }
+
+                .am-hero-label {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 8px;
+                    color: #dcfce7;
+                    font-size: 11px;
+                    font-weight: 850;
+                    letter-spacing: 2px;
+                    text-transform: uppercase;
+                }
+
+                .am-hero-label::before {
+                    content: "";
+                    width: 28px;
+                    height: 2px;
+                    border-radius: 10px;
+                    background: #bbf7d0;
+                }
+
+                .am-hero h2 {
+                    margin: 15px 0 14px;
+                    color: #ffffff;
+                    font-size: 42px;
+                    line-height: 1.08;
+                    font-weight: 900;
+                    letter-spacing: -1.2px;
+                }
+
+                .am-hero p {
+                    max-width: 650px;
+                    margin: 0;
+                    color:
+                        rgba(
+                            255,
+                            255,
+                            255,
+                            0.90
+                        );
+                    font-size: 15px;
+                    line-height: 1.7;
+                }
+
+                .am-primary-button {
+                    margin-top: 26px;
+                    height: 50px;
+                    padding: 0 21px;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    border: none;
+                    border-radius: 13px;
+                    background: #ffffff;
+                    color: #087a3a;
+                    font-family: inherit;
+                    font-size: 13px;
+                    font-weight: 850;
+                    cursor: pointer;
+                    box-shadow:
+                        0 9px 22px
+                        rgba(
+                            0,
+                            0,
+                            0,
+                            0.15
+                        );
+                    transition:
+                        transform 0.2s ease,
+                        box-shadow 0.2s ease;
+                }
+
+                .am-primary-button:hover {
+                    transform: translateY(-3px);
+                    box-shadow:
+                        0 13px 28px
+                        rgba(
+                            0,
+                            0,
+                            0,
+                            0.20
+                        );
+                }
+
+                .am-hero-art {
+                    position: relative;
+                    z-index: 2;
+                    width: 165px;
+                    height: 165px;
+                    min-width: 165px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin-right: 25px;
+                    border-radius: 50%;
+                    background:
+                        rgba(
+                            255,
+                            255,
+                            255,
+                            0.09
+                        );
+                    border:
+                        1px solid
+                        rgba(
+                            255,
+                            255,
+                            255,
+                            0.18
+                        );
+                    font-size: 95px;
+                    filter:
+                        drop-shadow(
+                            0 12px 15px
+                            rgba(
+                                0,
+                                0,
+                                0.13
+                            )
+                        );
+                }
+
+                @media (max-width: 850px) {
+
+                    .am-hero {
+                        padding: 36px;
+                    }
+
+                    .am-hero h2 {
+                        font-size: 34px;
+                    }
+
+                    .am-hero-art {
+                        width: 135px;
+                        height: 135px;
+                        min-width: 135px;
+                        font-size: 75px;
+                    }
+                }
+
+                @media (max-width: 600px) {
+
+                    .am-hero {
+                        padding: 30px 24px;
+                        flex-direction: column;
+                        align-items: flex-start;
+                        border-radius: 21px;
+                    }
+
+                    .am-hero h2 {
+                        font-size: 28px;
+                    }
+
+                    .am-hero p {
+                        font-size: 14px;
+                    }
+
+                    .am-primary-button {
+                        width: 100%;
+                    }
+
+                    .am-hero-art {
+                        align-self: center;
+                        width: 115px;
+                        height: 115px;
+                        min-width: 115px;
+                        margin: 0;
+                        font-size: 65px;
                     }
                 }
 
@@ -1300,48 +1513,55 @@ const fetchDashboardData = async (isRefresh = false) => {
 
 
             {/* =================================================
-                HEADER
+               HEADER
             ================================================= */}
 
-            <div className="dashboard-header">
+            <header className="am-header">
 
-                <div className="dashboard-title">
-                    <h1>Dashboard</h1>
+                {/* LEFT SIDE */}
+
+                <div className="am-heading">
+
+                    <span className="am-dashboard-label">
+                        AGRIMIND AI • SMART AGRICULTURE
+                    </span>
+
+                    <h1>
+                        Dashboard
+                    </h1>
+
                     <p>
-                        Welcome, {userName} 👋
+                        Welcome back, {userName} 👋
                     </p>
+
                 </div>
 
 
-                <div className="header-actions">
+                {/* RIGHT SIDE */}
+
+                <div className="am-header-actions">
 
                     {/* SEARCH */}
 
-                    <div className="search-wrapper">
+                    <div className="am-search">
 
-                        <div className="search-box">
+                        <div className="am-search-box">
 
-                            <span className="search-icon">
+                            <span>
                                 🔍
                             </span>
 
                             <input
-                                type="text"
-                                placeholder="Search dashboard..."
                                 value={search}
+                                type="text"
+                                placeholder="Search crops, diseases..."
                                 onChange={(e) => {
-                                    setSearch(
-                                        e.target.value
-                                    );
-                                    setShowSearchResults(
-                                        true
-                                    );
+                                    setSearch(e.target.value);
+                                    setShowSearchResults(true);
                                 }}
                                 onFocus={() => {
                                     if (search.trim()) {
-                                        setShowSearchResults(
-                                            true
-                                        );
+                                        setShowSearchResults(true);
                                     }
                                 }}
                             />
@@ -1349,44 +1569,39 @@ const fetchDashboardData = async (isRefresh = false) => {
                         </div>
 
 
+                        {/* SEARCH RESULTS */}
+
                         {showSearchResults &&
                             search.trim() &&
                             searchResults.length > 0 && (
 
-                                <div className="search-results">
+                                <div className="am-search-results">
 
                                     {searchResults.map(
                                         (result, index) => (
 
                                             <div
-                                                className="search-result"
-                                                key={
-                                                    `${result.title}-${index}`
-                                                }
+                                                key={`${result.title}-${index}`}
+                                                className="am-search-result"
                                                 onClick={() => {
-                                                    setShowSearchResults(
-                                                        false
-                                                    );
-                                                    navigate(
-                                                        result.action
-                                                    );
+                                                    setShowSearchResults(false);
+                                                    setSearch("");
+                                                    navigate(result.action);
                                                 }}
                                             >
 
-                                                <div className="search-result-icon">
+                                                <div className="am-search-result-icon">
                                                     {result.icon}
                                                 </div>
 
                                                 <div>
 
-                                                    <div className="search-result-title">
+                                                    <div className="am-search-result-title">
                                                         {result.title}
                                                     </div>
 
-                                                    <div className="search-result-description">
-                                                        {
-                                                            result.description
-                                                        }
+                                                    <div className="am-search-result-description">
+                                                        {result.description}
                                                     </div>
 
                                                 </div>
@@ -1405,11 +1620,9 @@ const fetchDashboardData = async (isRefresh = false) => {
                     {/* REFRESH */}
 
                     <button
-                        className="refresh-button"
-                        onClick={() =>
-                            fetchDashboardData(true)
-                        }
+                        className="am-refresh"
                         disabled={refreshing}
+                        onClick={() => fetchDashboardData(true)}
                     >
                         {refreshing
                             ? "Refreshing..."
@@ -1421,7 +1634,7 @@ const fetchDashboardData = async (isRefresh = false) => {
                     {/* PROFILE */}
 
                     <button
-                        className="profile-button"
+                        className="am-profile"
                         title={userName}
                     >
                         {userInitial}
@@ -1429,38 +1642,37 @@ const fetchDashboardData = async (isRefresh = false) => {
 
                 </div>
 
-            </div>
-
+            </header>
 
             {/* =================================================
-                ERROR
+               ERROR
             ================================================= */}
 
             {error && (
-                <div className="dashboard-error">
+                <div className="am-error">
                     ⚠️ {error}
                 </div>
             )}
 
 
             {/* =================================================
-                TOP STATISTICS
+               TOP STATS
             ================================================= */}
 
-            <div className="dashboard-stat-grid">
+            <div className="am-stat-grid">
 
-                <div className="dashboard-stat">
+                <div className="am-stat">
 
-                    <div className="stat-icon-pro">
+                    <div className="am-stat-icon">
                         🌱
                     </div>
 
                     <div>
-                        <p className="stat-label">
+                        <p className="am-stat-label">
                             Supported Crops
                         </p>
 
-                        <h2 className="stat-value">
+                        <h2 className="am-stat-value">
                             {supportedCrops.length}
                         </h2>
                     </div>
@@ -1468,22 +1680,20 @@ const fetchDashboardData = async (isRefresh = false) => {
                 </div>
 
 
-                <div className="dashboard-stat">
+                <div className="am-stat">
 
-                    <div className="stat-icon-pro">
+                    <div className="am-stat-icon">
                         🧠
                     </div>
 
                     <div>
-                        <p className="stat-label">
+                        <p className="am-stat-label">
                             AI Model
                         </p>
 
                         <h2
-                            className="stat-value"
-                            style={{
-                                fontSize: "18px"
-                            }}
+                            className="am-stat-value"
+                            style={{ fontSize: "18px" }}
                         >
                             EfficientNet-B0
                         </h2>
@@ -1492,18 +1702,18 @@ const fetchDashboardData = async (isRefresh = false) => {
                 </div>
 
 
-                <div className="dashboard-stat">
+                <div className="am-stat">
 
-                    <div className="stat-icon-pro">
+                    <div className="am-stat-icon">
                         🎯
                     </div>
 
                     <div>
-                        <p className="stat-label">
+                        <p className="am-stat-label">
                             Model Status
                         </p>
 
-                        <h2 className="stat-value green">
+                        <h2 className="am-stat-value am-green">
                             {loading
                                 ? "Loading..."
                                 : "Ready"
@@ -1514,18 +1724,18 @@ const fetchDashboardData = async (isRefresh = false) => {
                 </div>
 
 
-                <div className="dashboard-stat">
+                <div className="am-stat">
 
-                    <div className="stat-icon-pro">
+                    <div className="am-stat-icon">
                         📷
                     </div>
 
                     <div>
-                        <p className="stat-label">
+                        <p className="am-stat-label">
                             Total Detections
                         </p>
 
-                        <h2 className="stat-value">
+                        <h2 className="am-stat-value">
                             {loading
                                 ? "..."
                                 : totalDetections
@@ -1539,14 +1749,14 @@ const fetchDashboardData = async (isRefresh = false) => {
 
 
             {/* =================================================
-                HERO
+               HERO
             ================================================= */}
 
-            <div className="hero-pro">
+            <section className="am-hero">
 
-                <div className="hero-content">
+                <div className="am-hero-content">
 
-                    <div className="hero-label">
+                    <div className="am-hero-label">
                         AI POWERED CROP HEALTH
                     </div>
 
@@ -1558,36 +1768,36 @@ const fetchDashboardData = async (isRefresh = false) => {
 
                     <p>
                         Upload a crop leaf image and let
-                        AgriMind AI analyze it using
-                        deep learning with EfficientNet-B0.
+                        AgriMind AI analyze it using deep
+                        learning with EfficientNet-B0.
                     </p>
 
                     <button
-                        className="hero-button"
+                        className="am-primary-button"
                         onClick={() =>
                             navigate("/detection")
                         }
                     >
-                        🔬 Start Detection
+                        🔬 Start Disease Detection →
                     </button>
 
                 </div>
 
 
-                <div className="hero-visual">
+                <div className="am-hero-art">
                     🌾
                 </div>
 
-            </div>
+            </section>
 
 
             {/* =================================================
-                AI DETECTION OVERVIEW
+               AI OVERVIEW
             ================================================= */}
 
-            <div className="dashboard-section">
+            <section className="am-section">
 
-                <div className="section-heading">
+                <div className="am-section-head">
 
                     <h2>
                         AI Detection Overview
@@ -1600,20 +1810,20 @@ const fetchDashboardData = async (isRefresh = false) => {
                 </div>
 
 
-                <div className="overview-grid">
+                <div className="am-overview">
 
-                    <div className="dashboard-stat">
+                    <div className="am-stat">
 
-                        <div className="stat-icon-pro">
+                        <div className="am-stat-icon">
                             📊
                         </div>
 
                         <div>
-                            <p className="stat-label">
+                            <p className="am-stat-label">
                                 Average Confidence
                             </p>
 
-                            <h2 className="stat-value">
+                            <h2 className="am-stat-value">
                                 {averageConfidence}%
                             </h2>
                         </div>
@@ -1621,18 +1831,18 @@ const fetchDashboardData = async (isRefresh = false) => {
                     </div>
 
 
-                    <div className="dashboard-stat">
+                    <div className="am-stat">
 
-                        <div className="stat-icon-pro">
+                        <div className="am-stat-icon">
                             🌿
                         </div>
 
                         <div>
-                            <p className="stat-label">
+                            <p className="am-stat-label">
                                 Healthy Predictions
                             </p>
 
-                            <h2 className="stat-value green">
+                            <h2 className="am-stat-value am-green">
                                 {healthyCount}
                             </h2>
                         </div>
@@ -1640,18 +1850,18 @@ const fetchDashboardData = async (isRefresh = false) => {
                     </div>
 
 
-                    <div className="dashboard-stat">
+                    <div className="am-stat">
 
-                        <div className="stat-icon-pro">
+                        <div className="am-stat-icon">
                             🦠
                         </div>
 
                         <div>
-                            <p className="stat-label">
+                            <p className="am-stat-label">
                                 Disease Predictions
                             </p>
 
-                            <h2 className="stat-value red">
+                            <h2 className="am-stat-value am-red">
                                 {diseaseCount}
                             </h2>
                         </div>
@@ -1660,26 +1870,26 @@ const fetchDashboardData = async (isRefresh = false) => {
 
                 </div>
 
-            </div>
+            </section>
 
 
             {/* =================================================
-                LATEST AI DETECTION
+               LATEST DETECTION
             ================================================= */}
 
-            <div className="dashboard-section">
+            <section className="am-section">
 
-                <div className="latest-card">
+                <div className="am-latest">
 
-                    <div className="latest-header">
+                    <div className="am-latest-header">
 
                         <div>
 
-                            <h2 className="latest-title">
+                            <h2 className="am-latest-title">
                                 🧠 Latest AI Detection
                             </h2>
 
-                            <p className="latest-date">
+                            <p className="am-latest-date">
                                 {latestDetection
                                     ? formatDate(
                                         latestDetection.created_at
@@ -1690,8 +1900,9 @@ const fetchDashboardData = async (isRefresh = false) => {
 
                         </div>
 
+
                         <button
-                            className="history-button"
+                            className="am-history-button"
                             onClick={() =>
                                 navigate("/history")
                             }
@@ -1705,24 +1916,23 @@ const fetchDashboardData = async (isRefresh = false) => {
                     {latestDetection ? (
 
                         <div
-                            className={`latest-result ${
+                            className={`am-latest-result ${
                                 latestIsHealthy
                                     ? ""
                                     : "disease"
                             }`}
                         >
 
-                            <div className="latest-grid">
+                            <div className="am-latest-grid">
 
                                 <div>
 
-                                    <div className="latest-item-label">
+                                    <div className="am-detail-label">
                                         Crop
                                     </div>
 
-                                    <div className="latest-item-value">
-                                        🌱{" "}
-                                        {latestDetection.crop}
+                                    <div className="am-detail-value">
+                                        🌱 {latestDetection.crop}
                                     </div>
 
                                 </div>
@@ -1730,21 +1940,18 @@ const fetchDashboardData = async (isRefresh = false) => {
 
                                 <div>
 
-                                    <div className="latest-item-label">
+                                    <div className="am-detail-label">
                                         Prediction
                                     </div>
 
                                     <div
-                                        className={`latest-item-value ${
+                                        className={`am-detail-value ${
                                             latestIsHealthy
-                                                ? "green"
-                                                : "red"
+                                                ? "am-green"
+                                                : "am-red"
                                         }`}
                                     >
-                                        🦠{" "}
-                                        {
-                                            latestDetection.prediction
-                                        }
+                                        🦠 {latestDetection.prediction}
                                     </div>
 
                                 </div>
@@ -1752,11 +1959,11 @@ const fetchDashboardData = async (isRefresh = false) => {
 
                                 <div>
 
-                                    <div className="latest-item-label">
+                                    <div className="am-detail-label">
                                         Confidence
                                     </div>
 
-                                    <div className="latest-item-value">
+                                    <div className="am-detail-value">
                                         🎯{" "}
                                         {Number(
                                             latestDetection.confidence
@@ -1772,7 +1979,7 @@ const fetchDashboardData = async (isRefresh = false) => {
 
                     ) : (
 
-                        <div className="empty-dashboard">
+                        <div className="am-empty">
                             No AI detections available yet.
                         </div>
 
@@ -1780,16 +1987,16 @@ const fetchDashboardData = async (isRefresh = false) => {
 
                 </div>
 
-            </div>
+            </section>
 
 
             {/* =================================================
-                SUPPORTED CROPS
+               CROPS
             ================================================= */}
 
-            <div className="dashboard-section">
+            <section className="am-section">
 
-                <div className="section-heading">
+                <div className="am-section-head">
 
                     <h2>
                         🌾 Supported Crops
@@ -1803,34 +2010,30 @@ const fetchDashboardData = async (isRefresh = false) => {
                 </div>
 
 
-                <div className="crop-grid">
+                <div className="am-crop-grid">
 
-                    {supportedCrops.map(crop => (
+                    {supportedCrops.map((crop) => (
 
                         <div
-                            className="crop-card"
                             key={crop.name}
+                            className="am-crop-card"
                             onClick={() => {
-                                if (crop.available) {
-                                    navigate(
-                                        "/detection"
-                                    );
-                                } else {
-                                    navigate(
-                                        "/crops"
-                                    );
-                                }
+                                navigate(
+                                    crop.available
+                                        ? "/detection"
+                                        : "/crops"
+                                );
                             }}
                         >
 
-                            <div className="crop-top">
+                            <div className="am-crop-top">
 
-                                <div className="crop-icon">
+                                <div className="am-crop-icon">
                                     {crop.icon}
                                 </div>
 
                                 <span
-                                    className={`crop-status ${
+                                    className={`am-crop-status ${
                                         crop.available
                                             ? ""
                                             : "soon"
@@ -1846,6 +2049,7 @@ const fetchDashboardData = async (isRefresh = false) => {
                                 {crop.name}
                             </h3>
 
+
                             <p>
                                 {crop.available
                                     ? `AI-powered disease detection for ${crop.name.toLowerCase()} leaves.`
@@ -1853,7 +2057,8 @@ const fetchDashboardData = async (isRefresh = false) => {
                                 }
                             </p>
 
-                            <div className="crop-action">
+
+                            <div className="am-crop-action">
                                 {crop.available
                                     ? "Analyze Now →"
                                     : "View Details →"
@@ -1866,16 +2071,16 @@ const fetchDashboardData = async (isRefresh = false) => {
 
                 </div>
 
-            </div>
+            </section>
 
 
             {/* =================================================
-                HOW AGRIMIND AI WORKS
+               HOW IT WORKS
             ================================================= */}
 
-            <div className="dashboard-section">
+            <section className="am-section">
 
-                <div className="section-heading">
+                <div className="am-section-head">
 
                     <h2>
                         🤖 How AgriMind AI Works
@@ -1888,16 +2093,16 @@ const fetchDashboardData = async (isRefresh = false) => {
                 </div>
 
 
-                <div className="process-grid">
+                <div className="am-process">
 
-                    <div className="process-card">
+                    <div className="am-process-card">
 
-                        <div className="process-number">
+                        <div className="am-number">
                             1
                         </div>
 
                         <h3>
-                            📷 Upload Image
+                            📷 Upload Leaf Image
                         </h3>
 
                         <p>
@@ -1909,9 +2114,9 @@ const fetchDashboardData = async (isRefresh = false) => {
                     </div>
 
 
-                    <div className="process-card">
+                    <div className="am-process-card">
 
-                        <div className="process-number">
+                        <div className="am-number">
                             2
                         </div>
 
@@ -1928,9 +2133,9 @@ const fetchDashboardData = async (isRefresh = false) => {
                     </div>
 
 
-                    <div className="process-card">
+                    <div className="am-process-card">
 
-                        <div className="process-number">
+                        <div className="am-number">
                             3
                         </div>
 
@@ -1948,16 +2153,16 @@ const fetchDashboardData = async (isRefresh = false) => {
 
                 </div>
 
-            </div>
+            </section>
 
 
             {/* =================================================
-                QUICK ACTIONS
+               QUICK ACTIONS
             ================================================= */}
 
-            <div className="dashboard-section">
+            <section className="am-section">
 
-                <div className="section-heading">
+                <div className="am-section-head">
 
                     <h2>
                         Quick Actions
@@ -1970,16 +2175,16 @@ const fetchDashboardData = async (isRefresh = false) => {
                 </div>
 
 
-                <div className="quick-grid-pro">
+                <div className="am-quick">
 
                     <div
-                        className="quick-card-pro"
+                        className="am-quick-card"
                         onClick={() =>
                             navigate("/detection")
                         }
                     >
 
-                        <div className="quick-card-icon">
+                        <div className="am-quick-icon">
                             🔬
                         </div>
 
@@ -1992,7 +2197,7 @@ const fetchDashboardData = async (isRefresh = false) => {
                             detect possible diseases.
                         </p>
 
-                        <span className="quick-arrow">
+                        <span className="am-quick-arrow">
                             Start Detection →
                         </span>
 
@@ -2000,13 +2205,13 @@ const fetchDashboardData = async (isRefresh = false) => {
 
 
                     <div
-                        className="quick-card-pro"
+                        className="am-quick-card"
                         onClick={() =>
                             navigate("/analytics")
                         }
                     >
 
-                        <div className="quick-card-icon">
+                        <div className="am-quick-icon">
                             📊
                         </div>
 
@@ -2019,7 +2224,7 @@ const fetchDashboardData = async (isRefresh = false) => {
                             confidence and disease distribution.
                         </p>
 
-                        <span className="quick-arrow">
+                        <span className="am-quick-arrow">
                             View Analytics →
                         </span>
 
@@ -2027,13 +2232,13 @@ const fetchDashboardData = async (isRefresh = false) => {
 
 
                     <div
-                        className="quick-card-pro"
+                        className="am-quick-card"
                         onClick={() =>
                             navigate("/history")
                         }
                     >
 
-                        <div className="quick-card-icon">
+                        <div className="am-quick-icon">
                             🕘
                         </div>
 
@@ -2046,7 +2251,7 @@ const fetchDashboardData = async (isRefresh = false) => {
                             detection results.
                         </p>
 
-                        <span className="quick-arrow">
+                        <span className="am-quick-arrow">
                             View History →
                         </span>
 
@@ -2054,12 +2259,10 @@ const fetchDashboardData = async (isRefresh = false) => {
 
                 </div>
 
-            </div>
-
+            </section>
 
         </div>
     );
 }
-
 
 export default Dashboard;

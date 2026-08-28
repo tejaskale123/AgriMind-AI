@@ -3,7 +3,10 @@ import { NavLink, useNavigate } from "react-router-dom";
 function Sidebar() {
     const navigate = useNavigate();
 
-    // Get logged-in user
+    // ============================================================
+    // GET LOGGED-IN USER
+    // ============================================================
+
     const storedUser = localStorage.getItem("user");
 
     let user = null;
@@ -16,49 +19,61 @@ function Sidebar() {
         user = null;
     }
 
-    // Get user's name
+    // ============================================================
+    // USER INFORMATION
+    // ============================================================
+
     const userName =
         user?.full_name ||
         user?.name ||
         user?.username ||
         "Farmer";
 
-    // Get first letter for avatar
     const userInitial =
         userName
             .trim()
             .charAt(0)
             .toUpperCase();
 
-    const menuItems = [
+    // ============================================================
+    // NAVIGATION ITEMS
+    // ============================================================
+
+    const mainMenu = [
         {
             path: "/",
             icon: "🏠",
-            label: "Dashboard"
+            label: "Dashboard",
         },
         {
             path: "/detection",
             icon: "🔬",
-            label: "Disease Detection"
+            label: "Disease Detection",
         },
         {
             path: "/crops",
             icon: "🌾",
-            label: "Crops"
+            label: "My Crops",
         },
+    ];
+
+    const insightMenu = [
         {
             path: "/analytics",
             icon: "📊",
-            label: "Analytics"
+            label: "Analytics",
         },
         {
             path: "/history",
             icon: "🕘",
-            label: "History"
-        }
+            label: "History",
+        },
     ];
 
-    // Logout
+    // ============================================================
+    // LOGOUT
+    // ============================================================
+
     const handleLogout = () => {
         localStorage.removeItem("access_token");
         localStorage.removeItem("user");
@@ -66,10 +81,40 @@ function Sidebar() {
         navigate("/login");
     };
 
+    // ============================================================
+    // NAVIGATION ITEM
+    // ============================================================
+
+    const renderMenuItem = (item) => (
+        <NavLink
+            key={item.path}
+            to={item.path}
+            className={({ isActive }) =>
+                isActive
+                    ? "nav-item active"
+                    : "nav-item"
+            }
+        >
+            <span className="nav-icon">
+                {item.icon}
+            </span>
+
+            <span className="nav-label">
+                {item.label}
+            </span>
+        </NavLink>
+    );
+
+    // ============================================================
+    // SIDEBAR UI
+    // ============================================================
+
     return (
         <aside className="sidebar">
 
-            {/* LOGO */}
+            {/* ==================================================
+                LOGO
+            ================================================== */}
 
             <div className="logo">
 
@@ -77,14 +122,14 @@ function Sidebar() {
                     🌱
                 </div>
 
-                <div>
+                <div className="logo-content">
 
                     <h2>
                         AgriMind
                     </h2>
 
                     <span>
-                        AI
+                        SMART AGRICULTURE
                     </span>
 
                 </div>
@@ -92,45 +137,47 @@ function Sidebar() {
             </div>
 
 
-            {/* MENU TITLE */}
+            {/* ==================================================
+                NAVIGATION
+            ================================================== */}
 
-            <div className="menu-title">
-                MAIN MENU
+            <div className="sidebar-navigation">
+
+                {/* MAIN */}
+
+                <div className="menu-section">
+
+                    <div className="menu-title">
+                        MAIN
+                    </div>
+
+                    <nav>
+                        {mainMenu.map(renderMenuItem)}
+                    </nav>
+
+                </div>
+
+
+                {/* INSIGHTS */}
+
+                <div className="menu-section">
+
+                    <div className="menu-title">
+                        INSIGHTS
+                    </div>
+
+                    <nav>
+                        {insightMenu.map(renderMenuItem)}
+                    </nav>
+
+                </div>
+
             </div>
 
 
-            {/* MAIN NAVIGATION */}
-
-            <nav>
-
-                {menuItems.map((item) => (
-
-                    <NavLink
-                        key={item.path}
-                        to={item.path}
-                        className={({ isActive }) =>
-                            isActive
-                                ? "nav-item active"
-                                : "nav-item"
-                        }
-                    >
-
-                        <span className="nav-icon">
-                            {item.icon}
-                        </span>
-
-                        <span>
-                            {item.label}
-                        </span>
-
-                    </NavLink>
-
-                ))}
-
-            </nav>
-
-
-            {/* BOTTOM */}
+            {/* ==================================================
+                SIDEBAR BOTTOM
+            ================================================== */}
 
             <div className="sidebar-bottom">
 
@@ -149,78 +196,37 @@ function Sidebar() {
                         ⚙️
                     </span>
 
-                    <span>
+                    <span className="nav-label">
                         Settings
                     </span>
 
                 </NavLink>
 
 
-                {/* USER INFO */}
+                {/* ==================================================
+                    USER PROFILE
+                ================================================== */}
 
-                <div
-                    style={{
-                        marginTop: "15px",
-                        padding: "12px",
-                        borderTop: "1px solid #e5ebe7"
-                    }}
-                >
+                <div className="sidebar-user">
 
-                    <div
-                        style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "10px"
-                        }}
-                    >
+                    <div className="sidebar-user-info">
 
-                        {/* USER AVATAR */}
+                        {/* AVATAR */}
 
-                        <div
-                            style={{
-                                width: "38px",
-                                height: "38px",
-                                minWidth: "38px",
-                                borderRadius: "50%",
-                                background: "#16a34a",
-                                color: "white",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                fontWeight: "800"
-                            }}
-                        >
+                        <div className="sidebar-avatar">
                             {userInitial}
                         </div>
 
 
-                        {/* USER NAME */}
+                        {/* USER DETAILS */}
 
-                        <div
-                            style={{
-                                overflow: "hidden"
-                            }}
-                        >
+                        <div className="sidebar-user-details">
 
-                            <div
-                                style={{
-                                    fontSize: "13px",
-                                    fontWeight: "700",
-                                    color: "#14231a",
-                                    whiteSpace: "nowrap",
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis"
-                                }}
-                            >
+                            <div className="sidebar-user-name">
                                 {userName}
                             </div>
 
-                            <div
-                                style={{
-                                    fontSize: "11px",
-                                    color: "#64748b"
-                                }}
-                            >
+                            <div className="sidebar-user-role">
                                 Farmer
                             </div>
 
@@ -232,27 +238,25 @@ function Sidebar() {
                     {/* LOGOUT */}
 
                     <button
+                        type="button"
                         onClick={handleLogout}
-                        style={{
-                            width: "100%",
-                            marginTop: "10px",
-                            height: "38px",
-                            border: "1px solid #fecaca",
-                            borderRadius: "9px",
-                            background: "#fff7f7",
-                            color: "#dc2626",
-                            fontSize: "13px",
-                            fontWeight: "700",
-                            cursor: "pointer"
-                        }}
+                        className="sidebar-logout"
                     >
-                        🚪 Logout
+                        <span>
+                            🚪
+                        </span>
+
+                        <span>
+                            Logout
+                        </span>
                     </button>
 
                 </div>
 
 
-                {/* VERSION */}
+                {/* ==================================================
+                    VERSION
+                ================================================== */}
 
                 <div className="sidebar-version">
 
