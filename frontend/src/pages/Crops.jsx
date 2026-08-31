@@ -74,19 +74,20 @@ function Crops() {
             supported: false,
         },
 
-        {
+        
+          {
             name: "Wheat",
             icon: "🌾",
             description:
-                "AI-based crop health analysis for wheat leaves.",
+                "AI-powered disease detection for wheat leaves.",
             diseases: [
-                "Leaf Rust",
-                "Stem Rust",
-                "Powdery Mildew",
+                "Brown Rust",
+                "Healthy",
+                "Yellow Rust",
             ],
-            status: "Coming Soon",
+            status: "AI Detection Available",
             category: "Cereal Crop",
-            supported: false,
+            supported: true,
         },
 
         {
@@ -909,7 +910,7 @@ function Crops() {
                 </h2>
 
                 <p>
-                    Select Cotton, Soybean, or Maize, continue to Disease
+                    Select Cotton, Soybean, Maize, or Wheat, continue to Disease
                     Detection, upload a clear crop-leaf image,
                     and let the trained EfficientNet-B0 model
                     analyze the image. AgriMind AI then provides

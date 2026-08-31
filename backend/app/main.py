@@ -74,6 +74,11 @@ MAIZE_MODEL_PATH = (
     / "models"
     / "maize_efficientnet_b0.pth"
 )
+WHEAT_MODEL_PATH = (
+    PROJECT_ROOT
+    / "models"
+    / "wheat_efficientnet_b0.pth"
+)
 
 COTTON_CLASSES = [
     "Alternaria Leaf Spot",
@@ -97,17 +102,23 @@ MAIZE_CLASSES = [
     "Gray_Leaf_Spot",
     "Healthy",
 ]
-
+WHEAT_CLASSES = [
+    "Brown_Rust",
+    "Healthy",
+    "Yellow_Rust",
+]
 MODEL_PATHS = {
     "cotton": MODEL_PATH,
     "soybean": SOYBEAN_MODEL_PATH,
     "maize": MAIZE_MODEL_PATH,
+    "wheat": WHEAT_MODEL_PATH,
 }
 
 CROP_CLASSES = {
     "cotton": COTTON_CLASSES,
     "soybean": SOYBEAN_CLASSES,
     "maize": MAIZE_CLASSES,
+    "wheat": WHEAT_CLASSES,
 }
 
 
@@ -756,6 +767,11 @@ maize_model = load_model(
     "maize",
 )
 
+wheat_model = load_model(
+    WHEAT_MODEL_PATH,
+    WHEAT_CLASSES,
+    "wheat",
+)
 
 # ============================================================
 # ROOT API
@@ -795,16 +811,18 @@ def health():
         "status":
             "healthy",
 
-        "model_loaded":
-            cotton_model is not None
-            and soybean_model is not None
-            and maize_model is not None,
+    "model_loaded":
+        cotton_model is not None
+        and soybean_model is not None
+        and maize_model is not None
+        and wheat_model is not None,
 
-        "models": [
-            "cotton_efficientnet_b0",
-            "soybean_efficientnet_b0",
-            "maize_efficientnet_b0",
-        ],
+    "models": [
+        "cotton_efficientnet_b0",
+        "soybean_efficientnet_b0",
+        "maize_efficientnet_b0",
+        "wheat_efficientnet_b0",
+    ],
 
         "crop":
             list(CROP_CLASSES.keys()),
@@ -841,14 +859,15 @@ async def predict(
         "cotton",
         "soybean",
         "maize",
+        "wheat",
     ]:
 
         raise HTTPException(
             status_code=400,
-            detail=(
-                f"Unsupported crop: {crop}. "
-                "Supported crops are cotton, soybean and maize."
-            ),
+           detail=(
+            f"Unsupported crop: {crop}. "
+            "Supported crops are cotton, soybean, maize and wheat."
+        ),
         )
 
     # --------------------------------------------------------
@@ -945,6 +964,11 @@ async def predict(
 
         selected_model = maize_model
         selected_classes = MAIZE_CLASSES
+
+    elif crop == "wheat":
+
+        selected_model = wheat_model
+        selected_classes = WHEAT_CLASSES
 
     else:
 

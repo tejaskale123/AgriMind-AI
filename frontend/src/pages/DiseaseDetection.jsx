@@ -14,27 +14,34 @@
 
         const selectedCrop = routeCrop || storageCrop || null;
 
-    const supportedCrops = [
-        "cotton",
-        "soybean",
-        "maize"
-    ];
+   const supportedCrops = [
+    "cotton",
+    "soybean",
+    "maize",
+    "wheat"
+];
 
       const cropName =
-        selectedCrop === "soybean"
+         selectedCrop === "soybean"
             ? "Soybean"
             : selectedCrop === "cotton"
                 ? "Cotton"
                 : selectedCrop === "maize"
                     ? "Maize"
-                    : "Crop";
+                    : selectedCrop === "wheat"
+                        ? "Wheat"
+                        : "Crop";
 
-        const cropIcon =
-           selectedCrop === "soybean"
+      const cropIcon =
+          selectedCrop === "soybean"
             ? "🌱"
             : selectedCrop === "maize"
                 ? "🌽"
-                : "🌿";
+                : selectedCrop === "wheat"
+                    ? "🌾"
+                    : selectedCrop === "cotton"
+                        ? "🌿"
+                        : "🌱";
 
         // =========================================================
         // STATE
@@ -413,14 +420,14 @@
 
             if (!selectedCrop) {
                 setError(
-                    "No crop selected. Please go back to Crops and select Cotton or Soybean."
+                   "No crop selected. Please go back to Crops and select a supported crop."
                 );
                 return;
             }
 
             if (!supportedCrops.includes(selectedCrop)) {
                 setError(
-                    "Unsupported crop. Please select Cotton or Soybean."
+                   "Unsupported crop. Please select a supported crop."
                 );
                 return;
             }

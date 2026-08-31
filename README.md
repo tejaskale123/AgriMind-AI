@@ -1,6 +1,6 @@
 # AgriMind AI
 
-AgriMind AI is a full-stack smart agriculture project for crop leaf disease detection. It combines a React + Vite frontend, a FastAPI backend, JWT authentication, SQLite storage, and PyTorch EfficientNet-B0 models to help farmers identify cotton and soybean leaf diseases from uploaded or captured images.
+AgriMind AI is a full-stack smart agriculture project for crop leaf disease detection. It combines a React + Vite frontend, a FastAPI backend, JWT authentication, SQLite storage, and PyTorch EfficientNet-B0 models to help farmers identify crop leaf diseases from uploaded or captured images.
 
 The application supports authenticated users, protected dashboard access, image quality validation, model inference, disease recommendations, detection history, and analytics.
 
@@ -10,7 +10,7 @@ The application supports authenticated users, protected dashboard access, image 
 - Protected frontend pages with automatic login redirect
 - Upload or capture crop leaf images from the web app
 - Select crop before prediction
-- Cotton and soybean disease prediction using EfficientNet-B0
+- Cotton, soybean, and maize disease prediction using EfficientNet-B0
 - Image quality checks for file type, size, brightness, contrast, and confidence
 - Confidence score, confidence level, and class probability output
 - Disease guidance with symptoms, treatment, prevention, spray guidance, and farmer actions where available
@@ -18,7 +18,7 @@ The application supports authenticated users, protected dashboard access, image 
 - Dashboard, disease detection, crops, analytics, history, and settings pages
 - ML utilities for dataset validation, duplicate detection, cleaning, splitting, training, inference, and evaluation
 
-## Supported Crops And Classes
+## Backend Supported Crops And Classes
 
 ### Cotton
 
@@ -35,6 +35,13 @@ The application supports authenticated users, protected dashboard access, image 
 - Healthy
 - Rust
 - Sudden Death Syndrome
+
+### Maize
+
+- Blight
+- Common Rust
+- Gray Leaf Spot
+- Healthy
 
 ## Tech Stack
 
@@ -87,8 +94,10 @@ AgriMind-AI/
 |   `-- training/
 |-- models/
 |   |-- cotton_efficientnet_b0.pth
+|   |-- maize_efficientnet_b0.pth
 |   |-- soybean_efficientnet_b0.pth
-|   `-- soybean_efficientnet_b0_baseline_98_18.pth
+|   |-- soybean_efficientnet_b0_baseline_98_18.pth
+|   `-- wheat_efficientnet_b0.pth
 |-- tests/
 |   `-- sample_soybean.jpg
 |-- requirements.txt
@@ -203,6 +212,7 @@ The frontend stores the logged-in user's token in `localStorage` as `access_toke
 | `GET` | `/health` | No | Backend health, model loading status, available models, and device |
 | `POST` | `/auth/register` | No | Create a user account |
 | `POST` | `/auth/login` | No | Login and return an access token |
+| `POST` | `/auth/token` | No | OAuth2-compatible token endpoint for Swagger UI authorization |
 | `GET` | `/auth/me` | Yes | Return the current authenticated user payload |
 | `POST` | `/predict` | Yes | Predict disease from an uploaded image |
 | `GET` | `/history` | Yes | Return the logged-in user's prediction history |
@@ -246,7 +256,7 @@ Successful login responses include:
 
 ```text
 file: JPG, PNG, or WEBP image
-crop: cotton or soybean
+crop: cotton, soybean, or maize
 ```
 
 Example with curl:
@@ -255,7 +265,7 @@ Example with curl:
 curl -X POST "http://127.0.0.1:8000/predict" \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
   -F "file=@leaf.jpg" \
-  -F "crop=soybean"
+  -F "crop=maize"
 ```
 
 Successful prediction responses include:
@@ -283,6 +293,17 @@ The backend checks file type, image size, brightness, contrast, and model confid
 | `/analytics` | Analytics | Protected |
 | `/history` | History | Protected |
 | `/settings` | Settings | Protected |
+
+## Crop Availability
+
+| Crop | Frontend Status | Backend Prediction Status |
+|---|---|---|
+| Cotton | AI Detection Available | Active |
+| Soybean | AI Detection Available | Active |
+| Maize | AI Detection Available | Active |
+| Wheat | AI Detection Available in UI | Model checkpoint present, backend integration pending |
+| Tomato | Coming Soon | Not active |
+| Bell Pepper | Coming Soon | Not active |
 
 ## Application Workflow
 
@@ -329,6 +350,8 @@ ml/preprocessing/duplicate_checker.py
 ml/preprocessing/duplicate_report.py
 ml/preprocessing/create_clean_soybean.py
 ml/preprocessing/create_clean_cotton.py
+ml/preprocessing/create_clean_maize.py
+ml/preprocessing/check_maize.py
 ml/preprocessing/create_final_cotton.py
 ml/preprocessing/dataset_splitter.py
 ml/preprocessing/split_leakage_checker.py
