@@ -4,8 +4,8 @@ import React, {
     useState
 } from "react";
 
-const API_BASE_URL =
-    "http://127.0.0.1:8000";
+const API_BASE_URL = "http://127.0.0.1:8000";
+
 
 // ============================================================
 // HEALTHY CHECK
@@ -68,15 +68,11 @@ const getToken = () => {
                     return parsed;
                 }
 
-                if (
-                    parsed?.access_token
-                ) {
+                if (parsed?.access_token) {
                     return parsed.access_token;
                 }
 
-                if (
-                    parsed?.token
-                ) {
+                if (parsed?.token) {
                     return parsed.token;
                 }
 
@@ -93,13 +89,28 @@ const getToken = () => {
 
 
 // ============================================================
+// FORMAT NAME
+// ============================================================
+
+const formatName = (value) => {
+
+    return String(value || "Unknown")
+        .replace(/_/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .replace(/\b\w/g, (char) =>
+            char.toUpperCase()
+        );
+};
+
+
+// ============================================================
 // ANALYTICS COMPONENT
 // ============================================================
 
 function Analytics() {
 
-    const [history, setHistory] =
-        useState([]);
+    const [history, setHistory] = useState([]);
 
     const [loading, setLoading] =
         useState(true);
@@ -129,8 +140,7 @@ function Analytics() {
 
             setError("");
 
-            const token =
-                getToken();
+            const token = getToken();
 
             if (!token) {
 
@@ -169,10 +179,6 @@ function Analytics() {
             }
 
 
-            // ------------------------------------------------
-            // AUTH ERROR
-            // ------------------------------------------------
-
             if (
                 response.status === 401
             ) {
@@ -182,10 +188,6 @@ function Analytics() {
                 );
             }
 
-
-            // ------------------------------------------------
-            // OTHER ERROR
-            // ------------------------------------------------
 
             if (!response.ok) {
 
@@ -197,14 +199,8 @@ function Analytics() {
             }
 
 
-            // ------------------------------------------------
-            // HISTORY
-            // ------------------------------------------------
-
             setHistory(
-                Array.isArray(
-                    data.history
-                )
+                Array.isArray(data.history)
                     ? data.history
                     : []
             );
@@ -245,259 +241,213 @@ function Analytics() {
     // ANALYTICS CALCULATION
     // ========================================================
 
-    const analytics =
-        useMemo(() => {
+    const analytics = useMemo(() => {
 
-            const total =
-                history.length;
+        const total = history.length;
 
 
-            if (total === 0) {
-
-                return {
-
-                    total: 0,
-
-                    healthy: 0,
-
-                    diseased: 0,
-
-                    averageConfidence: 0,
-
-                    healthyPercentage: 0,
-
-                    diseasePercentage: 0,
-
-                    mostCommonDisease:
-                        "No disease detected",
-
-                    mostCommonDiseaseCount:
-                        0,
-
-                    diseaseCounts: {},
-
-                    cropCounts: {},
-
-                    highConfidence: 0,
-
-                    mediumConfidence: 0,
-
-                    lowConfidence: 0
-                };
-            }
-
-
-            // ------------------------------------------------
-            // HEALTHY
-            // ------------------------------------------------
-
-            const healthy =
-                history.filter(
-                    (item) =>
-                        isHealthyPrediction(
-                            item.prediction
-                        )
-                ).length;
-
-
-            const diseased =
-                total - healthy;
-
-
-            // ------------------------------------------------
-            // CONFIDENCE
-            // ------------------------------------------------
-
-            const confidenceValues =
-                history
-                    .map(
-                        (item) =>
-                            Number(
-                                item.confidence
-                            )
-                    )
-                    .filter(
-                        (value) =>
-                            Number.isFinite(
-                                value
-                            )
-                    );
-
-
-            const averageConfidence =
-                confidenceValues.length > 0
-                    ? confidenceValues.reduce(
-                        (
-                            sum,
-                            value
-                        ) =>
-                            sum + value,
-                        0
-                    ) /
-                    confidenceValues.length
-                    : 0;
-
-
-            const highConfidence =
-                confidenceValues.filter(
-                    (value) =>
-                        value >= 80
-                ).length;
-
-
-            const mediumConfidence =
-                confidenceValues.filter(
-                    (value) =>
-                        value >= 60 &&
-                        value < 80
-                ).length;
-
-
-            const lowConfidence =
-                confidenceValues.filter(
-                    (value) =>
-                        value < 60
-                ).length;
-
-
-            // ------------------------------------------------
-            // PERCENTAGES
-            // ------------------------------------------------
-
-            const healthyPercentage =
-                (
-                    (healthy / total) *
-                    100
-                );
-
-
-            const diseasePercentage =
-                (
-                    (diseased / total) *
-                    100
-                );
-
-
-            // ------------------------------------------------
-            // DISEASE COUNTS
-            // ------------------------------------------------
-
-            const diseaseCounts = {};
-
-
-            history.forEach(
-                (item) => {
-
-                    const prediction =
-                        item.prediction ||
-                        "Unknown";
-
-
-                    diseaseCounts[
-                        prediction
-                    ] =
-                        (
-                            diseaseCounts[
-                                prediction
-                            ] || 0
-                        ) + 1;
-                }
-            );
-
-
-            // ------------------------------------------------
-            // CROP COUNTS
-            // ------------------------------------------------
-
-            const cropCounts = {};
-
-
-            history.forEach(
-                (item) => {
-
-                    const crop =
-                        item.crop ||
-                        "Unknown";
-
-
-                    cropCounts[crop] =
-                        (
-                            cropCounts[crop] ||
-                            0
-                        ) + 1;
-                }
-            );
-
-
-            // ------------------------------------------------
-            // DISEASE ONLY
-            // ------------------------------------------------
-
-            const diseaseOnly =
-                Object.entries(
-                    diseaseCounts
-                )
-                    .filter(
-                        ([name]) =>
-                            !isHealthyPrediction(
-                                name
-                            )
-                    )
-                    .sort(
-                        (
-                            [, a],
-                            [, b]
-                        ) =>
-                            b - a
-                    );
-
-
-            // ------------------------------------------------
-            // MOST COMMON
-            // ------------------------------------------------
-
-            const mostCommonDisease =
-                diseaseOnly.length > 0
-                    ? diseaseOnly[0][0]
-                    : "No disease detected";
-
-
-            const mostCommonDiseaseCount =
-                diseaseOnly.length > 0
-                    ? diseaseOnly[0][1]
-                    : 0;
-
+        if (total === 0) {
 
             return {
 
-                total,
+                total: 0,
+                healthy: 0,
+                diseased: 0,
 
-                healthy,
+                averageConfidence: 0,
 
-                diseased,
+                healthyPercentage: 0,
+                diseasePercentage: 0,
 
-                averageConfidence,
+                mostCommonDisease:
+                    "No disease detected",
 
-                healthyPercentage,
+                mostCommonDiseaseCount: 0,
 
-                diseasePercentage,
+                diseaseCounts: {},
+                cropCounts: {},
 
-                mostCommonDisease,
-
-                mostCommonDiseaseCount,
-
-                diseaseCounts,
-
-                cropCounts,
-
-                highConfidence,
-
-                mediumConfidence,
-
-                lowConfidence
+                highConfidence: 0,
+                mediumConfidence: 0,
+                lowConfidence: 0
             };
+        }
 
-        }, [history]);
+
+        // ------------------------------------------------
+        // HEALTHY
+        // ------------------------------------------------
+
+        const healthy =
+            history.filter(
+                (item) =>
+                    isHealthyPrediction(
+                        item.prediction
+                    )
+            ).length;
+
+
+        const diseased =
+            total - healthy;
+
+
+        // ------------------------------------------------
+        // CONFIDENCE
+        // ------------------------------------------------
+
+        const confidenceValues =
+            history
+                .map(
+                    (item) =>
+                        Number(item.confidence)
+                )
+                .filter(
+                    (value) =>
+                        Number.isFinite(value)
+                );
+
+
+        const averageConfidence =
+            confidenceValues.length > 0
+                ? confidenceValues.reduce(
+                    (sum, value) =>
+                        sum + value,
+                    0
+                ) /
+                confidenceValues.length
+                : 0;
+
+
+        const highConfidence =
+            confidenceValues.filter(
+                (value) =>
+                    value >= 80
+            ).length;
+
+
+        const mediumConfidence =
+            confidenceValues.filter(
+                (value) =>
+                    value >= 60 &&
+                    value < 80
+            ).length;
+
+
+        const lowConfidence =
+            confidenceValues.filter(
+                (value) =>
+                    value < 60
+            ).length;
+
+
+        // ------------------------------------------------
+        // PERCENTAGES
+        // ------------------------------------------------
+
+        const healthyPercentage =
+            (healthy / total) * 100;
+
+        const diseasePercentage =
+            (diseased / total) * 100;
+
+
+        // ------------------------------------------------
+        // DISEASE COUNTS
+        // ------------------------------------------------
+
+        const diseaseCounts = {};
+
+        history.forEach((item) => {
+
+            const prediction =
+                item.prediction ||
+                "Unknown";
+
+            diseaseCounts[prediction] =
+                (
+                    diseaseCounts[prediction] ||
+                    0
+                ) + 1;
+        });
+
+
+        // ------------------------------------------------
+        // CROP COUNTS
+        // ------------------------------------------------
+
+        const cropCounts = {};
+
+        history.forEach((item) => {
+
+            const crop =
+                item.crop ||
+                "Unknown";
+
+            cropCounts[crop] =
+                (
+                    cropCounts[crop] ||
+                    0
+                ) + 1;
+        });
+
+
+        // ------------------------------------------------
+        // DISEASE ONLY
+        // ------------------------------------------------
+
+        const diseaseOnly =
+            Object.entries(
+                diseaseCounts
+            )
+                .filter(
+                    ([name]) =>
+                        !isHealthyPrediction(name)
+                )
+                .sort(
+                    ([, a], [, b]) =>
+                        b - a
+                );
+
+
+        // ------------------------------------------------
+        // MOST COMMON
+        // ------------------------------------------------
+
+        const mostCommonDisease =
+            diseaseOnly.length > 0
+                ? diseaseOnly[0][0]
+                : "No disease detected";
+
+
+        const mostCommonDiseaseCount =
+            diseaseOnly.length > 0
+                ? diseaseOnly[0][1]
+                : 0;
+
+
+        return {
+
+            total,
+            healthy,
+            diseased,
+
+            averageConfidence,
+
+            healthyPercentage,
+            diseasePercentage,
+
+            mostCommonDisease,
+            mostCommonDiseaseCount,
+
+            diseaseCounts,
+            cropCounts,
+
+            highConfidence,
+            mediumConfidence,
+            lowConfidence
+        };
+
+    }, [history]);
 
 
     // ========================================================
@@ -527,6 +477,20 @@ function Analytics() {
 
 
     // ========================================================
+    // MAX CROP COUNT
+    // ========================================================
+
+    const maxCropCount =
+        sortedCrops.length > 0
+            ? Math.max(
+                ...sortedCrops.map(
+                    ([, count]) => count
+                )
+            )
+            : 1;
+
+
+    // ========================================================
     // LOADING
     // ========================================================
 
@@ -541,16 +505,18 @@ function Analytics() {
                 <div className="analytics-state">
 
                     <div className="state-icon">
-                        📊
+                        <span>AI</span>
                     </div>
 
+                    <div className="state-loader"></div>
+
                     <h2>
-                        Loading Analytics...
+                        Loading Analytics
                     </h2>
 
                     <p>
-                        AgriMind AI is loading your
-                        detection insights.
+                        AgriMind AI is preparing
+                        your crop health insights.
                     </p>
 
                 </div>
@@ -573,8 +539,8 @@ function Analytics() {
 
                 <div className="analytics-state">
 
-                    <div className="state-icon">
-                        ⚠️
+                    <div className="state-icon error">
+                        <span>!</span>
                     </div>
 
                     <h2>
@@ -591,7 +557,7 @@ function Analytics() {
                             fetchHistory(true)
                         }
                     >
-                        🔄 Try Again
+                        Try Again
                     </button>
 
                 </div>
@@ -639,7 +605,7 @@ function Analytics() {
                     <div className="analytics-state">
 
                         <div className="state-icon">
-                            📊
+                            <span>AI</span>
                         </div>
 
                         <h2>
@@ -704,9 +670,15 @@ function Analytics() {
                     }
                     disabled={refreshing}
                 >
+
+                    <span className="refresh-icon">
+                        ↻
+                    </span>
+
                     {refreshing
-                        ? "⏳ Refreshing..."
-                        : "↻ Refresh"}
+                        ? "Refreshing..."
+                        : "Refresh"}
+
                 </button>
 
             </header>
@@ -718,19 +690,23 @@ function Analytics() {
 
             <section className="analytics-hero">
 
+                <div className="hero-pattern"></div>
+
                 <div className="hero-content">
 
-                    <span>
+                    <span className="hero-label">
                         AI CROP HEALTH OVERVIEW
                     </span>
 
                     <h2>
+
                         {analytics.diseased >
                         analytics.healthy
 
                             ? "Attention is needed"
 
                             : "Your crop health looks good"}
+
                     </h2>
 
                     <p>
@@ -754,15 +730,19 @@ function Analytics() {
 
                 <div className="hero-score">
 
-                    <strong>
-                        {analytics.healthyPercentage.toFixed(
-                            1
-                        )}%
-                    </strong>
+                    <div className="hero-score-ring">
 
-                    <span>
-                        Healthy
-                    </span>
+                        <strong>
+                            {analytics.healthyPercentage.toFixed(
+                                1
+                            )}%
+                        </strong>
+
+                        <span>
+                            Healthy
+                        </span>
+
+                    </div>
 
                 </div>
 
@@ -781,7 +761,11 @@ function Analytics() {
                 <div className="stat-card">
 
                     <div className="stat-icon green">
-                        📊
+                        <span className="chart-icon">
+                            <i></i>
+                            <i></i>
+                            <i></i>
+                        </span>
                     </div>
 
                     <div>
@@ -794,6 +778,10 @@ function Analytics() {
                             {analytics.total}
                         </strong>
 
+                        <small>
+                            All recorded results
+                        </small>
+
                     </div>
 
                 </div>
@@ -804,7 +792,11 @@ function Analytics() {
                 <div className="stat-card">
 
                     <div className="stat-icon light-green">
-                        🌿
+
+                        <span className="leaf-icon">
+                            <i></i>
+                        </span>
+
                     </div>
 
                     <div>
@@ -817,6 +809,12 @@ function Analytics() {
                             {analytics.healthy}
                         </strong>
 
+                        <small>
+                            {analytics.healthyPercentage.toFixed(
+                                1
+                            )}% of total
+                        </small>
+
                     </div>
 
                 </div>
@@ -827,7 +825,11 @@ function Analytics() {
                 <div className="stat-card">
 
                     <div className="stat-icon red">
-                        🦠
+
+                        <span className="disease-icon">
+                            <i></i>
+                        </span>
+
                     </div>
 
                     <div>
@@ -840,6 +842,12 @@ function Analytics() {
                             {analytics.diseased}
                         </strong>
 
+                        <small>
+                            {analytics.diseasePercentage.toFixed(
+                                1
+                            )}% of total
+                        </small>
+
                     </div>
 
                 </div>
@@ -850,7 +858,11 @@ function Analytics() {
                 <div className="stat-card">
 
                     <div className="stat-icon blue">
-                        🎯
+
+                        <span className="confidence-icon">
+                            %
+                        </span>
+
                     </div>
 
                     <div>
@@ -864,6 +876,10 @@ function Analytics() {
                                 1
                             )}%
                         </strong>
+
+                        <small>
+                            AI prediction accuracy
+                        </small>
 
                     </div>
 
@@ -887,6 +903,10 @@ function Analytics() {
 
                         <div>
 
+                            <div className="section-kicker">
+                                PREDICTION BREAKDOWN
+                            </div>
+
                             <h2>
                                 Detection Distribution
                             </h2>
@@ -905,84 +925,90 @@ function Analytics() {
                     </div>
 
 
-                    {sortedDiseases.map(
-                        ([disease, count]) => {
+                    <div className="distribution-list">
 
-                            const percentage =
-                                (
-                                    (count /
-                                        analytics.total) *
-                                    100
-                                );
+                        {sortedDiseases.map(
+                            ([disease, count]) => {
+
+                                const percentage =
+                                    (
+                                        (count /
+                                            analytics.total) *
+                                        100
+                                    );
+
+                                const healthy =
+                                    isHealthyPrediction(
+                                        disease
+                                    );
+
+                                return (
+
+                                    <div
+                                        className="distribution-row"
+                                        key={disease}
+                                    >
+
+                                        <div className="distribution-top">
+
+                                            <span>
+
+                                                <i
+                                                    className={
+                                                        healthy
+                                                            ? "green-dot"
+                                                            : "red-dot"
+                                                    }
+                                                />
+
+                                                {formatName(
+                                                    disease
+                                                )}
+
+                                            </span>
+
+                                            <strong>
+                                                {count}
+                                            </strong>
+
+                                        </div>
 
 
-                            const healthy =
-                                isHealthyPrediction(
-                                    disease
-                                );
+                                        <div className="bar">
 
-
-                            return (
-
-                                <div
-                                    className="distribution-row"
-                                    key={disease}
-                                >
-
-                                    <div className="distribution-top">
-
-                                        <span>
-
-                                            <i
+                                            <div
                                                 className={
                                                     healthy
-                                                        ? "green-dot"
-                                                        : "red-dot"
+                                                        ? "bar-fill healthy-bar"
+                                                        : "bar-fill disease-bar"
                                                 }
+
+                                                style={{
+                                                    width:
+                                                        `${Math.min(
+                                                            percentage,
+                                                            100
+                                                        )}%`
+                                                }}
                                             />
 
-                                            {disease}
-
-                                        </span>
-
-                                        <strong>
-                                            {count}
-                                        </strong>
-
-                                    </div>
+                                        </div>
 
 
-                                    <div className="bar">
-
-                                        <div
-                                            className={
-                                                healthy
-                                                    ? "bar-fill healthy-bar"
-                                                    : "bar-fill disease-bar"
-                                            }
-
-                                            style={{
-                                                width:
-                                                    `${Math.min(
-                                                        percentage,
-                                                        100
-                                                    )}%`
-                                            }}
-                                        />
+                                        <small>
+                                            {percentage.toFixed(
+                                                1
+                                            )}%
+                                        </small>
 
                                     </div>
 
+                                );
 
-                                    <small>
-                                        {percentage.toFixed(
-                                            1
-                                        )}%
-                                    </small>
+                            }
+                        )}
 
-                                </div>
-                            );
-                        }
-                    )}
+                    </div>
 
                 </div>
 
@@ -994,6 +1020,10 @@ function Analytics() {
                     <div className="card-header">
 
                         <div>
+
+                            <div className="section-kicker">
+                                HEALTH OVERVIEW
+                            </div>
 
                             <h2>
                                 Crop Health
@@ -1044,9 +1074,7 @@ function Analytics() {
                             </span>
 
                             <strong>
-                                {analytics.healthyPercentage.toFixed(
-                                    1
-                                )}%
+                                {analytics.healthy}
                             </strong>
 
                         </div>
@@ -1060,9 +1088,7 @@ function Analytics() {
                             </span>
 
                             <strong>
-                                {analytics.diseasePercentage.toFixed(
-                                    1
-                                )}%
+                                {analytics.diseased}
                             </strong>
 
                         </div>
@@ -1081,7 +1107,9 @@ function Analytics() {
             <section className="highlight-card">
 
                 <div className="highlight-icon">
-                    🔎
+
+                    <span className="search-icon"></span>
+
                 </div>
 
                 <div>
@@ -1091,7 +1119,9 @@ function Analytics() {
                     </span>
 
                     <h2>
-                        {analytics.mostCommonDisease}
+                        {formatName(
+                            analytics.mostCommonDisease
+                        )}
                     </h2>
 
                     <p>
@@ -1117,7 +1147,7 @@ function Analytics() {
 
 
             {/* =================================================
-                DISEASE-WISE
+                DISEASE-WISE ANALYSIS
             ================================================= */}
 
             <section className="analytics-card">
@@ -1125,6 +1155,10 @@ function Analytics() {
                 <div className="card-header">
 
                     <div>
+
+                        <div className="section-kicker">
+                            DISEASE INSIGHTS
+                        </div>
 
                         <h2>
                             Disease-wise Analysis
@@ -1161,7 +1195,6 @@ function Analytics() {
                                         )
                                         : 0;
 
-
                                 return (
 
                                     <div
@@ -1178,7 +1211,9 @@ function Analytics() {
                                                 </span>
 
                                                 <h3>
-                                                    {disease}
+                                                    {formatName(
+                                                        disease
+                                                    )}
                                                 </h3>
 
                                             </div>
@@ -1213,7 +1248,9 @@ function Analytics() {
                                         </p>
 
                                     </div>
+
                                 );
+
                             }
                         )}
 
@@ -1223,17 +1260,21 @@ function Analytics() {
 
 
             {/* =================================================
-                CROP-WISE
+                CROP-WISE ANALYSIS
             ================================================= */}
 
-            <section className="analytics-card">
+            <section className="analytics-card crop-section">
 
                 <div className="card-header">
 
                     <div>
 
+                        <div className="section-kicker">
+                            CROP PERFORMANCE
+                        </div>
+
                         <h2>
-                            🌱 Crop-wise Analysis
+                            Crop-wise Analysis
                         </h2>
 
                         <p>
@@ -1243,8 +1284,120 @@ function Analytics() {
 
                     </div>
 
+                    <span className="chart-badge">
+                        Live Data
+                    </span>
+
                 </div>
 
+
+                {/* BAR CHART */}
+
+                <div className="crop-chart">
+
+                    <div className="chart-y-axis">
+
+                        <span>
+                            {maxCropCount}
+                        </span>
+
+                        <span>
+                            {Math.ceil(
+                                maxCropCount * 0.75
+                            )}
+                        </span>
+
+                        <span>
+                            {Math.ceil(
+                                maxCropCount * 0.5
+                            )}
+                        </span>
+
+                        <span>
+                            {Math.ceil(
+                                maxCropCount * 0.25
+                            )}
+                        </span>
+
+                        <span>
+                            0
+                        </span>
+
+                    </div>
+
+
+                    <div className="chart-area">
+
+                        <div className="chart-grid-lines">
+
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                            <span></span>
+
+                        </div>
+
+
+                        <div className="bars-container">
+
+                            {sortedCrops.map(
+                                ([crop, count]) => {
+
+                                    const height =
+                                        maxCropCount > 0
+                                            ? (
+                                                (count /
+                                                    maxCropCount) *
+                                                100
+                                            )
+                                            : 0;
+
+                                    return (
+
+                                        <div
+                                            className="chart-column"
+                                            key={crop}
+                                        >
+
+                                            <div className="bar-value">
+                                                {count}
+                                            </div>
+
+                                            <div
+                                                className="vertical-bar"
+                                                style={{
+                                                    height:
+                                                        `${Math.max(
+                                                            height,
+                                                            7
+                                                        )}%`
+                                                }}
+                                            >
+                                                <span></span>
+                                            </div>
+
+                                            <div className="chart-label">
+                                                {formatName(
+                                                    crop
+                                                )}
+                                            </div>
+
+                                        </div>
+
+                                    );
+
+                                }
+                            )}
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                {/* CROP CARDS */}
 
                 <div className="crop-grid">
 
@@ -1258,7 +1411,6 @@ function Analytics() {
                                     100
                                 );
 
-
                             return (
 
                                 <div
@@ -1268,12 +1420,12 @@ function Analytics() {
 
                                     <div className="crop-name">
 
-                                        <span>
-                                            🌱
+                                        <span className="crop-icon">
+                                            <i></i>
                                         </span>
 
                                         <strong>
-                                            {crop}
+                                            {formatName(crop)}
                                         </strong>
 
                                     </div>
@@ -1307,7 +1459,9 @@ function Analytics() {
                                     </small>
 
                                 </div>
+
                             );
+
                         }
                     )}
 
@@ -1326,8 +1480,12 @@ function Analytics() {
 
                     <div>
 
+                        <div className="section-kicker">
+                            MODEL PERFORMANCE
+                        </div>
+
                         <h2>
-                            🎯 Confidence Analysis
+                            Confidence Analysis
                         </h2>
 
                         <p>
@@ -1345,8 +1503,7 @@ function Analytics() {
 
                     <div className="confidence-box high">
 
-                        <span>
-                            🟢
+                        <span className="confidence-dot high-dot">
                         </span>
 
                         <div>
@@ -1370,8 +1527,7 @@ function Analytics() {
 
                     <div className="confidence-box medium">
 
-                        <span>
-                            🟡
+                        <span className="confidence-dot medium-dot">
                         </span>
 
                         <div>
@@ -1395,8 +1551,7 @@ function Analytics() {
 
                     <div className="confidence-box low">
 
-                        <span>
-                            🔴
+                        <span className="confidence-dot low-dot">
                         </span>
 
                         <div>
@@ -1435,7 +1590,7 @@ function Analytics() {
                     </span>
 
                     <h2>
-                        🤖 AI Crop Health Insights
+                        AI Crop Health Insights
                     </h2>
 
                     <p>
@@ -1454,17 +1609,23 @@ function Analytics() {
 
                     <div className="insight-item">
 
+                        <div className="insight-number">
+                            01
+                        </div>
+
                         <span>
                             HEALTH STATUS
                         </span>
 
                         <h3>
+
                             {analytics.diseased >
                             analytics.healthy
 
-                                ? "⚠️ Attention Required"
+                                ? "Attention Required"
 
-                                : "✅ Overall Health Looks Good"}
+                                : "Overall Health Looks Good"}
+
                         </h3>
 
                         <p>
@@ -1491,6 +1652,10 @@ function Analytics() {
 
                     <div className="insight-item">
 
+                        <div className="insight-number">
+                            02
+                        </div>
+
                         <span>
                             MODEL CONFIDENCE
                         </span>
@@ -1513,12 +1678,16 @@ function Analytics() {
 
                     <div className="insight-item">
 
+                        <div className="insight-number">
+                            03
+                        </div>
+
                         <span>
                             FARMER ACTION
                         </span>
 
                         <h3>
-                            🌱 Monitor Your Crops
+                            Monitor Your Crops
                         </h3>
 
                         <p>
@@ -1541,7 +1710,9 @@ function Analytics() {
 
             <div className="analytics-note">
 
-                🤖 Analytics are generated from
+                <span className="note-dot"></span>
+
+                Analytics are generated from
                 AgriMind AI detection history.
 
             </div>
@@ -1557,177 +1728,509 @@ function Analytics() {
 
 const styles = `
 
-.analytics-page {
-    width: 100%;
-    max-width: 1500px;
-    margin: 0 auto;
-    padding: 30px 34px 70px;
-    color: #10261a;
-}
-
-.analytics-page * {
+* {
     box-sizing: border-box;
 }
 
+.analytics-page {
+
+    width: 100%;
+
+    max-width: 1500px;
+
+    margin: 0 auto;
+
+    padding:
+        32px 36px 80px;
+
+    color: #10261a;
+
+    background:
+        linear-gradient(
+            180deg,
+            #f8fcfa 0%,
+            #f4f9f6 100%
+        );
+
+}
+
+
+/* ============================================================
+   HEADER
+============================================================ */
+
 .analytics-header {
+
     display: flex;
+
     align-items: flex-end;
+
     justify-content: space-between;
+
     gap: 25px;
-    margin-bottom: 25px;
+
+    margin-bottom: 28px;
+
 }
 
 .eyebrow {
+
     display: inline-block;
-    margin-bottom: 8px;
+
+    margin-bottom: 9px;
+
     color: #16a34a;
+
     font-size: 11px;
+
     font-weight: 900;
-    letter-spacing: 2px;
+
+    letter-spacing: 2.2px;
+
 }
 
 .analytics-header h1 {
+
     margin: 0;
-    font-size: 36px;
-    font-weight: 900;
+
+    color: #092419;
+
+    font-size: 40px;
+
+    line-height: 1;
+
+    font-weight: 950;
+
+    letter-spacing: -1.5px;
+
 }
 
 .analytics-header p {
-    margin: 8px 0 0;
+
+    margin: 10px 0 0;
+
     color: #718096;
+
     font-size: 15px;
+
+    line-height: 1.6;
+
 }
 
 .refresh-button,
 .primary-button {
-    height: 44px;
-    padding: 0 18px;
-    border: 1px solid #16a34a;
-    border-radius: 11px;
+
+    min-height: 46px;
+
+    padding: 0 20px;
+
+    border:
+        1px solid #16a34a;
+
+    border-radius: 12px;
+
     background: #ffffff;
+
     color: #15803d;
+
+    font-size: 14px;
+
     font-weight: 800;
+
     cursor: pointer;
+
+    transition:
+        .25s ease;
+
+}
+
+.refresh-button:hover {
+
+    color: #ffffff;
+
+    background: #16a34a;
+
+    transform:
+        translateY(-2px);
+
+    box-shadow:
+        0 8px 20px
+        rgba(22,163,74,.18);
+
 }
 
 .refresh-button:disabled {
+
     opacity: .6;
+
     cursor: not-allowed;
+
+    transform: none;
+
 }
 
-.primary-button {
-    background: #16a34a;
-    color: #ffffff;
+.refresh-icon {
+
+    display: inline-block;
+
+    margin-right: 7px;
+
+    font-size: 17px;
+
 }
+
+
+/* ============================================================
+   HERO
+============================================================ */
 
 .analytics-hero {
+
+    position: relative;
+
     display: flex;
+
     align-items: center;
+
     justify-content: space-between;
-    gap: 30px;
-    min-height: 220px;
-    padding: 35px 40px;
-    margin-bottom: 22px;
-    border-radius: 23px;
+
+    gap: 35px;
+
+    min-height: 235px;
+
+    overflow: hidden;
+
+    padding: 38px 44px;
+
+    margin-bottom: 24px;
+
+    border-radius: 25px;
+
     color: #ffffff;
+
     background:
         linear-gradient(
             135deg,
-            #087a3a,
-            #16a34a,
-            #22c55e
+            #066b34 0%,
+            #0b8a42 45%,
+            #19b957 100%
         );
+
     box-shadow:
-        0 16px 38px
-        rgba(21,128,61,.17);
+        0 18px 45px
+        rgba(21,128,61,.20);
+
 }
 
-.hero-content > span {
-    font-size: 12px;
+.hero-pattern {
+
+    position: absolute;
+
+    width: 390px;
+
+    height: 390px;
+
+    right: -110px;
+
+    top: -190px;
+
+    border:
+        1px solid
+        rgba(255,255,255,.12);
+
+    border-radius: 50%;
+
+    box-shadow:
+        0 0 0 55px
+        rgba(255,255,255,.035),
+        0 0 0 110px
+        rgba(255,255,255,.025);
+
+}
+
+.hero-content {
+
+    position: relative;
+
+    z-index: 2;
+
+    max-width: 900px;
+
+}
+
+.hero-label {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 9px;
+
+    font-size: 11px;
+
     font-weight: 900;
+
     letter-spacing: 2px;
+
+}
+
+.hero-label::before {
+
+    content: "";
+
+    width: 28px;
+
+    height: 2px;
+
+    border-radius: 3px;
+
+    background:
+        rgba(255,255,255,.85);
+
 }
 
 .hero-content h2 {
-    margin: 14px 0 10px;
-    font-size: 34px;
-    font-weight: 900;
+
+    margin: 15px 0 11px;
+
+    font-size: 36px;
+
+    line-height: 1.12;
+
+    font-weight: 950;
+
+    letter-spacing: -1px;
+
 }
 
 .hero-content p {
+
     margin: 0;
+
     font-size: 16px;
+
+    line-height: 1.6;
+
+    color:
+        rgba(255,255,255,.94);
+
+}
+
+.hero-content p strong {
+
+    color: #ffffff;
+
 }
 
 .hero-score {
-    width: 145px;
-    height: 145px;
+
+    position: relative;
+
+    z-index: 2;
+
     flex-shrink: 0;
-    border: 1px solid
-        rgba(255,255,255,.35);
-    border-radius: 50%;
+
+}
+
+.hero-score-ring {
+
+    width: 150px;
+
+    height: 150px;
+
     display: flex;
+
     flex-direction: column;
+
     align-items: center;
+
     justify-content: center;
+
+    border:
+        1px solid
+        rgba(255,255,255,.4);
+
+    border-radius: 50%;
+
     background:
         rgba(255,255,255,.08);
+
+    box-shadow:
+        inset 0 0 0 12px
+        rgba(255,255,255,.035);
+
+    backdrop-filter:
+        blur(4px);
+
 }
 
-.hero-score strong {
-    font-size: 30px;
+.hero-score-ring strong {
+
+    font-size: 31px;
+
+    font-weight: 950;
+
 }
 
-.hero-score span {
-    margin-top: 4px;
+.hero-score-ring span {
+
+    margin-top: 3px;
+
     font-size: 13px;
+
     font-weight: 800;
+
 }
+
+
+/* ============================================================
+   STAT GRID
+============================================================ */
 
 .stat-grid {
+
     display: grid;
+
     grid-template-columns:
         repeat(4, minmax(0, 1fr));
+
     gap: 18px;
-    margin-bottom: 22px;
+
+    margin-bottom: 24px;
+
 }
 
 .stat-card {
+
+    position: relative;
+
     display: flex;
+
     align-items: center;
+
     gap: 15px;
+
+    min-height: 125px;
+
     padding: 22px;
+
+    overflow: hidden;
+
     background: #ffffff;
-    border: 1px solid #e5e7eb;
-    border-radius: 17px;
+
+    border:
+        1px solid #e5e7eb;
+
+    border-radius: 18px;
+
     box-shadow:
-        0 6px 20px
+        0 7px 24px
         rgba(0,0,0,.045);
+
+    transition:
+        transform .25s ease,
+        box-shadow .25s ease,
+        border-color .25s ease;
+
 }
 
-.stat-card span {
+.stat-card::after {
+
+    content: "";
+
+    position: absolute;
+
+    width: 80px;
+
+    height: 80px;
+
+    right: -35px;
+
+    bottom: -40px;
+
+    border-radius: 50%;
+
+    background:
+        rgba(22,163,74,.035);
+
+}
+
+.stat-card:hover {
+
+    transform:
+        translateY(-4px);
+
+    border-color:
+        #ccebd7;
+
+    box-shadow:
+        0 14px 30px
+        rgba(0,0,0,.07);
+
+}
+
+.stat-card > div:last-child {
+
+    min-width: 0;
+
+}
+
+.stat-card span:not(.chart-icon):not(.leaf-icon):not(.disease-icon):not(.confidence-icon) {
+
     display: block;
+
     margin-bottom: 5px;
+
     color: #64748b;
+
     font-size: 13px;
-    font-weight: 700;
+
+    font-weight: 750;
+
 }
 
 .stat-card strong {
+
     display: block;
-    font-size: 28px;
-    font-weight: 900;
+
+    font-size: 29px;
+
+    line-height: 1;
+
+    font-weight: 950;
+
+}
+
+.stat-card small {
+
+    display: block;
+
+    margin-top: 6px;
+
+    color: #94a3b8;
+
+    font-size: 10px;
+
+    font-weight: 650;
+
 }
 
 .stat-icon {
-    width: 52px;
-    height: 52px;
+
+    width: 54px;
+
+    height: 54px;
+
     flex-shrink: 0;
+
     display: flex;
+
     align-items: center;
+
     justify-content: center;
-    border-radius: 15px;
-    font-size: 26px;
+
+    border-radius: 16px;
+
 }
 
 .stat-icon.green {
@@ -1758,151 +2261,478 @@ const styles = `
     color: #2563eb;
 }
 
+
+/* ============================================================
+   CSS ICONS
+============================================================ */
+
+.chart-icon {
+
+    width: 25px;
+
+    height: 23px;
+
+    display: flex !important;
+
+    align-items: flex-end;
+
+    justify-content: center;
+
+    gap: 3px;
+
+}
+
+.chart-icon i {
+
+    display: block;
+
+    width: 5px;
+
+    border-radius: 3px;
+
+    background: #16a34a;
+
+}
+
+.chart-icon i:nth-child(1) {
+    height: 11px;
+}
+
+.chart-icon i:nth-child(2) {
+    height: 20px;
+}
+
+.chart-icon i:nth-child(3) {
+    height: 15px;
+}
+
+.leaf-icon {
+
+    position: relative;
+
+    width: 25px;
+
+    height: 22px;
+
+    display: block !important;
+
+    border:
+        2px solid #16a34a;
+
+    border-radius:
+        100% 0 100% 0;
+
+    transform:
+        rotate(-35deg);
+
+}
+
+.leaf-icon i {
+
+    position: absolute;
+
+    width: 2px;
+
+    height: 19px;
+
+    left: 10px;
+
+    top: 3px;
+
+    border-radius: 2px;
+
+    background: #16a34a;
+
+    transform:
+        rotate(40deg);
+
+}
+
+.disease-icon {
+
+    position: relative;
+
+    width: 20px;
+
+    height: 20px;
+
+    display: block !important;
+
+    border:
+        2px solid #dc2626;
+
+    border-radius: 50%;
+
+}
+
+.disease-icon::before,
+.disease-icon::after {
+
+    content: "";
+
+    position: absolute;
+
+    background: #dc2626;
+
+    border-radius: 2px;
+
+}
+
+.disease-icon::before {
+
+    width: 27px;
+
+    height: 2px;
+
+    left: -5px;
+
+    top: 7px;
+
+}
+
+.disease-icon::after {
+
+    width: 2px;
+
+    height: 27px;
+
+    left: 7px;
+
+    top: -5px;
+
+}
+
+.confidence-icon {
+
+    display: block !important;
+
+    color: #2563eb;
+
+    font-size: 22px;
+
+    font-weight: 950;
+
+}
+
+
+/* ============================================================
+   MAIN GRID
+============================================================ */
+
 .analytics-grid {
+
     display: grid;
+
     grid-template-columns:
         minmax(0, 1.55fr)
-        minmax(300px, .75fr);
+        minmax(320px, .75fr);
+
     gap: 22px;
-    margin-bottom: 22px;
+
+    margin-bottom: 0;
+
 }
 
 .analytics-card {
-    padding: 25px;
-    margin-bottom: 22px;
+
+    padding: 27px;
+
+    margin-bottom: 24px;
+
     background: #ffffff;
-    border: 1px solid #e5e7eb;
-    border-radius: 18px;
+
+    border:
+        1px solid #e5e7eb;
+
+    border-radius: 19px;
+
     box-shadow:
-        0 6px 22px
+        0 7px 24px
         rgba(0,0,0,.045);
+
 }
 
 .health-card {
-    margin-bottom: 0;
+
+    margin-bottom: 24px;
+
 }
 
 .card-header {
+
     display: flex;
+
     align-items: flex-start;
+
     justify-content: space-between;
-    gap: 15px;
-    margin-bottom: 24px;
+
+    gap: 18px;
+
+    margin-bottom: 25px;
+
+}
+
+.section-kicker {
+
+    margin-bottom: 5px;
+
+    color: #16a34a;
+
+    font-size: 9px;
+
+    font-weight: 950;
+
+    letter-spacing: 1.7px;
+
 }
 
 .card-header h2 {
+
     margin: 0 0 7px;
-    font-size: 22px;
+
+    color: #10261a;
+
+    font-size: 23px;
+
+    line-height: 1.2;
+
+    font-weight: 900;
+
+    letter-spacing: -.4px;
+
 }
 
 .card-header p {
+
     margin: 0;
+
     color: #718096;
+
     font-size: 14px;
+
+    line-height: 1.5;
+
 }
 
-.result-count {
+.result-count,
+.chart-badge {
+
+    flex-shrink: 0;
+
     padding: 8px 13px;
+
     border-radius: 999px;
+
     background: #ecfdf5;
+
     color: #15803d;
-    font-size: 12px;
-    font-weight: 800;
+
+    font-size: 11px;
+
+    font-weight: 850;
+
+}
+
+.chart-badge {
+
+    background: #f0fdf4;
+
+    border:
+        1px solid #dcfce7;
+
+}
+
+
+/* ============================================================
+   DISTRIBUTION
+============================================================ */
+
+.distribution-list {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 4px;
+
 }
 
 .distribution-row {
-    margin-bottom: 22px;
+
+    padding: 7px 0 14px;
+
+    margin-bottom: 3px;
+
 }
 
 .distribution-top {
+
     display: flex;
+
     align-items: center;
+
     justify-content: space-between;
+
     gap: 15px;
+
     margin-bottom: 8px;
+
 }
 
 .distribution-top span {
+
     display: flex;
+
     align-items: center;
-    gap: 8px;
-    font-weight: 700;
+
+    gap: 9px;
+
+    color: #475569;
+
+    font-size: 13px;
+
+    font-weight: 750;
+
 }
 
 .distribution-top strong {
-    font-size: 24px;
+
+    color: #10261a;
+
+    font-size: 21px;
+
+    font-weight: 900;
+
 }
 
 .bar {
+
     width: 100%;
-    height: 10px;
+
+    height: 9px;
+
     overflow: hidden;
+
     border-radius: 999px;
+
     background: #e9eef0;
+
 }
 
 .bar-fill {
+
     height: 100%;
+
     border-radius: 999px;
+
+    transition:
+        width .7s ease;
+
 }
 
 .disease-bar {
+
     background:
         linear-gradient(
             90deg,
             #ef4444,
             #f97316
         );
+
 }
 
 .healthy-bar {
+
     background:
         linear-gradient(
             90deg,
             #16a34a,
             #22c55e
         );
+
 }
 
 .crop-bar {
+
     background:
         linear-gradient(
             90deg,
             #15803d,
             #22c55e
         );
+
 }
 
 .distribution-row small {
+
     display: block;
+
     margin-top: 5px;
+
     color: #94a3b8;
+
+    font-size: 11px;
+
 }
 
 .green-dot,
 .red-dot {
+
     width: 8px;
+
     height: 8px;
+
     display: inline-block;
+
+    flex-shrink: 0;
+
     border-radius: 50%;
+
 }
 
 .green-dot {
+
     background: #22c55e;
+
+    box-shadow:
+        0 0 0 4px
+        #dcfce7;
+
 }
 
 .red-dot {
+
     background: #ef4444;
+
+    box-shadow:
+        0 0 0 4px
+        #fee2e2;
+
 }
 
+
+/* ============================================================
+   HEALTH CIRCLE
+============================================================ */
+
 .health-circle {
+
     width: 190px;
+
     height: 190px;
-    margin: 15px auto 25px;
-    border-radius: 50%;
+
+    margin:
+        14px auto 27px;
+
     display: flex;
+
     align-items: center;
+
     justify-content: center;
+
+    position: relative;
+
+    border-radius: 50%;
 
     background:
         conic-gradient(
@@ -1911,348 +2741,1303 @@ const styles = `
             #fee2e2 0
         );
 
-    position: relative;
+    box-shadow:
+        0 12px 30px
+        rgba(34,197,94,.12);
+
 }
 
 .health-circle::before {
+
     content: "";
+
     position: absolute;
-    width: 155px;
-    height: 155px;
+
+    width: 153px;
+
+    height: 153px;
+
     border-radius: 50%;
+
     background: #ffffff;
+
 }
 
 .health-circle > div {
+
     position: relative;
+
     z-index: 1;
+
     text-align: center;
+
 }
 
 .health-circle strong {
+
     display: block;
-    font-size: 28px;
+
+    color: #10261a;
+
+    font-size: 29px;
+
+    font-weight: 950;
+
 }
 
 .health-circle span {
+
+    display: block;
+
+    margin-top: 4px;
+
     color: #64748b;
-    font-size: 13px;
+
+    font-size: 12px;
+
+    font-weight: 700;
+
 }
 
 .health-legend > div {
+
     display: flex;
+
     align-items: center;
+
     justify-content: space-between;
-    padding: 14px;
-    margin-top: 10px;
+
+    padding: 13px 14px;
+
+    margin-top: 9px;
+
+    border:
+        1px solid #edf0f1;
+
     border-radius: 12px;
+
     background: #f8fafc;
+
 }
 
 .health-legend span {
+
     display: flex;
+
     align-items: center;
+
     gap: 8px;
-    font-weight: 700;
+
+    color: #475569;
+
+    font-size: 13px;
+
+    font-weight: 750;
+
 }
 
 .legend-green,
 .legend-red {
+
     width: 8px;
+
     height: 8px;
+
     display: inline-block;
+
     border-radius: 50%;
+
 }
 
 .legend-green {
+
     background: #22c55e;
+
 }
 
 .legend-red {
+
     background: #ef4444;
+
 }
 
 .health-legend strong {
-    font-size: 20px;
+
+    font-size: 18px;
+
+    font-weight: 900;
+
 }
 
+
+/* ============================================================
+   HIGHLIGHT
+============================================================ */
+
 .highlight-card {
+
+    position: relative;
+
     display: flex;
+
     align-items: center;
-    gap: 20px;
-    padding: 27px;
-    margin-bottom: 22px;
-    border-radius: 19px;
+
+    gap: 21px;
+
+    overflow: hidden;
+
+    padding: 29px;
+
+    margin-bottom: 24px;
+
+    border-radius: 20px;
+
     color: #ffffff;
+
     background:
         linear-gradient(
             135deg,
-            #16a34a,
-            #15803d
+            #119447,
+            #087a3a
         );
+
     box-shadow:
-        0 8px 25px
-        rgba(21,128,61,.15);
+        0 10px 30px
+        rgba(21,128,61,.16);
+
+}
+
+.highlight-card::after {
+
+    content: "";
+
+    position: absolute;
+
+    width: 210px;
+
+    height: 210px;
+
+    right: -80px;
+
+    top: -90px;
+
+    border:
+        1px solid
+        rgba(255,255,255,.12);
+
+    border-radius: 50%;
+
 }
 
 .highlight-icon {
-    width: 60px;
-    height: 60px;
+
+    position: relative;
+
+    z-index: 1;
+
+    width: 62px;
+
+    height: 62px;
+
+    flex-shrink: 0;
+
     display: flex;
+
     align-items: center;
+
     justify-content: center;
+
     border-radius: 17px;
+
     background:
+        rgba(255,255,255,.13);
+
+    border:
+        1px solid
         rgba(255,255,255,.12);
-    font-size: 30px;
+
+}
+
+.search-icon {
+
+    position: relative;
+
+    width: 22px;
+
+    height: 22px;
+
+    display: block;
+
+    border:
+        3px solid #ffffff;
+
+    border-radius: 50%;
+
+}
+
+.search-icon::after {
+
+    content: "";
+
+    position: absolute;
+
+    width: 10px;
+
+    height: 3px;
+
+    right: -8px;
+
+    bottom: -5px;
+
+    border-radius: 4px;
+
+    background: #ffffff;
+
+    transform:
+        rotate(45deg);
+
+}
+
+.highlight-card > div:last-child {
+
+    position: relative;
+
+    z-index: 1;
+
 }
 
 .highlight-card span {
-    font-size: 11px;
+
+    font-size: 10px;
+
     font-weight: 900;
+
     letter-spacing: 1.7px;
+
 }
 
 .highlight-card h2 {
+
     margin: 7px 0;
-    font-size: 27px;
+
+    font-size: 28px;
+
+    font-weight: 950;
+
 }
 
 .highlight-card p {
+
     margin: 0;
-    opacity: .9;
+
+    color:
+        rgba(255,255,255,.88);
+
+    font-size: 14px;
+
 }
 
+.highlight-card p strong {
+
+    color: #ffffff;
+
+}
+
+
+/* ============================================================
+   DISEASE GRID
+============================================================ */
+
 .disease-grid {
+
     display: grid;
+
     grid-template-columns:
         repeat(2, minmax(0, 1fr));
-    gap: 18px;
+
+    gap: 17px;
+
 }
 
 .disease-box,
 .crop-box {
+
     padding: 20px;
-    border: 1px solid #e5e7eb;
-    border-radius: 14px;
-    background: #fbfdfc;
+
+    border:
+        1px solid #e5e7eb;
+
+    border-radius: 15px;
+
+    background:
+        linear-gradient(
+            180deg,
+            #ffffff,
+            #fbfdfc
+        );
+
+    transition:
+        transform .25s ease,
+        box-shadow .25s ease,
+        border-color .25s ease;
+
+}
+
+.disease-box:hover,
+.crop-box:hover {
+
+    transform:
+        translateY(-3px);
+
+    border-color:
+        #d8eade;
+
+    box-shadow:
+        0 10px 22px
+        rgba(0,0,0,.055);
+
 }
 
 .disease-title {
+
     display: flex;
+
     align-items: center;
+
     justify-content: space-between;
+
     gap: 15px;
+
     margin-bottom: 15px;
+
 }
 
 .disease-title span {
+
     color: #94a3b8;
-    font-size: 10px;
-    font-weight: 900;
+
+    font-size: 9px;
+
+    font-weight: 950;
+
     letter-spacing: 1.5px;
+
 }
 
 .disease-title h3 {
+
     margin: 5px 0 0;
+
+    color: #10261a;
+
     font-size: 16px;
+
+    font-weight: 850;
+
 }
 
 .disease-title > strong {
+
     padding: 9px 13px;
+
     border-radius: 10px;
+
     background: #fef2f2;
+
     color: #dc2626;
+
+    font-size: 18px;
+
+    font-weight: 950;
+
 }
 
-.disease-box p,
-.crop-box small {
+.disease-box p {
+
+    margin: 9px 0 0;
+
     color: #718096;
-    font-size: 12px;
+
+    font-size: 11px;
+
 }
+
+
+/* ============================================================
+   CROP CHART
+============================================================ */
+
+.crop-chart {
+
+    display: flex;
+
+    width: 100%;
+
+    height: 320px;
+
+    margin:
+        5px 0 30px;
+
+    padding:
+        0 0 0 5px;
+
+}
+
+.chart-y-axis {
+
+    width: 35px;
+
+    flex-shrink: 0;
+
+    display: flex;
+
+    flex-direction: column;
+
+    justify-content: space-between;
+
+    padding:
+        4px 0 36px;
+
+}
+
+.chart-y-axis span {
+
+    color: #94a3b8;
+
+    font-size: 10px;
+
+    font-weight: 650;
+
+    text-align: right;
+
+}
+
+.chart-area {
+
+    position: relative;
+
+    flex: 1;
+
+    min-width: 0;
+
+}
+
+.chart-grid-lines {
+
+    position: absolute;
+
+    inset:
+        0 0 36px 0;
+
+    display: flex;
+
+    flex-direction: column;
+
+    justify-content: space-between;
+
+}
+
+.chart-grid-lines span {
+
+    display: block;
+
+    width: 100%;
+
+    height: 1px;
+
+    background: #edf1ef;
+
+}
+
+.bars-container {
+
+    position: absolute;
+
+    inset:
+        0 0 0 12px;
+
+    display: flex;
+
+    align-items: flex-end;
+
+    justify-content: space-around;
+
+    gap: 16px;
+
+    border-bottom:
+        1px solid #dfe6e2;
+
+}
+
+.chart-column {
+
+    position: relative;
+
+    width: 100%;
+
+    max-width: 100px;
+
+    height: 100%;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: flex-end;
+
+}
+
+.vertical-bar {
+
+    position: relative;
+
+    width: min(48px, 70%);
+
+    min-height: 12px;
+
+    margin-bottom: 9px;
+
+    border-radius:
+        9px 9px 4px 4px;
+
+    background:
+        linear-gradient(
+            180deg,
+            #22c55e,
+            #15803d
+        );
+
+    box-shadow:
+        0 6px 15px
+        rgba(21,128,61,.13);
+
+    animation:
+        chartGrow .7s ease-out;
+
+}
+
+.vertical-bar span {
+
+    position: absolute;
+
+    top: 0;
+
+    left: 0;
+
+    width: 100%;
+
+    height: 2px;
+
+    border-radius: 10px;
+
+    background:
+        rgba(255,255,255,.5);
+
+}
+
+.bar-value {
+
+    margin-bottom: 6px;
+
+    color: #10261a;
+
+    font-size: 13px;
+
+    font-weight: 900;
+
+}
+
+.chart-label {
+
+    width: 100%;
+
+    min-height: 28px;
+
+    color: #64748b;
+
+    font-size: 11px;
+
+    font-weight: 750;
+
+    text-align: center;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+}
+
+@keyframes chartGrow {
+
+    from {
+        height: 0;
+    }
+
+}
+
+
+/* ============================================================
+   CROP GRID
+============================================================ */
 
 .crop-grid {
+
     display: grid;
+
     grid-template-columns:
         repeat(
             auto-fit,
-            minmax(220px, 1fr)
+            minmax(210px, 1fr)
         );
-    gap: 18px;
+
+    gap: 17px;
+
 }
 
 .crop-name {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-}
 
-.crop-name span {
-    font-size: 24px;
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
 }
 
 .crop-name strong {
-    font-size: 18px;
-    text-transform: capitalize;
+
+    color: #10261a;
+
+    font-size: 17px;
+
+    font-weight: 850;
+
+}
+
+.crop-icon {
+
+    position: relative;
+
+    width: 25px;
+
+    height: 25px;
+
+    flex-shrink: 0;
+
+}
+
+.crop-icon::before {
+
+    content: "";
+
+    position: absolute;
+
+    left: 11px;
+
+    top: 8px;
+
+    width: 2px;
+
+    height: 17px;
+
+    border-radius: 2px;
+
+    background: #15803d;
+
+}
+
+.crop-icon::after {
+
+    content: "";
+
+    position: absolute;
+
+    left: 4px;
+
+    top: 3px;
+
+    width: 11px;
+
+    height: 8px;
+
+    border:
+        2px solid #22c55e;
+
+    border-radius:
+        100% 0 100% 0;
+
+    transform:
+        rotate(-25deg);
+
+}
+
+.crop-icon i {
+
+    position: absolute;
+
+    left: 12px;
+
+    top: 1px;
+
+    width: 11px;
+
+    height: 8px;
+
+    border:
+        2px solid #84cc16;
+
+    border-radius:
+        0 100% 0 100%;
+
+    transform:
+        rotate(20deg);
+
 }
 
 .crop-box > b {
+
     display: block;
-    margin: 12px 0;
+
+    margin: 14px 0;
+
+    color: #10261a;
+
     font-size: 28px;
+
+    line-height: 1;
+
+    font-weight: 950;
+
 }
 
+.crop-box small {
+
+    display: block;
+
+    margin-top: 6px;
+
+    color: #718096;
+
+    font-size: 11px;
+
+}
+
+
+/* ============================================================
+   CONFIDENCE
+============================================================ */
+
 .confidence-grid {
+
     display: grid;
+
     grid-template-columns:
         repeat(3, minmax(0, 1fr));
+
     gap: 18px;
+
 }
 
 .confidence-box {
+
     display: flex;
+
     align-items: center;
-    gap: 15px;
+
+    gap: 16px;
+
+    min-height: 130px;
+
     padding: 20px;
-    border-radius: 14px;
+
+    border-radius: 15px;
+
+    transition:
+        transform .25s ease;
+
 }
 
-.confidence-box > span {
-    font-size: 28px;
-}
+.confidence-box:hover {
 
-.confidence-box small {
-    display: block;
-    font-size: 10px;
-    font-weight: 900;
-    letter-spacing: 1px;
-}
+    transform:
+        translateY(-3px);
 
-.confidence-box strong {
-    display: block;
-    margin: 5px 0;
-    font-size: 28px;
-}
-
-.confidence-box p {
-    margin: 0;
-    color: #64748b;
-    font-size: 12px;
 }
 
 .confidence-box.high {
+
     background: #f0fdf4;
-    border: 1px solid #bbf7d0;
+
+    border:
+        1px solid #bbf7d0;
+
 }
 
 .confidence-box.medium {
+
     background: #fffbeb;
-    border: 1px solid #fde68a;
+
+    border:
+        1px solid #fde68a;
+
 }
 
 .confidence-box.low {
+
     background: #fef2f2;
-    border: 1px solid #fecaca;
+
+    border:
+        1px solid #fecaca;
+
 }
 
-.ai-insights {
-    padding: 28px;
-    margin-bottom: 22px;
-    border: 1px solid #bbf7d0;
-    border-radius: 20px;
+.confidence-dot {
+
+    width: 30px;
+
+    height: 30px;
+
+    flex-shrink: 0;
+
+    display: block;
+
+    border-radius: 50%;
+
+}
+
+.high-dot {
+
     background:
         linear-gradient(
             135deg,
-            #f0fdf4,
-            #ffffff
+            #86efac,
+            #16a34a
         );
+
+    box-shadow:
+        0 5px 12px
+        rgba(22,163,74,.18);
+
+}
+
+.medium-dot {
+
+    background:
+        linear-gradient(
+            135deg,
+            #fde68a,
+            #f59e0b
+        );
+
+    box-shadow:
+        0 5px 12px
+        rgba(245,158,11,.18);
+
+}
+
+.low-dot {
+
+    background:
+        linear-gradient(
+            135deg,
+            #fb7185,
+            #dc2626
+        );
+
+    box-shadow:
+        0 5px 12px
+        rgba(220,38,38,.18);
+
+}
+
+.confidence-box small {
+
+    display: block;
+
+    color: #64748b;
+
+    font-size: 9px;
+
+    font-weight: 950;
+
+    letter-spacing: 1.2px;
+
+}
+
+.confidence-box strong {
+
+    display: block;
+
+    margin: 5px 0;
+
+    color: #10261a;
+
+    font-size: 29px;
+
+    line-height: 1;
+
+    font-weight: 950;
+
+}
+
+.confidence-box p {
+
+    margin: 0;
+
+    color: #64748b;
+
+    font-size: 11px;
+
+}
+
+
+/* ============================================================
+   AI INSIGHTS
+============================================================ */
+
+.ai-insights {
+
+    padding: 30px;
+
+    margin-bottom: 24px;
+
+    border:
+        1px solid #bbf7d0;
+
+    border-radius: 21px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #effcf3,
+            #ffffff 65%
+        );
+
+    box-shadow:
+        0 7px 24px
+        rgba(0,0,0,.035);
+
 }
 
 .insight-heading > span {
+
     color: #16a34a;
+
     font-size: 10px;
-    font-weight: 900;
+
+    font-weight: 950;
+
     letter-spacing: 2px;
+
 }
 
 .insight-heading h2 {
-    margin: 6px 0 8px;
-    font-size: 24px;
+
+    margin: 7px 0 8px;
+
+    color: #10261a;
+
+    font-size: 25px;
+
+    font-weight: 900;
+
 }
 
 .insight-heading p {
-    margin: 0 0 24px;
+
+    max-width: 760px;
+
+    margin: 0 0 25px;
+
     color: #64748b;
+
+    font-size: 14px;
+
+    line-height: 1.6;
+
 }
 
 .insight-grid {
+
     display: grid;
+
     grid-template-columns:
         repeat(3, minmax(0, 1fr));
-    gap: 18px;
+
+    gap: 17px;
+
 }
 
 .insight-item {
-    padding: 20px;
-    border-radius: 14px;
+
+    position: relative;
+
+    padding: 22px;
+
+    overflow: hidden;
+
+    border:
+        1px solid #e5e7eb;
+
+    border-radius: 15px;
+
     background: #ffffff;
-    border: 1px solid #e5e7eb;
+
+    transition:
+        transform .25s ease,
+        box-shadow .25s ease;
+
+}
+
+.insight-item:hover {
+
+    transform:
+        translateY(-3px);
+
+    box-shadow:
+        0 12px 25px
+        rgba(0,0,0,.055);
+
+}
+
+.insight-number {
+
+    position: absolute;
+
+    top: 16px;
+
+    right: 18px;
+
+    color: #dbeee1;
+
+    font-size: 26px;
+
+    font-weight: 950;
+
 }
 
 .insight-item > span {
+
     color: #94a3b8;
-    font-size: 10px;
-    font-weight: 900;
-    letter-spacing: 1.3px;
+
+    font-size: 9px;
+
+    font-weight: 950;
+
+    letter-spacing: 1.4px;
+
 }
 
 .insight-item h3 {
+
+    max-width: 80%;
+
     margin: 10px 0;
+
+    color: #10261a;
+
     font-size: 18px;
+
+    font-weight: 900;
+
 }
 
 .insight-item p {
+
     margin: 0;
+
     color: #64748b;
+
     font-size: 13px;
+
     line-height: 1.7;
+
 }
+
+
+/* ============================================================
+   FOOTER
+============================================================ */
 
 .analytics-note {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 8px;
+
     padding: 17px;
+
     text-align: center;
-    border-radius: 12px;
+
+    border:
+        1px solid #e5e7eb;
+
+    border-radius: 13px;
+
     color: #64748b;
-    background: #f8fafc;
-    font-size: 13px;
+
+    background: #ffffff;
+
+    font-size: 12px;
+
 }
 
+.note-dot {
+
+    width: 6px;
+
+    height: 6px;
+
+    display: inline-block;
+
+    border-radius: 50%;
+
+    background: #22c55e;
+
+    box-shadow:
+        0 0 0 4px #dcfce7;
+
+}
+
+
+/* ============================================================
+   STATES
+============================================================ */
+
 .analytics-state {
-    min-height: 60vh;
-    padding: 60px 25px;
+
+    min-height: 65vh;
+
+    padding: 70px 25px;
+
     display: flex;
+
     flex-direction: column;
+
     align-items: center;
+
     justify-content: center;
+
     text-align: center;
+
 }
 
 .state-icon {
-    margin-bottom: 12px;
-    font-size: 55px;
+
+    width: 64px;
+
+    height: 64px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    margin-bottom: 15px;
+
+    border:
+        2px solid #16a34a;
+
+    border-radius: 18px;
+
+    color: #16a34a;
+
+    background: #ecfdf5;
+
+}
+
+.state-icon span {
+
+    font-size: 20px;
+
+    font-weight: 950;
+
+    letter-spacing: -1px;
+
+}
+
+.state-icon.error {
+
+    border-color: #dc2626;
+
+    color: #dc2626;
+
+    background: #fef2f2;
+
+}
+
+.state-loader {
+
+    width: 25px;
+
+    height: 25px;
+
+    margin-bottom: 17px;
+
+    border:
+        3px solid #dcfce7;
+
+    border-top-color: #16a34a;
+
+    border-radius: 50%;
+
+    animation:
+        spin .8s linear infinite;
+
+}
+
+@keyframes spin {
+
+    to {
+        transform: rotate(360deg);
+    }
+
 }
 
 .analytics-state h2 {
+
     margin: 0 0 8px;
+
+    color: #10261a;
+
+    font-size: 23px;
+
+    font-weight: 900;
+
 }
 
 .analytics-state p {
+
     max-width: 600px;
+
+    margin: 0 0 20px;
+
     color: #64748b;
-    line-height: 1.6;
+
+    line-height: 1.7;
+
 }
 
-@media (max-width: 1100px) {
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+
+@media (max-width: 1200px) {
+
+    .analytics-page {
+        padding:
+            28px 28px 65px;
+    }
 
     .stat-grid {
         grid-template-columns:
@@ -2260,16 +4045,18 @@ const styles = `
     }
 
     .analytics-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns:
+            1fr;
     }
 
 }
 
-@media (max-width: 850px) {
+
+@media (max-width: 900px) {
 
     .analytics-page {
         padding:
-            25px 20px 55px;
+            24px 20px 55px;
     }
 
     .analytics-header {
@@ -2277,10 +4064,22 @@ const styles = `
         flex-direction: column;
     }
 
+    .analytics-header h1 {
+        font-size: 35px;
+    }
+
     .analytics-hero {
         align-items: flex-start;
         flex-direction: column;
-        padding: 30px;
+        padding: 31px;
+    }
+
+    .hero-content h2 {
+        font-size: 31px;
+    }
+
+    .hero-score {
+        align-self: flex-end;
     }
 
     .disease-grid,
@@ -2289,37 +4088,152 @@ const styles = `
         grid-template-columns: 1fr;
     }
 
+    .crop-grid {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+
 }
 
-@media (max-width: 600px) {
+
+@media (max-width: 650px) {
+
+    .analytics-page {
+        padding:
+            20px 14px 45px;
+    }
+
+    .analytics-header h1 {
+        font-size: 31px;
+    }
+
+    .analytics-header p {
+        font-size: 14px;
+    }
 
     .stat-grid {
         grid-template-columns: 1fr;
     }
 
-    .analytics-header h1 {
-        font-size: 30px;
-    }
-
     .analytics-hero {
-        padding: 25px;
+        min-height: auto;
+        padding: 27px 23px;
+        border-radius: 20px;
     }
 
     .hero-content h2 {
         font-size: 27px;
     }
 
+    .hero-content p {
+        font-size: 14px;
+    }
+
+    .hero-score {
+        align-self: center;
+    }
+
+    .hero-score-ring {
+        width: 135px;
+        height: 135px;
+    }
+
     .analytics-card,
     .ai-insights {
         padding: 20px;
+        border-radius: 17px;
+    }
+
+    .card-header {
+        flex-direction: column;
+    }
+
+    .result-count,
+    .chart-badge {
+        align-self: flex-start;
     }
 
     .highlight-card {
         align-items: flex-start;
         flex-direction: column;
+        padding: 24px;
+    }
+
+    .highlight-card h2 {
+        font-size: 24px;
+    }
+
+    .crop-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .crop-chart {
+        height: 270px;
+    }
+
+    .bars-container {
+        gap: 7px;
+    }
+
+    .vertical-bar {
+        width: min(36px, 70%);
+    }
+
+    .chart-label {
+        font-size: 9px;
     }
 
 }
+
+
+@media (max-width: 420px) {
+
+    .analytics-page {
+        padding:
+            17px 11px 35px;
+    }
+
+    .analytics-header h1 {
+        font-size: 28px;
+    }
+
+    .analytics-hero {
+        padding: 23px 19px;
+    }
+
+    .hero-content h2 {
+        font-size: 24px;
+    }
+
+    .stat-card {
+        padding: 18px;
+    }
+
+    .analytics-card,
+    .ai-insights {
+        padding: 17px;
+    }
+
+    .health-circle {
+        width: 165px;
+        height: 165px;
+    }
+
+    .health-circle::before {
+        width: 132px;
+        height: 132px;
+    }
+
+    .crop-chart {
+        height: 245px;
+    }
+
+    .chart-y-axis {
+        width: 27px;
+    }
+
+}
+
 `;
 
 export default Analytics;

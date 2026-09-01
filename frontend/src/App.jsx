@@ -3,7 +3,7 @@ import {
     Routes,
     Route,
     useLocation,
-    Navigate
+    Navigate,
 } from "react-router-dom";
 
 import Sidebar from "./components/Sidebar";
@@ -18,6 +18,10 @@ import Register from "./pages/Register";
 import Login from "./pages/Login";
 
 
+/* ============================================================
+   APP LAYOUT
+============================================================ */
+
 function AppLayout() {
 
     const location = useLocation();
@@ -26,14 +30,19 @@ function AppLayout() {
 
     const isAuthenticated = Boolean(token);
 
+
+    /* ============================================================
+       PUBLIC PAGES
+    ============================================================ */
+
     const publicPage =
         location.pathname === "/login" ||
         location.pathname === "/register";
 
 
-    // ============================================================
-    // PROTECTED ROUTES
-    // ============================================================
+    /* ============================================================
+       PROTECTED ROUTES
+    ============================================================ */
 
     if (!publicPage && !isAuthenticated) {
 
@@ -47,9 +56,10 @@ function AppLayout() {
     }
 
 
-    // ============================================================
-    // AUTHENTICATED USER ON LOGIN / REGISTER
-    // ============================================================
+    /* ============================================================
+       AUTHENTICATED USER
+       CANNOT OPEN LOGIN / REGISTER
+    ============================================================ */
 
     if (publicPage && isAuthenticated) {
 
@@ -63,53 +73,68 @@ function AppLayout() {
     }
 
 
-    // ============================================================
-    // SIDEBAR
-    // ============================================================
+    /* ============================================================
+       AUTH PAGES
+       NO SIDEBAR
+    ============================================================ */
 
-    const hideSidebar = publicPage;
+    if (publicPage) {
 
+        return (
+
+            <div className="auth-layout">
+
+                <main className="auth-main-content">
+
+                    <Routes>
+
+                        <Route
+                            path="/login"
+                            element={<Login />}
+                        />
+
+                        <Route
+                            path="/register"
+                            element={<Register />}
+                        />
+
+                    </Routes>
+
+                </main>
+
+            </div>
+
+        );
+
+    }
+
+
+    /* ============================================================
+       MAIN APPLICATION
+       SIDEBAR + CONTENT
+    ============================================================ */
 
     return (
 
-        <div
-            className={
-                hideSidebar
-                    ? "auth-layout"
-                    : "app-layout"
-            }
-        >
+        <div className="app-layout">
 
-            {!hideSidebar && <Sidebar />}
+            {/* ==================================================
+                SIDEBAR
+            ================================================== */}
+
+            <Sidebar />
 
 
-            <main
-                className={
-                    hideSidebar
-                        ? "auth-main-content"
-                        : "main-content"
-                }
-            >
+            {/* ==================================================
+                MAIN CONTENT
+            ================================================== */}
+
+            <main className="main-content">
 
                 <Routes>
 
                     {/* ==================================================
-                        PUBLIC ROUTES
-                    ================================================== */}
-
-                    <Route
-                        path="/login"
-                        element={<Login />}
-                    />
-
-                    <Route
-                        path="/register"
-                        element={<Register />}
-                    />
-
-
-                    {/* ==================================================
-                        PROTECTED ROUTES
+                        DASHBOARD
                     ================================================== */}
 
                     <Route
@@ -117,25 +142,50 @@ function AppLayout() {
                         element={<Dashboard />}
                     />
 
+
+                    {/* ==================================================
+                        DISEASE DETECTION
+                    ================================================== */}
+
                     <Route
                         path="/detection"
                         element={<DiseaseDetection />}
                     />
+
+
+                    {/* ==================================================
+                        MY CROPS
+                    ================================================== */}
 
                     <Route
                         path="/crops"
                         element={<Crops />}
                     />
 
+
+                    {/* ==================================================
+                        ANALYTICS
+                    ================================================== */}
+
                     <Route
                         path="/analytics"
                         element={<Analytics />}
                     />
 
+
+                    {/* ==================================================
+                        HISTORY
+                    ================================================== */}
+
                     <Route
                         path="/history"
                         element={<History />}
                     />
+
+
+                    {/* ==================================================
+                        SETTINGS
+                    ================================================== */}
 
                     <Route
                         path="/settings"
@@ -149,7 +199,12 @@ function AppLayout() {
 
                     <Route
                         path="*"
-                        element={<Navigate to="/" replace />}
+                        element={
+                            <Navigate
+                                to="/"
+                                replace
+                            />
+                        }
                     />
 
                 </Routes>
@@ -162,6 +217,10 @@ function AppLayout() {
 
 }
 
+
+/* ============================================================
+   APP
+============================================================ */
 
 function App() {
 
