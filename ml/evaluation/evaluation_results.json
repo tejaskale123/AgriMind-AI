@@ -1,43 +1,55 @@
 {
   "project": "AgriMind AI",
-  "crop": "maize",
+  "crop": "cotton",
   "model": "EfficientNet-B0",
   "image_size": "224x224",
-  "test_images": 422,
-  "accuracy": 97.87,
-  "precision": 97.89,
-  "recall": 97.87,
-  "f1_score": 97.87,
+  "test_images": 114,
+  "accuracy": 99.12,
+  "precision": 99.15,
+  "recall": 99.12,
+  "f1_score": 99.12,
   "classes": [
-    "Blight",
-    "Common_Rust",
-    "Gray_Leaf_Spot",
-    "Healthy"
+    "Alternaria Leaf Spot",
+    "Bacterial Blight",
+    "Fusarium Wilt",
+    "Healthy Leaf",
+    "Verticillium Wilt"
   ],
   "confusion_matrix": [
     [
-      113,
+      17,
       0,
-      3,
+      0,
+      0,
       0
     ],
     [
-      1,
-      129,
-      1,
-      0
-    ],
-    [
-      4,
       0,
-      54,
+      19,
+      0,
+      0,
       0
     ],
     [
       0,
       0,
+      31,
       0,
-      117
+      1
+    ],
+    [
+      0,
+      0,
+      0,
+      18,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      28
     ]
   ]
 }

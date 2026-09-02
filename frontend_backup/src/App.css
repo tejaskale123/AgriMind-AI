@@ -1,0 +1,1974 @@
+/* ============================================================
+   AGRIMIND AI
+   CLEAN FINAL APP.CSS
+   Sidebar + Main Content + Dashboard + Crops
+   ============================================================ */
+
+
+/* ============================================================
+   ROOT
+   ============================================================ */
+
+:root {
+    --bg-color: #f4f7f5;
+    --card-color: #ffffff;
+
+    --text-color: #10251a;
+    --text-dark: #111827;
+
+    --muted-color: #64748b;
+
+    --border-color: #e2e8f0;
+
+    --primary: #16a34a;
+    --primary-dark: #15803d;
+    --primary-light: #dcfce7;
+    --primary-soft: #f0fdf4;
+
+    --danger: #dc2626;
+    --danger-soft: #fff7f7;
+
+    --sidebar-width: 300px;
+}
+
+
+/* ============================================================
+   GLOBAL RESET
+   ============================================================ */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    width: 100%;
+    min-height: 100%;
+    margin: 0;
+    padding: 0;
+    scroll-behavior: smooth;
+}
+
+body {
+    width: 100%;
+    min-height: 100vh;
+
+    margin: 0;
+    padding: 0;
+
+    font-family:
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+    background: var(--bg-color);
+
+    color: var(--text-color);
+
+    overflow-x: hidden;
+}
+
+#root {
+    width: 100%;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+}
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+img {
+    max-width: 100%;
+}
+
+
+/* ============================================================
+   AUTH LAYOUT
+   Login / Register
+   ============================================================ */
+
+.auth-layout {
+    width: 100%;
+    min-height: 100vh;
+
+    margin: 0;
+    padding: 0;
+
+    background: var(--bg-color);
+}
+
+.auth-main-content {
+    width: 100%;
+    min-height: 100vh;
+
+    margin: 0;
+    padding: 0;
+}
+
+
+/* ============================================================
+   APP LAYOUT
+   IMPORTANT
+   Sidebar is fixed.
+   Main content gets exactly sidebar width as left margin.
+   ============================================================ */
+
+.app-layout {
+    position: relative;
+
+    display: block;
+
+    width: 100%;
+    min-height: 100vh;
+
+    margin: 0;
+    padding: 0;
+
+    background: var(--bg-color);
+
+    overflow-x: hidden;
+}
+
+
+/* ============================================================
+   SIDEBAR
+   Supports:
+   .sidebar
+   .agrimind-sidebar
+   ============================================================ */
+
+.sidebar,
+.agrimind-sidebar {
+    position: fixed !important;
+
+    top: 0 !important;
+    left: 0 !important;
+
+    width: var(--sidebar-width) !important;
+    height: 100vh !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    z-index: 1000 !important;
+
+    display: flex !important;
+    flex-direction: column !important;
+
+    background: #ffffff !important;
+
+    border-right: 1px solid #e5ebe7 !important;
+
+    overflow: hidden !important;
+
+    box-sizing: border-box !important;
+}
+
+
+/* ============================================================
+   OLD SIDEBAR
+   ============================================================ */
+
+.sidebar .logo {
+    min-height: 116px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 14px;
+
+    padding: 24px;
+
+    border-bottom: 1px solid #edf1ee;
+
+    flex-shrink: 0;
+}
+
+.sidebar .logo-icon {
+    width: 50px;
+    height: 50px;
+
+    min-width: 50px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    background: #dcfce7;
+
+    border: 1px solid #bbf7d0;
+
+    border-radius: 15px;
+
+    font-size: 26px;
+}
+
+.sidebar .logo-content {
+    min-width: 0;
+}
+
+.sidebar .logo-content h2 {
+    margin: 0;
+
+    color: #10251a;
+
+    font-size: 24px;
+
+    font-weight: 800;
+
+    letter-spacing: -0.6px;
+}
+
+.sidebar .logo-content span {
+    display: block;
+
+    margin-top: 5px;
+
+    color: #16a34a;
+
+    font-size: 10px;
+
+    font-weight: 800;
+
+    letter-spacing: 1.7px;
+
+    white-space: nowrap;
+}
+
+
+/* ============================================================
+   OLD SIDEBAR NAVIGATION
+   ============================================================ */
+
+.sidebar-navigation {
+    flex: 1;
+
+    min-height: 0;
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 25px;
+
+    padding: 25px 16px 15px;
+
+    overflow-y: auto;
+
+    overflow-x: hidden;
+}
+
+.menu-section {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 8px;
+}
+
+.menu-title {
+    padding: 0 12px 7px;
+
+    color: #8b978f;
+
+    font-size: 11px;
+
+    font-weight: 800;
+
+    letter-spacing: 1.4px;
+}
+
+.sidebar nav {
+    width: 100%;
+}
+
+.sidebar .nav-item {
+    position: relative;
+
+    width: 100%;
+
+    min-height: 50px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 14px;
+
+    padding: 0 15px;
+
+    border: 1px solid transparent;
+
+    border-radius: 13px;
+
+    background: transparent;
+
+    color: #53615a;
+
+    text-decoration: none;
+
+    font-size: 14px;
+
+    font-weight: 600;
+
+    transition: 0.2s ease;
+}
+
+.sidebar .nav-item:hover {
+    background: #f0fdf4;
+
+    color: #166534;
+
+    border-color: #dcfce7;
+}
+
+.sidebar .nav-item.active {
+    background: #ecfdf3;
+
+    color: #166534;
+
+    border-color: #bbf7d0;
+
+    font-weight: 750;
+}
+
+.sidebar .nav-item.active::before {
+    content: "";
+
+    position: absolute;
+
+    left: -16px;
+
+    top: 9px;
+
+    width: 4px;
+
+    height: 32px;
+
+    border-radius: 0 5px 5px 0;
+
+    background: #16a34a;
+}
+
+.sidebar .nav-icon {
+    width: 25px;
+    height: 25px;
+
+    min-width: 25px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    font-size: 19px;
+}
+
+.sidebar .nav-label {
+    flex: 1;
+
+    min-width: 0;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+}
+
+
+/* ============================================================
+   OLD SIDEBAR BOTTOM
+   ============================================================ */
+
+.sidebar-bottom {
+    flex-shrink: 0;
+
+    margin-top: auto;
+
+    padding: 15px 16px 18px;
+
+    border-top: 1px solid #edf1ee;
+
+    background: #ffffff;
+}
+
+.sidebar-bottom > .nav-item {
+    margin-bottom: 14px;
+}
+
+.sidebar .sidebar-user {
+    width: 100%;
+
+    margin-top: 10px;
+
+    padding: 14px;
+
+    background: #f8faf9;
+
+    border: 1px solid #e5ebe7;
+
+    border-radius: 16px;
+}
+
+.sidebar .sidebar-user-info {
+    display: flex;
+
+    align-items: center;
+
+    gap: 11px;
+}
+
+.sidebar .sidebar-avatar {
+    width: 40px;
+    height: 40px;
+
+    min-width: 40px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background: linear-gradient(
+        135deg,
+        #166534,
+        #22c55e
+    );
+
+    color: #ffffff;
+
+    font-size: 15px;
+
+    font-weight: 800;
+}
+
+.sidebar .sidebar-user-details {
+    min-width: 0;
+
+    flex: 1;
+}
+
+.sidebar .sidebar-user-name {
+    color: #17211b;
+
+    font-size: 13px;
+
+    font-weight: 700;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+}
+
+.sidebar .sidebar-user-role {
+    margin-top: 2px;
+
+    color: #7b857e;
+
+    font-size: 11px;
+}
+
+.sidebar .sidebar-logout {
+    width: 100%;
+    height: 38px;
+
+    margin-top: 12px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    gap: 7px;
+
+    border: 1px solid #e5e7eb;
+
+    border-radius: 10px;
+
+    background: #ffffff;
+
+    color: #53615a;
+
+    font-size: 12px;
+
+    font-weight: 700;
+}
+
+.sidebar .sidebar-logout:hover {
+    background: #fef2f2;
+
+    border-color: #fecaca;
+
+    color: #dc2626;
+}
+
+.sidebar-version {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 10px;
+
+    padding: 13px 6px 0;
+
+    color: #9aa39d;
+
+    font-size: 10px;
+}
+
+.sidebar-version small {
+    color: #16a34a;
+
+    font-weight: 800;
+}
+
+
+/* ============================================================
+   NEW AGRIMIND SIDEBAR
+   ============================================================ */
+
+.agrimind-sidebar {
+    font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+}
+
+
+/* BRAND */
+
+.agrimind-brand {
+    height: 116px;
+    min-height: 116px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 13px;
+
+    padding: 24px 22px;
+
+    border-bottom: 1px solid #edf2ee;
+
+    flex-shrink: 0;
+}
+
+.agrimind-brand-icon {
+    width: 52px;
+    height: 52px;
+
+    min-width: 52px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    background: #e8faef;
+
+    border: 1px solid #c9f2d8;
+
+    border-radius: 15px;
+}
+
+.agrimind-brand-icon svg {
+    width: 29px;
+    height: 29px;
+
+    fill: none;
+
+    stroke: #149447;
+
+    stroke-width: 1.8;
+
+    stroke-linecap: round;
+
+    stroke-linejoin: round;
+}
+
+.agrimind-brand-text {
+    min-width: 0;
+}
+
+.agrimind-brand-text h2 {
+    margin: 0;
+
+    color: #102d1d;
+
+    font-size: 22px;
+
+    line-height: 1.05;
+
+    font-weight: 800;
+
+    letter-spacing: -0.6px;
+}
+
+.agrimind-brand-text span {
+    display: block;
+
+    margin-top: 6px;
+
+    color: #159448;
+
+    font-size: 9px;
+
+    font-weight: 800;
+
+    letter-spacing: 1.5px;
+
+    white-space: nowrap;
+}
+
+
+/* SIDEBAR CONTENT */
+
+.agrimind-sidebar-content {
+    flex: 1;
+
+    min-height: 0;
+
+    padding: 25px 15px 10px;
+
+    overflow-y: auto;
+
+    overflow-x: hidden;
+}
+
+.agrimind-menu-section {
+    margin-bottom: 27px;
+}
+
+.agrimind-menu-title {
+    padding: 0 13px;
+
+    margin-bottom: 9px;
+
+    color: #8a9890;
+
+    font-size: 10px;
+
+    line-height: 1;
+
+    font-weight: 800;
+
+    letter-spacing: 1.5px;
+}
+
+.agrimind-menu {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 4px;
+}
+
+.agrimind-nav-item {
+    position: relative;
+
+    width: 100%;
+
+    min-height: 50px;
+
+    padding: 0 13px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 13px;
+
+    border-radius: 12px;
+
+    text-decoration: none;
+
+    color: #53625a;
+
+    background: transparent;
+
+    transition: 0.18s ease;
+}
+
+.agrimind-nav-item:hover {
+    background: #f3faf5;
+
+    color: #168d47;
+}
+
+.agrimind-nav-item.active {
+    background: #e8faef;
+
+    color: #087f3c;
+
+    font-weight: 700;
+
+    box-shadow:
+        inset 0 0 0 1px #c9f1d6;
+}
+
+.agrimind-nav-item.active::before {
+    content: "";
+
+    position: absolute;
+
+    left: 0;
+
+    top: 12px;
+
+    bottom: 12px;
+
+    width: 3px;
+
+    border-radius: 0 4px 4px 0;
+
+    background: #14a052;
+}
+
+.agrimind-nav-icon {
+    width: 26px;
+    height: 26px;
+
+    min-width: 26px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+}
+
+.agrimind-nav-icon svg {
+    width: 20px;
+    height: 20px;
+
+    fill: none;
+
+    stroke: currentColor;
+
+    stroke-width: 1.7;
+
+    stroke-linecap: round;
+
+    stroke-linejoin: round;
+}
+
+.agrimind-nav-label {
+    flex: 1;
+
+    min-width: 0;
+
+    font-size: 14px;
+
+    line-height: 1.2;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+}
+
+.agrimind-nav-arrow {
+    width: 18px;
+    height: 18px;
+
+    min-width: 18px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    opacity: 0;
+
+    transition: opacity 0.18s ease;
+}
+
+.agrimind-nav-arrow svg {
+    width: 15px;
+    height: 15px;
+
+    fill: none;
+
+    stroke: currentColor;
+
+    stroke-width: 1.8;
+
+    stroke-linecap: round;
+
+    stroke-linejoin: round;
+}
+
+.agrimind-nav-item:hover .agrimind-nav-arrow,
+.agrimind-nav-item.active .agrimind-nav-arrow {
+    opacity: 1;
+}
+
+
+/* ============================================================
+   NEW SIDEBAR BOTTOM
+   ============================================================ */
+
+.agrimind-sidebar-bottom {
+    flex-shrink: 0;
+
+    padding: 12px 15px 16px;
+
+    border-top: 1px solid #edf2ee;
+
+    background: #ffffff;
+}
+
+.agrimind-user-card {
+    margin-top: 12px;
+
+    padding: 12px;
+
+    border: 1px solid #e1ebe4;
+
+    border-radius: 15px;
+
+    background: #f9fcfa;
+}
+
+.agrimind-user-info {
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+}
+
+.agrimind-avatar {
+    width: 42px;
+    height: 42px;
+
+    min-width: 42px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 12px;
+
+    background: #0da04e;
+
+    color: #ffffff;
+
+    font-size: 16px;
+
+    font-weight: 800;
+}
+
+.agrimind-user-details {
+    min-width: 0;
+
+    flex: 1;
+}
+
+.agrimind-user-name {
+    color: #183225;
+
+    font-size: 13px;
+
+    font-weight: 700;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+}
+
+.agrimind-user-role {
+    margin-top: 3px;
+
+    color: #829087;
+
+    font-size: 11px;
+}
+
+.agrimind-logout {
+    width: 100%;
+    height: 39px;
+
+    margin-top: 10px;
+
+    border: 1px solid #e1e9e3;
+
+    border-radius: 10px;
+
+    background: #ffffff;
+
+    color: #53625a;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 8px;
+
+    font-size: 12px;
+
+    font-weight: 700;
+}
+
+.agrimind-logout:hover {
+    background: #fff6f5;
+
+    color: #c84b3d;
+
+    border-color: #f0d7d3;
+}
+
+.agrimind-logout-icon {
+    width: 17px;
+    height: 17px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+}
+
+.agrimind-logout-icon svg {
+    width: 17px;
+    height: 17px;
+
+    fill: none;
+
+    stroke: currentColor;
+
+    stroke-width: 1.7;
+
+    stroke-linecap: round;
+
+    stroke-linejoin: round;
+}
+
+.agrimind-version {
+    margin-top: 12px;
+
+    padding: 0 5px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    color: #9aa59f;
+
+    font-size: 10px;
+}
+
+.agrimind-version span:last-child {
+    color: #159448;
+
+    font-weight: 700;
+}
+
+
+/* ============================================================
+   MAIN CONTENT
+   THIS IS THE MOST IMPORTANT PART
+   ============================================================ */
+
+.app-layout > .main-content {
+    position: relative !important;
+
+    display: block !important;
+
+    width: calc(100% - var(--sidebar-width)) !important;
+
+    min-width: 0 !important;
+
+    min-height: 100vh !important;
+
+    margin: 0 0 0 var(--sidebar-width) !important;
+
+    padding: 0 !important;
+
+    background: var(--bg-color);
+
+    overflow-x: hidden !important;
+
+    box-sizing: border-box !important;
+}
+
+
+/* ============================================================
+   MAIN CONTENT DIRECT CHILD
+   No negative positioning.
+   No forced extra margin.
+   ============================================================ */
+
+.app-layout > .main-content > * {
+    position: relative;
+
+    left: auto !important;
+    right: auto !important;
+
+    transform: none !important;
+
+    min-width: 0;
+
+    box-sizing: border-box;
+}
+
+
+/* ============================================================
+   GENERAL PAGE CONTAINERS
+   ============================================================ */
+
+.main-content .page,
+.main-content .page-container,
+.main-content .page-content,
+.main-content .dashboard,
+.main-content .dashboard-page,
+.main-content .dashboard-container,
+.main-content .dashboard-content,
+.main-content .detection-page,
+.main-content .detection-container,
+.main-content .analytics-page,
+.main-content .history-page {
+    width: 100%;
+
+    min-width: 0;
+
+    box-sizing: border-box;
+
+    margin-left: 0;
+    margin-right: 0;
+}
+
+
+/* ============================================================
+   CROPS PAGE
+   ============================================================ */
+
+.main-content .crops-page {
+    position: relative !important;
+
+    width: 100% !important;
+
+    min-width: 0 !important;
+
+    max-width: none !important;
+
+    margin: 0 !important;
+
+    padding: 35px !important;
+
+    left: auto !important;
+    right: auto !important;
+
+    transform: none !important;
+
+    box-sizing: border-box !important;
+
+    overflow-x: hidden !important;
+}
+
+
+/* ============================================================
+   CROPS HEADER
+   ============================================================ */
+
+.crops-page .crops-header {
+    width: 100% !important;
+
+    min-width: 0 !important;
+
+    max-width: 100% !important;
+
+    margin: 0 0 30px 0 !important;
+
+    box-sizing: border-box;
+}
+
+
+/* ============================================================
+   CROPS SUMMARY
+   ============================================================ */
+
+.crops-page .crop-summary {
+    width: 100% !important;
+
+    min-width: 0 !important;
+
+    max-width: 100% !important;
+
+    display: grid !important;
+
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr)) !important;
+
+    gap: 20px !important;
+
+    margin: 0 0 35px 0 !important;
+
+    padding: 0 !important;
+
+    box-sizing: border-box !important;
+}
+
+.crop-summary-card {
+    min-width: 0;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 18px;
+
+    padding: 24px;
+
+    background: #ffffff;
+
+    border: 1px solid #e5e7eb;
+
+    border-radius: 18px;
+
+    box-shadow:
+        0 8px 25px rgba(0, 0, 0, 0.05);
+
+    box-sizing: border-box;
+}
+
+.summary-icon {
+    width: 58px;
+    height: 58px;
+
+    min-width: 58px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    background: #dcfce7;
+
+    border-radius: 16px;
+
+    font-size: 30px;
+}
+
+
+/* ============================================================
+   CROPS GRID
+   IMPORTANT:
+   Use .crops-grid AND .crop-grid
+   ============================================================ */
+
+.crops-page .crops-grid,
+.crops-page .crop-grid {
+    width: 100% !important;
+
+    min-width: 0 !important;
+
+    max-width: 100% !important;
+
+    display: grid !important;
+
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr)) !important;
+
+    gap: 25px !important;
+
+    margin: 0 0 35px 0 !important;
+
+    padding: 0 !important;
+
+    box-sizing: border-box !important;
+}
+
+
+/* ============================================================
+   CROP CARD
+   ============================================================ */
+
+.crops-page .crop-card {
+    width: 100% !important;
+
+    min-width: 0 !important;
+
+    max-width: 100% !important;
+
+    margin: 0 !important;
+
+    padding: 26px !important;
+
+    background: #ffffff;
+
+    border: 1px solid #e5e7eb;
+
+    border-radius: 22px;
+
+    box-shadow:
+        0 8px 25px rgba(0, 0, 0, 0.05);
+
+    overflow: hidden !important;
+
+    box-sizing: border-box !important;
+
+    transition:
+        transform 0.25s ease,
+        box-shadow 0.25s ease;
+}
+
+.crops-page .crop-card:hover {
+    transform: translateY(-5px);
+
+    border-color: #86efac;
+
+    box-shadow:
+        0 18px 35px rgba(22, 163, 74, 0.12);
+}
+
+
+/* ============================================================
+   CROP CARD IMAGE
+   ============================================================ */
+
+.crops-page .crop-card img {
+    width: 100% !important;
+
+    max-width: 100% !important;
+
+    height: 210px;
+
+    display: block;
+
+    object-fit: cover;
+
+    border-radius: 14px;
+}
+
+
+/* ============================================================
+   CROP ICON
+   ============================================================ */
+
+.crop-icon {
+    width: 70px;
+    height: 70px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    background: #dcfce7;
+
+    border-radius: 20px;
+
+    font-size: 38px;
+
+    margin-bottom: 18px;
+}
+
+
+/* ============================================================
+   CROP CATEGORY
+   ============================================================ */
+
+.crop-category {
+    display: inline-block;
+
+    padding: 6px 12px;
+
+    background: #f0fdf4;
+
+    color: #15803d;
+
+    border: 1px solid #bbf7d0;
+
+    border-radius: 999px;
+
+    font-size: 12px;
+
+    font-weight: 700;
+
+    margin-bottom: 10px;
+}
+
+
+/* ============================================================
+   CROP TEXT
+   ============================================================ */
+
+.crops-page .crop-card h2 {
+    margin: 4px 0 10px;
+
+    color: #111827;
+
+    font-size: 25px;
+
+    font-weight: 800;
+
+    overflow-wrap: break-word;
+}
+
+.crop-description {
+    color: #6b7280;
+
+    font-size: 14px;
+
+    line-height: 1.6;
+
+    min-height: 46px;
+
+    margin-bottom: 22px;
+
+    overflow-wrap: break-word;
+}
+
+
+/* ============================================================
+   DISEASE SECTION
+   ============================================================ */
+
+.disease-section {
+    background: #f9fafb;
+
+    border-radius: 16px;
+
+    padding: 18px;
+
+    margin-top: 10px;
+}
+
+.disease-section h3 {
+    margin: 0 0 14px;
+
+    color: #374151;
+
+    font-size: 15px;
+
+    font-weight: 700;
+}
+
+.disease-section ul {
+    list-style: none;
+
+    padding: 0;
+
+    margin: 0;
+}
+
+.disease-section li {
+    display: flex;
+
+    align-items: center;
+
+    gap: 9px;
+
+    padding: 7px 0;
+
+    color: #4b5563;
+
+    font-size: 13px;
+
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.disease-section li:last-child {
+    border-bottom: none;
+}
+
+
+/* ============================================================
+   CROP FOOTER
+   ============================================================ */
+
+.crop-footer {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 12px;
+
+    margin-top: 18px;
+
+    padding-top: 16px;
+
+    border-top: 1px solid #e5e7eb;
+}
+
+.crop-status {
+    color: #16a34a;
+
+    font-size: 13px;
+
+    font-weight: 700;
+}
+
+.crop-status.coming-soon {
+    color: #9ca3af;
+}
+
+
+/* ============================================================
+   ANALYZE BUTTON
+   ============================================================ */
+
+.crop-analyze-button {
+    width: 100% !important;
+
+    padding: 12px 18px !important;
+
+    margin-top: 4px;
+
+    border: none !important;
+
+    border-radius: 10px !important;
+
+    background: #16a34a !important;
+
+    color: #ffffff !important;
+
+    font-size: 14px !important;
+
+    font-weight: 700 !important;
+
+    text-align: center;
+
+    cursor: pointer !important;
+
+    transition: 0.2s ease;
+}
+
+.crop-analyze-button:hover {
+    background: #15803d !important;
+
+    transform: translateY(-2px);
+}
+
+
+/* ============================================================
+   CROP INFO BOX
+   ============================================================ */
+
+.crop-info-box {
+    width: 100%;
+
+    display: flex;
+
+    align-items: flex-start;
+
+    gap: 20px;
+
+    background: #f0fdf4;
+
+    border: 1px solid #bbf7d0;
+
+    border-radius: 22px;
+
+    padding: 28px;
+
+    margin-bottom: 30px;
+}
+
+.crop-info-icon {
+    width: 60px;
+    height: 60px;
+
+    min-width: 60px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    background: #dcfce7;
+
+    border-radius: 18px;
+
+    font-size: 30px;
+}
+
+
+/* ============================================================
+   DASHBOARD SEARCH
+   ============================================================ */
+
+.dashboard-search {
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    width: 320px;
+
+    padding: 8px 12px;
+
+    background: #ffffff;
+
+    border: 1px solid #e5e9e6;
+
+    border-radius: 12px;
+}
+
+.dashboard-search input {
+    width: 100%;
+
+    border: none;
+
+    outline: none;
+
+    background: transparent;
+
+    color: #17211b;
+
+    font-size: 14px;
+}
+
+.dashboard-search input::placeholder {
+    color: #9aa39d;
+}
+
+
+/* ============================================================
+   DASHBOARD / GENERAL GRIDS
+   ============================================================ */
+
+.main-content .grid,
+.main-content .cards-grid,
+.main-content .stats-grid,
+.main-content .dashboard-stats,
+.main-content .stats-cards,
+.main-content .content-grid,
+.main-content .overview-grid {
+    width: 100%;
+
+    max-width: 100%;
+
+    min-width: 0;
+
+    box-sizing: border-box;
+}
+
+
+/* ============================================================
+   HERO
+   ============================================================ */
+
+.main-content .hero,
+.main-content .dashboard-hero,
+.main-content .hero-section {
+    position: relative;
+
+    width: 100%;
+
+    max-width: 100%;
+
+    min-width: 0;
+
+    margin-left: 0;
+
+    margin-right: 0;
+
+    overflow: hidden;
+
+    box-sizing: border-box;
+}
+
+.hero-content,
+.dashboard-hero-content,
+.hero-text {
+    position: relative;
+
+    min-width: 0;
+
+    max-width: 100%;
+
+    box-sizing: border-box;
+}
+
+.hero img,
+.dashboard-hero img,
+.hero-section img {
+    max-width: 100%;
+
+    height: auto;
+}
+
+
+/* ============================================================
+   GENERAL CONTENT IMAGES
+   ============================================================ */
+
+.main-content img {
+    max-width: 100%;
+}
+
+
+/* ============================================================
+   GENERAL CARDS
+   ============================================================ */
+
+.main-content .card {
+    min-width: 0;
+
+    max-width: 100%;
+
+    box-sizing: border-box;
+}
+
+
+/* ============================================================
+   HISTORY
+   ============================================================ */
+
+.history-container {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 20px;
+
+    margin-top: 25px;
+}
+
+.history-card {
+    background: #ffffff;
+
+    border: 1px solid #e5e7eb;
+
+    border-radius: 18px;
+
+    padding: 24px;
+
+    box-shadow:
+        0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.history-card-header {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: flex-start;
+
+    gap: 20px;
+
+    margin-bottom: 20px;
+}
+
+.history-details {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
+    gap: 16px;
+}
+
+
+/* ============================================================
+   SETTINGS
+   ============================================================ */
+
+.settings-actions {
+    display: flex;
+
+    justify-content: flex-end;
+
+    gap: 12px;
+
+    margin-top: 20px;
+
+    margin-bottom: 20px;
+}
+
+.save-settings-btn,
+.reset-settings-btn {
+    border: none;
+
+    border-radius: 8px;
+
+    padding: 12px 20px;
+
+    font-size: 15px;
+
+    font-weight: 600;
+}
+
+.save-settings-btn {
+    background: #16a34a;
+
+    color: #ffffff;
+}
+
+.reset-settings-btn {
+    background: #e5e7eb;
+
+    color: #111827;
+}
+
+
+/* ============================================================
+   DARK MODE
+   ============================================================ */
+
+html[data-theme="dark"] {
+    --bg-color: #0f172a;
+
+    --card-color: #1e293b;
+
+    --text-color: #f8fafc;
+
+    --muted-color: #cbd5e1;
+
+    --border-color: #334155;
+}
+
+html[data-theme="dark"] body {
+    background: var(--bg-color);
+
+    color: var(--text-color);
+}
+
+html[data-theme="dark"] .main-content {
+    background: var(--bg-color);
+}
+
+html[data-theme="dark"] .sidebar,
+html[data-theme="dark"] .agrimind-sidebar {
+    background: #111827 !important;
+
+    border-color: #334155 !important;
+}
+
+html[data-theme="dark"] .agrimind-brand-text h2 {
+    color: #f8fafc;
+}
+
+html[data-theme="dark"] .agrimind-nav-item {
+    color: #cbd5e1;
+}
+
+html[data-theme="dark"] .agrimind-nav-item:hover,
+html[data-theme="dark"] .agrimind-nav-item.active {
+    background: #172033;
+
+    color: #86efac;
+}
+
+
+/* ============================================================
+   LAPTOP
+   ============================================================ */
+
+@media (max-width: 1200px) and (min-width: 769px) {
+
+    :root {
+        --sidebar-width: 270px;
+    }
+
+    .sidebar,
+    .agrimind-sidebar {
+        width: 270px !important;
+    }
+
+    .app-layout > .main-content {
+        width: calc(100% - 270px) !important;
+
+        margin-left: 270px !important;
+    }
+
+    .main-content .crops-page {
+        padding: 28px !important;
+    }
+
+    .crops-page .crop-grid,
+    .crops-page .crops-grid {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .crops-page .crop-summary {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr)) !important;
+    }
+}
+
+
+/* ============================================================
+   TABLET
+   ============================================================ */
+
+@media (max-width: 768px) {
+
+    :root {
+        --sidebar-width: 76px;
+    }
+
+    .sidebar,
+    .agrimind-sidebar {
+        width: 76px !important;
+    }
+
+    .app-layout > .main-content {
+        width: calc(100% - 76px) !important;
+
+        margin-left: 76px !important;
+    }
+
+    /* New sidebar becomes icon-only */
+
+    .agrimind-brand {
+        justify-content: center;
+
+        padding: 18px 10px;
+    }
+
+    .agrimind-brand-text {
+        display: none;
+    }
+
+    .agrimind-sidebar-content {
+        padding: 20px 10px;
+    }
+
+    .agrimind-menu-title {
+        display: none;
+    }
+
+    .agrimind-nav-item {
+        justify-content: center;
+
+        padding: 0;
+
+        gap: 0;
+    }
+
+    .agrimind-nav-label,
+    .agrimind-nav-arrow {
+        display: none;
+    }
+
+    .agrimind-nav-icon {
+        width: 28px;
+        height: 28px;
+    }
+
+    .agrimind-sidebar-bottom {
+        padding: 10px;
+    }
+
+    .agrimind-user-card {
+        padding: 8px;
+    }
+
+    .agrimind-user-details,
+    .agrimind-logout {
+        display: none;
+    }
+
+    .agrimind-user-info {
+        justify-content: center;
+    }
+
+    .agrimind-version span:first-child {
+        display: none;
+    }
+
+    /* Crops */
+
+    .main-content .crops-page {
+        padding: 24px 20px 50px !important;
+    }
+
+    .crops-page .crop-grid,
+    .crops-page .crops-grid {
+        grid-template-columns: 1fr !important;
+
+        gap: 18px !important;
+    }
+
+    .crops-page .crop-summary {
+        grid-template-columns: 1fr !important;
+    }
+
+    .history-details {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-search {
+        width: 100%;
+    }
+}
+
+
+/* ============================================================
+   SMALL MOBILE
+   ============================================================ */
+
+@media (max-width: 480px) {
+
+    .app-layout > .main-content {
+        width: calc(100% - 76px) !important;
+
+        margin-left: 76px !important;
+    }
+
+    .main-content .crops-page {
+        padding: 20px 15px 40px !important;
+    }
+
+    .crops-page .crop-card {
+        border-radius: 16px;
+
+        padding: 18px !important;
+    }
+
+    .crops-page .crop-card img {
+        height: 180px;
+    }
+
+    .page-title h1 {
+        font-size: 28px;
+    }
+}
+
+
+/* ============================================================
+   ACCESSIBILITY
+   ============================================================ */
+
+:focus-visible {
+    outline: 2px solid #16a34a;
+
+    outline-offset: 2px;
+}
