@@ -15,3 +15,5 @@ torch
 torchvision
 matplotlib
 seaborn
+openai
+google-genai

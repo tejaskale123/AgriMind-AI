@@ -2074,6 +2074,98 @@ function DiseaseDetection() {
                         #1d4ed8;
                 }
 
+               /* =====================================================
+                GEMINI AI EXPLANATION
+                ===================================================== */
+
+                .ai-explanation {
+                    margin-top: 21px;
+
+                    padding: 22px 23px;
+
+                    border:
+                        1px solid #bbf7d0;
+
+                    border-radius: 18px;
+
+                    background:
+                        linear-gradient(
+                            135deg,
+                            #f0fdf4,
+                            #ecfdf5
+                        );
+
+                    box-shadow:
+                        0 6px 18px
+                        rgba(22,163,74,.05);
+                }
+
+                .ai-explanation-header {
+                    display: flex;
+                    align-items: center;
+
+                    gap: 10px;
+
+                    margin-bottom: 12px;
+                }
+
+                .ai-explanation-icon {
+                    width: 34px;
+                    height: 34px;
+
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+
+                    border-radius: 10px;
+
+                    background:
+                        #dcfce7;
+
+                    color:
+                        #15803d;
+
+                    font-size: 16px;
+                    font-weight: 950;
+                }
+
+                .ai-explanation h2 {
+                    margin: 0;
+
+                    color:
+                        #082518;
+
+                    font-size: 19px;
+                    font-weight: 950;
+                }
+
+                .ai-explanation-label {
+                    margin:
+                        0 0 8px;
+
+                    color:
+                        #15803d;
+
+                    font-size: 10px;
+                    font-weight: 900;
+
+                    text-transform:
+                        uppercase;
+
+                    letter-spacing:
+                        .7px;
+                }
+
+                .ai-explanation p {
+                    margin: 0;
+
+                    color:
+                        #334155;
+
+                    font-size: 13px;
+
+                    line-height: 1.75;
+                }
 
                 /* =====================================================
                    LOW CONFIDENCE
@@ -3224,6 +3316,38 @@ function DiseaseDetection() {
                     {/* =============================================
                         LOW CONFIDENCE
                     ============================================= */}
+
+                    {/* =====================================================
+                        GEMINI AI EXPLANATION
+                    ===================================================== */}
+
+                    {predictionResult?.ai_explanation && !isLowConfidence && (
+
+                        <div className="ai-explanation">
+
+                            <div className="ai-explanation-header">
+
+                                <div className="ai-explanation-icon">
+                                    ✦
+                                </div>
+
+                                <h2>
+                                    AI Explanation
+                                </h2>
+
+                            </div>
+
+                            <p className="ai-explanation-label">
+                                Gemini AI Assistant
+                            </p>
+
+                            <p>
+                                {predictionResult.ai_explanation}
+                            </p>
+
+                        </div>
+
+                    )}
 
                     {isLowConfidence ? (
 

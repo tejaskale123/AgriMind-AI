@@ -24,6 +24,7 @@ from .auth import (
     create_access_token,
     verify_access_token,
 )
+from .gemini_service import generate_ai_explanation
 
 # ============================================================
 # AGRIMIND AI
@@ -1105,6 +1106,30 @@ async def predict(
     predicted_class
 )
 
+       # --------------------------------------------------------
+    # GEMINI AI EXPLANATION
+    # Uses the existing curated recommendation as the source.
+    # --------------------------------------------------------
+
+    ai_explanation = None
+
+    if recommendation is not None:
+
+        try:
+
+            ai_explanation = generate_ai_explanation(
+                crop=crop,
+                disease=predicted_class,
+                recommendation=recommendation,
+            )
+
+        except Exception as error:
+
+            print(
+                f"WARNING: Gemini AI explanation failed: {error}"
+            )
+
+            ai_explanation = None
 
     # --------------------------------------------------------
     # SAVE HISTORY
@@ -1170,6 +1195,9 @@ async def predict(
 
         "recommendation":
             recommendation,
+            
+        "ai_explanation":
+            ai_explanation,
     }
 
 
