@@ -1,4 +1,4 @@
-from pathlib import Path
+﻿from pathlib import Path
 import argparse
 
 import torch
@@ -15,7 +15,7 @@ from torchvision import datasets, transforms, models
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
-DATASET_ROOT = PROJECT_ROOT / "datasets" / "disease"
+DATASET_ROOT = PROJECT_ROOT / "datasets" / "processed"
 
 MODEL_ROOT = PROJECT_ROOT / "models"
 
@@ -384,7 +384,7 @@ def train_model(crop):
     print("=" * 70)
 
     print(
-        "🌱 AGRIMIND AI - MODEL TRAINING"
+        "ðŸŒ± AGRIMIND AI - MODEL TRAINING"
     )
 
     print("=" * 70)
@@ -570,7 +570,7 @@ def train_model(crop):
 
 
             print(
-                f"💾 Best model saved: "
+                f"ðŸ’¾ Best model saved: "
                 f"{model_path}"
             )
 
@@ -591,7 +591,7 @@ def train_model(crop):
     print("\n" + "=" * 70)
 
     print(
-        "📊 FINAL TEST RESULT"
+        "ðŸ“Š FINAL TEST RESULT"
     )
 
     print("=" * 70)

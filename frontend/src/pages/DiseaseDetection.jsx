@@ -741,7 +741,7 @@ function DiseaseDetection() {
 
     const CheckIcon = () => (
         <span className="check-icon">
-            ✓
+            âœ“
         </span>
     );
 
@@ -2757,7 +2757,7 @@ function DiseaseDetection() {
                     {cropName}
 
                     <span>
-                        • AI Ready
+                        â€¢ AI Ready
                     </span>
 
                 </div>
@@ -2876,21 +2876,21 @@ function DiseaseDetection() {
 
                                     <span>
                                         <span className="meta-check">
-                                            ✓
+                                            âœ“
                                         </span>{" "}
                                         JPG / PNG / WEBP
                                     </span>
 
                                     <span>
                                         <span className="meta-check">
-                                            ✓
+                                            âœ“
                                         </span>{" "}
                                         Up to 10 MB
                                     </span>
 
                                     <span>
                                         <span className="meta-check">
-                                            ✓
+                                            âœ“
                                         </span>{" "}
                                         Clear leaf image
                                     </span>
@@ -3321,33 +3321,6 @@ function DiseaseDetection() {
                         GEMINI AI EXPLANATION
                     ===================================================== */}
 
-                    {predictionResult?.ai_explanation && !isLowConfidence && (
-
-                        <div className="ai-explanation">
-
-                            <div className="ai-explanation-header">
-
-                                <div className="ai-explanation-icon">
-                                    ✦
-                                </div>
-
-                                <h2>
-                                    AI Explanation
-                                </h2>
-
-                            </div>
-
-                            <p className="ai-explanation-label">
-                                Gemini AI Assistant
-                            </p>
-
-                            <p>
-                                {predictionResult.ai_explanation}
-                            </p>
-
-                        </div>
-
-                    )}
 
                     {isLowConfidence ? (
 
@@ -3375,7 +3348,7 @@ function DiseaseDetection() {
 
                                 %
 
-                                {" • "}
+                                {" â€¢ "}
 
                                 Required:
 
@@ -3447,7 +3420,7 @@ function DiseaseDetection() {
                                 </div>
 
                                 <h2>
-                                    AI Recommendation
+                                    Plant Care & Management
                                 </h2>
 
                             </div>

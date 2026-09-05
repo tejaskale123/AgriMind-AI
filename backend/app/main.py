@@ -1,4 +1,4 @@
-﻿from pathlib import Path
+from pathlib import Path
 import sqlite3
 import json
 from datetime import datetime
@@ -61,7 +61,7 @@ RECOMMENDATION_PATH = (
 MODEL_PATH = (
     PROJECT_ROOT
     / "models"
-    / "cotton_efficientnet_b0.pth"
+    / "cotton_9class_efficientnet_b0.pth"
 )
 
 SOYBEAN_MODEL_PATH = (
@@ -83,12 +83,15 @@ WHEAT_MODEL_PATH = (
 
 COTTON_CLASSES = [
     "Alternaria Leaf Spot",
+    "Anthracnose",
     "Bacterial Blight",
+    "Boll Rot",
+    "Cercospora Leaf Spot",
     "Fusarium Wilt",
+    "Grey Areolate Mildew",
     "Healthy Leaf",
     "Verticillium Wilt",
 ]
-
 SOYBEAN_CLASSES = [
     "Bacterial_Blight",
     "Cercospora_Leaf_Blight",
