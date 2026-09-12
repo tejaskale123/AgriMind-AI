@@ -1,4 +1,4 @@
-from pathlib import Path
+﻿from pathlib import Path
 import sqlite3
 import json
 from datetime import datetime
@@ -13,6 +13,7 @@ from torchvision import models, transforms
 from fastapi import FastAPI, File, UploadFile, HTTPException, Form
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.responses import StreamingResponse
 
 from pydantic import BaseModel, EmailStr
 
@@ -24,7 +25,8 @@ from .auth import (
     create_access_token,
     verify_access_token,
 )
-from .gemini_service import generate_ai_explanation
+from .claude_service import stream_claude_recommendation
+
 
 # ============================================================
 # AGRIMIND AI
@@ -171,7 +173,6 @@ IMAGE_TRANSFORM = transforms.Compose(
         ),
 
         transforms.ToTensor(),
-
         transforms.Normalize(
             mean=[
                 0.485,
@@ -1102,39 +1103,6 @@ async def predict(
 
 
     # --------------------------------------------------------
-    # RECOMMENDATION
-    # --------------------------------------------------------
-
-    recommendation = find_recommendation(
-    predicted_class
-)
-
-       # --------------------------------------------------------
-    # GEMINI AI EXPLANATION
-    # Uses the existing curated recommendation as the source.
-    # --------------------------------------------------------
-
-    ai_explanation = None
-
-    if recommendation is not None:
-
-        try:
-
-            ai_explanation = generate_ai_explanation(
-                crop=crop,
-                disease=predicted_class,
-                recommendation=recommendation,
-            )
-
-        except Exception as error:
-
-            print(
-                f"WARNING: Gemini AI explanation failed: {error}"
-            )
-
-            ai_explanation = None
-
-    # --------------------------------------------------------
     # SAVE HISTORY
     # --------------------------------------------------------
 
@@ -1161,8 +1129,7 @@ async def predict(
     probabilities=
         all_probabilities,
 
-    recommendation=
-        recommendation,
+    recommendation=None,
     )
 
 
@@ -1197,12 +1164,71 @@ async def predict(
             all_probabilities,
 
         "recommendation":
-            recommendation,
+            None,
             
-        "ai_explanation":
-            ai_explanation,
+       
     }
 
+
+
+# ============================================================
+# STREAMED RECOMMENDATION API
+# ============================================================
+
+@app.get("/recommendation/stream")
+async def recommendation_stream(
+    crop: str,
+    disease: str,
+    confidence: float | None = None,
+    token: str = Depends(oauth2_scheme),
+):
+    current_user = verify_access_token(token)
+
+    if current_user is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or expired token."
+        )
+
+    async def event_stream():
+        try:
+            async for event in stream_claude_recommendation(
+                crop=crop,
+                disease=disease,
+                confidence=confidence,
+            ):
+                yield (
+                    "data: "
+                    + json.dumps(event, ensure_ascii=False)
+                    + "\n\n"
+                )
+
+            yield "data: {\"done\": true}\n\n"
+
+        except Exception as error:
+            yield (
+                "data: "
+                + json.dumps(
+                    {
+                        "error": (
+                            "Recommendation stream failed: "
+                            f"{error}"
+                        )
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n\n"
+            )
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 # ============================================================

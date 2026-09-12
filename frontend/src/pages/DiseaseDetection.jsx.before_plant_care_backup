@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 function DiseaseDetection() {
@@ -207,134 +207,29 @@ function DiseaseDetection() {
                 )}`
             );
 
-            const data = await response.json();
+            const data =
+                await response.json();
 
-            if (!response.ok || !data.success) {
+            if (
+                !response.ok ||
+                !data.success
+            ) {
                 throw new Error(
                     data.detail ||
                     "Recommendation could not be loaded."
                 );
             }
 
-            setRecommendation(data.recommendation);
-        } catch (err) {
-            console.error("Recommendation error:", err);
-            setRecommendation(null);
-        } finally {
-            setRecommendationLoading(false);
-        }
-    };
-
-    const normalizeRecommendation = (value) => {
-        if (!value) return null;
-
-        const arrayFields = [
-            "symptoms",
-            "immediate_action",
-            "prevention",
-            "spray_guidance",
-            "treatment",
-        ];
-
-        return arrayFields.reduce(
-            (normalized, field) => ({
-                ...normalized,
-                [field]: Array.isArray(normalized[field])
-                    ? normalized[field]
-                    : normalized[field]
-                        ? [normalized[field]]
-                        : [],
-            }),
-            { ...value }
-        );
-    };
-
-    const streamRecommendation = async (
-        prediction,
-        confidence
-    ) => {
-        setRecommendation({});
-        setRecommendationLoading(true);
-
-        try {
-            const response = await fetch(
-                `http://127.0.0.1:8000/recommendation/stream?crop=${encodeURIComponent(
-                    selectedCrop
-                )}&disease=${encodeURIComponent(
-                    prediction
-                )}&confidence=${encodeURIComponent(
-                    confidence
-                )}`,
-                {
-                    headers: {
-                        Authorization:
-                            `Bearer ${getAuthToken()}`,
-                    },
-                }
+            setRecommendation(
+                data.recommendation
             );
-
-            if (!response.ok || !response.body) {
-                throw new Error(
-                    "Recommendation stream could not be started."
-                );
-            }
-
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-            let buffer = "";
-
-            while (true) {
-                const { value, done } =
-                    await reader.read();
-
-                buffer += decoder.decode(
-                    value || new Uint8Array(),
-                    { stream: !done }
-                );
-
-                const events = buffer.split("\n\n");
-                buffer = events.pop() || "";
-
-                for (const event of events) {
-                    const line = event
-                        .split("\n")
-                        .find((item) =>
-                            item.startsWith("data: ")
-                        );
-
-                    if (!line) continue;
-
-                    const payload = JSON.parse(
-                        line.slice(6)
-                    );
-
-                    if (payload.error) {
-                        throw new Error(payload.error);
-                    }
-
-                    if (payload.data) {
-                        setRecommendation((current) =>
-                            normalizeRecommendation({
-                                ...current,
-                                ...payload.data,
-                            })
-                        );
-                        setRecommendationLoading(false);
-                    }
-                }
-
-                if (done) break;
-            }
         } catch (err) {
             console.error(
-                "Recommendation stream error:",
+                "Recommendation error:",
                 err
             );
+
             setRecommendation(null);
-            setError(
-                err.message ||
-                "Unable to load the recommendation."
-            );
         } finally {
             setRecommendationLoading(false);
         }
@@ -734,9 +629,8 @@ function DiseaseDetection() {
                 finalResult
             );
 
-            await streamRecommendation(
-                data.prediction,
-                data.confidence
+            await fetchRecommendation(
+                data.prediction
             );
         } catch (err) {
             console.error(
@@ -747,7 +641,7 @@ function DiseaseDetection() {
             setError(
                 err.message ||
                 "Unable to connect to AI server."
-            ); 
+            );
         } finally {
             setLoading(false);
         }
@@ -847,7 +741,7 @@ function DiseaseDetection() {
 
     const CheckIcon = () => (
         <span className="check-icon">
-            âœ“
+            ✓
         </span>
     );
 
@@ -2823,29 +2717,6 @@ function DiseaseDetection() {
 
                 }
 
-                .ai-verification-warning {
-                    margin: 18px 0 22px;
-                    padding: 18px 20px;
-                    border: 2px solid #dc2626;
-                    border-radius: 12px;
-                    background: #fef2f2;
-                    color: #991b1b;
-                }
-
-                .ai-verification-warning strong {
-                    display: block;
-                    margin-bottom: 8px;
-                    font-size: 17px;
-                    color: #b91c1c;
-                }
-
-                .ai-verification-warning p {
-                    margin: 0;
-                    line-height: 1.6;
-                    font-size: 15px;
-                    color: #7f1d1d;
-                }
-
             `}</style>
 
 
@@ -2886,7 +2757,7 @@ function DiseaseDetection() {
                     {cropName}
 
                     <span>
-                        â€¢ AI Ready
+                        • AI Ready
                     </span>
 
                 </div>
@@ -3005,21 +2876,21 @@ function DiseaseDetection() {
 
                                     <span>
                                         <span className="meta-check">
-                                            âœ“
+                                            ✓
                                         </span>{" "}
                                         JPG / PNG / WEBP
                                     </span>
 
                                     <span>
                                         <span className="meta-check">
-                                            âœ“
+                                            ✓
                                         </span>{" "}
                                         Up to 10 MB
                                     </span>
 
                                     <span>
                                         <span className="meta-check">
-                                            âœ“
+                                            ✓
                                         </span>{" "}
                                         Clear leaf image
                                     </span>
@@ -3354,8 +3225,8 @@ function DiseaseDetection() {
 
                             <div>
 
-                                <h2> 
-                                    Disease Detection Result 
+                                <h2>
+                                    AI Detection Result
                                 </h2>
 
                                 <p>
@@ -3457,7 +3328,7 @@ function DiseaseDetection() {
                             <div className="ai-explanation-header">
 
                                 <div className="ai-explanation-icon">
-                                    AI
+                                    ✦
                                 </div>
 
                                 <h2>
@@ -3477,7 +3348,6 @@ function DiseaseDetection() {
                         </div>
 
                     )}
-
 
                     {isLowConfidence ? (
 
@@ -3505,7 +3375,7 @@ function DiseaseDetection() {
 
                                 %
 
-                                {" â€¢ "}
+                                {" • "}
 
                                 Required:
 
@@ -3577,24 +3447,11 @@ function DiseaseDetection() {
                                 </div>
 
                                 <h2>
-                                    Plant Care & Management
+                                    AI Recommendation
                                 </h2>
 
                             </div>
 
-
-                            <div className="ai-verification-warning">
-                                <strong>⚠️ Please verify this result</strong>
-
-                                <p>
-                                    AI prediction may not be completely accurate.
-                                    Please compare the detected condition with the
-                                    visible symptoms on your crop. If the result does
-                                    not match your crop, upload a clear image again
-                                    or consult a local agricultural expert before
-                                    taking treatment or spray action.
-                                </p>
-                            </div>
 
                             <h3>
                                 {prediction}
@@ -3882,12 +3739,7 @@ function DiseaseDetection() {
 
                             {Object.entries(
                                 predictionResult.probabilities
-                            )
-                                .filter(
-                                    ([disease]) =>
-                                        disease !== "Anthracnose"
-                                )
-                                .map(
+                            ).map(
                                 (
                                     [
                                         disease,

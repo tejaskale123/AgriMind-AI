@@ -1,30 +1,33 @@
 # AgriMind AI
 
-AgriMind AI is a full-stack smart agriculture project for crop leaf disease detection. It combines a React + Vite frontend, a FastAPI backend, JWT authentication, SQLite storage, and PyTorch EfficientNet-B0 models to help farmers identify crop leaf diseases from uploaded or captured images.
+AgriMind AI is a full-stack smart agriculture decision-support system. It uses crop leaf images, PyTorch EfficientNet-B0 models, FastAPI, React, and source-backed agricultural guidance to help users identify diseases in cotton, soybean, maize, and wheat.
 
-The application supports authenticated users, protected dashboard access, image quality validation, model inference, disease recommendations, detection history, and analytics.
+The system is an aid for field inspection, not a replacement for local agricultural expertise. AI predictions and recommendations should be verified before treatment or spraying.
 
-## Key Features
+## What The Project Does
 
-- User registration and login
-- Protected frontend pages with automatic login redirect
-- Upload or capture crop leaf images from the web app
-- Select crop before prediction
-- Cotton, soybean, and maize disease prediction using EfficientNet-B0
-- Image quality checks for file type, size, brightness, contrast, and confidence
-- Confidence score, confidence level, and class probability output
-- Disease guidance with symptoms, treatment, prevention, spray guidance, and farmer actions where available
-- User-specific detection history stored in SQLite
-- Dashboard, disease detection, crops, analytics, history, and settings pages
-- ML utilities for dataset validation, duplicate detection, cleaning, splitting, training, inference, and evaluation
+- Registers and authenticates users with JWT tokens.
+- Accepts JPG, PNG, and WEBP leaf images or camera captures.
+- Validates image resolution, brightness, contrast, file type, and model confidence.
+- Runs crop-specific EfficientNet-B0 disease classification.
+- Shows prediction, confidence, and class probabilities.
+- Generates crop-specific management guidance with Claude Haiku and trusted agricultural web search.
+- Streams recommendation sections progressively through Server-Sent Events (SSE).
+- Falls back to the local source-backed recommendation database when live Claude or web search is unavailable.
+- Stores user-specific detection history in SQLite.
+- Provides dashboard, crop, detection, analytics, history, and settings pages.
 
-## Backend Supported Crops And Classes
+## Supported Crops And Classes
 
 ### Cotton
 
 - Alternaria Leaf Spot
+- Anthracnose
 - Bacterial Blight
+- Boll Rot
+- Cercospora Leaf Spot
 - Fusarium Wilt
+- Grey Areolate Mildew
 - Healthy Leaf
 - Verticillium Wilt
 
@@ -43,16 +46,61 @@ The application supports authenticated users, protected dashboard access, image 
 - Gray Leaf Spot
 - Healthy
 
-## Tech Stack
+### Wheat
+
+- Brown Rust
+- Healthy
+- Yellow Rust
+
+## Architecture
+
+```text
+React + Vite frontend
+        |
+        | JWT-authenticated HTTP requests
+        v
+FastAPI backend
+        |
+        +-- EfficientNet-B0 crop-specific models
+        +-- SQLite user and detection history
+        +-- Local disease_recommendations.json fallback
+        +-- Claude Haiku + official agricultural web search
+        +-- SSE recommendation stream
+```
+
+## Recommendation Streaming Flow
+
+Prediction and recommendation generation are intentionally separated:
+
+```text
+Upload image
+    -> POST /predict
+    -> EfficientNet-B0 returns prediction immediately
+    -> Frontend opens /recommendation/stream
+    -> Three Claude Haiku section calls run concurrently
+    -> Each completed section is sent as an SSE event
+    -> Frontend merges and displays sections progressively
+```
+
+The three streamed sections are:
+
+1. Symptoms, severity, and immediate action
+2. Prevention, spray guidance, and treatment
+3. Farmer action and source information
+
+This improves time-to-first-content. It uses more API calls than one bulk request and can produce sections at different times, so the UI merges the results as they arrive. If a section fails, the backend uses the local verified recommendation as a safe fallback.
+
+## Technology Stack
 
 | Layer | Technologies |
 |---|---|
-| Frontend | React, Vite, React Router, CSS |
-| Backend | FastAPI, Python, SQLite, Pillow |
+| Frontend | React 19, Vite, React Router, CSS |
+| Backend | FastAPI, Python, Uvicorn, Pillow |
 | Authentication | JWT, bcrypt, python-jose |
-| Machine Learning | PyTorch, Torchvision, EfficientNet-B0 |
-| Data Processing | NumPy, Pandas, scikit-learn, imagehash |
-| Evaluation | Matplotlib, Seaborn |
+| Machine learning | PyTorch, Torchvision, EfficientNet-B0 |
+| AI recommendations | Anthropic Claude Haiku, server-side web search |
+| Storage | SQLite |
+| Data and evaluation | NumPy, Pandas, scikit-learn, Matplotlib, Seaborn, imagehash |
 
 ## Project Structure
 
@@ -61,47 +109,36 @@ AgriMind-AI/
 |-- backend/
 |   |-- app/
 |   |   |-- auth.py
-|   |   `-- main.py
+|   |   |-- claude_service.py
+|   |   |-- main.py
+|   |   `-- test_claude.py
 |   `-- data/
 |       |-- agrimind_history.db
 |       `-- disease_recommendations.json
+|-- datasets/
 |-- docs/
 |   `-- DATASET_SOURCES.md
 |-- frontend/
 |   |-- public/
 |   |-- src/
 |   |   |-- components/
-|   |   |   `-- Sidebar.jsx
 |   |   |-- pages/
-|   |   |   |-- Analytics.jsx
-|   |   |   |-- Crops.jsx
-|   |   |   |-- Dashboard.jsx
-|   |   |   |-- DiseaseDetection.jsx
-|   |   |   |-- History.jsx
-|   |   |   |-- Login.jsx
-|   |   |   |-- Register.jsx
-|   |   |   `-- Settings.jsx
 |   |   |-- App.jsx
-|   |   |-- App.css
-|   |   |-- index.css
 |   |   `-- main.jsx
-|   |-- package.json
-|   `-- vite.config.js
+|   `-- package.json
 |-- ml/
 |   |-- evaluation/
 |   |-- inference/
 |   |-- preprocessing/
 |   `-- training/
 |-- models/
-|   |-- cotton_efficientnet_b0.pth
+|   |-- cotton_9class_efficientnet_b0.pth
 |   |-- maize_efficientnet_b0.pth
 |   |-- soybean_efficientnet_b0.pth
 |   |-- soybean_efficientnet_b0_baseline_98_18.pth
 |   `-- wheat_efficientnet_b0.pth
-|-- tests/
-|   `-- sample_soybean.jpg
 |-- requirements.txt
-|-- project_extraction.txt
+|-- export_project.py
 `-- README.md
 ```
 
@@ -110,32 +147,27 @@ AgriMind-AI/
 - Python 3.10 or newer
 - Node.js 18 or newer
 - npm
+- Model checkpoint files in `models/`
+- An Anthropic API key for live recommendation generation
+
+## Environment Configuration
+
+Create a `.env` file in the project root:
+
+```env
+ANTHROPIC_API_KEY=your_anthropic_api_key
+```
+
+Never commit `.env` or expose the API key in frontend code. The backend loads the key from the environment and uses the verified model ID `claude-haiku-4-5-20251001`.
 
 ## Backend Setup
 
 Run these commands from the project root.
 
-```bash
+```powershell
 python -m venv .venv
-```
-
-Activate the virtual environment.
-
-Windows PowerShell:
-
-```bash
 .venv\Scripts\Activate.ps1
-```
-
-Install Python dependencies:
-
-```bash
 pip install -r requirements.txt
-```
-
-Start the FastAPI backend:
-
-```bash
 uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
@@ -144,13 +176,14 @@ Backend URLs:
 ```text
 API:  http://127.0.0.1:8000
 Docs: http://127.0.0.1:8000/docs
+Health: http://127.0.0.1:8000/health
 ```
 
 ## Frontend Setup
 
-Open a second terminal.
+Open a second terminal:
 
-```bash
+```powershell
 cd frontend
 npm install
 npm run dev
@@ -162,126 +195,73 @@ Frontend URL:
 http://localhost:5173
 ```
 
-Production build:
+Production build and preview:
 
-```bash
+```powershell
 npm run build
-```
-
-Preview production build:
-
-```bash
 npm run preview
 ```
 
-Run frontend lint:
-
-```bash
-npm run lint
-```
-
-If PowerShell blocks npm scripts, use `npm.cmd`:
-
-```bash
-npm.cmd run dev
-npm.cmd run build
-```
-
-## Authentication
-
-AgriMind AI includes user authentication to protect user-specific application data.
-
-### Authentication Features
-
-- User registration
-- User login
-- JWT access token storage in the frontend
-- Authenticated dashboard access
-- User-specific detection history
-- Protected prediction and history APIs
-- Logout functionality
-- Automatic redirect to login for protected pages
-
-The frontend stores the logged-in user's token in `localStorage` as `access_token` and stores user details as `user`. Protected API requests use a Bearer token.
-
 ## API Endpoints
 
-| Method | Endpoint | Auth Required | Description |
+| Method | Endpoint | Auth | Purpose |
 |---|---|---:|---|
-| `GET` | `/` | No | API status, model name, supported crops, and classes |
-| `GET` | `/health` | No | Backend health, model loading status, available models, and device |
+| `GET` | `/` | No | API status, supported crops, and model classes |
+| `GET` | `/health` | No | Model and device health |
 | `POST` | `/auth/register` | No | Create a user account |
-| `POST` | `/auth/login` | No | Login and return an access token |
-| `POST` | `/auth/token` | No | OAuth2-compatible token endpoint for Swagger UI authorization |
-| `GET` | `/auth/me` | Yes | Return the current authenticated user payload |
-| `POST` | `/predict` | Yes | Predict disease from an uploaded image |
-| `GET` | `/history` | Yes | Return the logged-in user's prediction history |
-| `DELETE` | `/history` | Yes | Clear the logged-in user's prediction history |
-| `GET` | `/recommendation/{disease}` | No | Return disease recommendation details |
-
-### Register Request
-
-`POST /auth/register`
-
-```json
-{
-  "full_name": "Test Farmer",
-  "email": "farmer@example.com",
-  "password": "secret123"
-}
-```
-
-### Login Request
-
-`POST /auth/login`
-
-```json
-{
-  "email": "farmer@example.com",
-  "password": "secret123"
-}
-```
-
-Successful login responses include:
-
-- `success`
-- `message`
-- `access_token`
-- `token_type`
-- `user`
+| `POST` | `/auth/login` | No | Login and receive a JWT |
+| `POST` | `/auth/token` | No | OAuth2-compatible Swagger login |
+| `GET` | `/auth/me` | Yes | Return the current user |
+| `POST` | `/predict` | Yes | Run image classification and return immediately |
+| `GET` | `/recommendation/stream` | Yes | Stream three recommendation sections as SSE |
+| `GET` | `/recommendation/{disease}` | No | Read local recommendation data |
+| `GET` | `/history` | Yes | Read the current user's detection history |
+| `DELETE` | `/history` | Yes | Clear the current user's history |
 
 ### Prediction Request
 
-`POST /predict` expects multipart form data and a Bearer token.
+`POST /predict` expects multipart form data and a Bearer token:
 
 ```text
 file: JPG, PNG, or WEBP image
-crop: cotton, soybean, or maize
+crop: cotton, soybean, maize, or wheat
 ```
 
-Example with curl:
+Example:
 
-```bash
-curl -X POST "http://127.0.0.1:8000/predict" \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
-  -F "file=@leaf.jpg" \
-  -F "crop=maize"
+```powershell
+curl.exe -X POST "http://127.0.0.1:8000/predict" `
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" `
+  -F "file=@leaf.jpg" `
+  -F "crop=cotton"
 ```
 
-Successful prediction responses include:
+The response includes `prediction`, `confidence`, `confidence_level`, `probabilities`, and a `recommendation` field. Recommendation content is loaded progressively from the separate stream endpoint after prediction.
 
-- `success`
-- `crop`
-- `filename`
-- `prediction`
-- `confidence`
-- `confidence_level`
-- `probabilities`
-- `recommendation`
+### Recommendation Stream
 
-The backend checks file type, image size, brightness, contrast, and model confidence before returning a final result.
+The frontend sends an authenticated request like:
 
-## Frontend Pages
+```text
+GET /recommendation/stream?crop=cotton&disease=Boll%20Rot&confidence=99.83
+```
+
+Each SSE event has this shape:
+
+```json
+{
+  "section": "management",
+  "data": {
+    "prevention": "...",
+    "spray_guidance": "...",
+    "treatment": "..."
+  }
+}
+```
+
+The stream ends with a `done` event. The frontend normalizes string fields into arrays before rendering list sections.
+
+## Frontend Routes
 
 | Route | Page | Access |
 |---|---|---|
@@ -289,200 +269,116 @@ The backend checks file type, image size, brightness, contrast, and model confid
 | `/register` | Register | Public |
 | `/` | Dashboard | Protected |
 | `/detection` | Disease Detection | Protected |
-| `/crops` | Crops | Protected |
-| `/analytics` | Analytics | Protected |
-| `/history` | History | Protected |
-| `/settings` | Settings | Protected |
+| `/crops` | Crop information | Protected |
+| `/analytics` | Detection analytics | Protected |
+| `/history` | User detection history | Protected |
+| `/settings` | Application settings | Protected |
 
-## Crop Availability
+## Image Validation
 
-| Crop | Frontend Status | Backend Prediction Status |
-|---|---|---|
-| Cotton | AI Detection Available | Active |
-| Soybean | AI Detection Available | Active |
-| Maize | AI Detection Available | Active |
-| Wheat | AI Detection Available in UI | Model checkpoint present, backend integration pending |
-| Tomato | Coming Soon | Not active |
-| Bell Pepper | Coming Soon | Not active |
+The backend currently validates:
 
-## Application Workflow
+- Minimum resolution: `224x224` pixels
+- Accepted types: JPEG, PNG, and WEBP
+- Frontend upload limit: `10 MB`
+- Brightness range and minimum contrast
+- Minimum model confidence: `70%`
 
-The AgriMind AI application follows this workflow:
+Low-quality or low-confidence results return a warning instead of a normal recommendation.
 
-```text
-User Registration / Login
--> Dashboard
--> Select Disease Detection
--> Select Crop
--> Upload or Capture Leaf Image
--> Image Quality Validation
--> EfficientNet-B0 Model Inference
--> Disease Prediction
--> Confidence & Class Probabilities
--> Disease Recommendation
--> Save Detection History
--> Analytics & History
-```
-
-The system provides disease information including symptoms, immediate actions, prevention, treatment guidance, spray guidance, and farmer actions where available.
-
-## ML Workflow
-
-The ML pipeline is organized under `ml/`.
+## Machine Learning Pipeline
 
 ```text
 Raw datasets
--> Dataset validation
--> Duplicate checking
--> Clean dataset creation
--> Train / validation / test split
--> EfficientNet-B0 training
--> Evaluation
--> Inference testing
--> Backend model deployment
+    -> audit and validation
+    -> duplicate checking and cleaning
+    -> train/validation/test split
+    -> EfficientNet-B0 training
+    -> evaluation and reports
+    -> inference
+    -> FastAPI deployment
 ```
 
-Important scripts:
+Relevant areas include:
 
-```text
-ml/preprocessing/dataset_validator.py
-ml/preprocessing/duplicate_checker.py
-ml/preprocessing/duplicate_report.py
-ml/preprocessing/create_clean_soybean.py
-ml/preprocessing/create_clean_cotton.py
-ml/preprocessing/create_clean_maize.py
-ml/preprocessing/check_maize.py
-ml/preprocessing/create_final_cotton.py
-ml/preprocessing/dataset_splitter.py
-ml/preprocessing/split_leakage_checker.py
-ml/training/train.py
-ml/training/evaluate.py
-ml/inference/predict.py
-ml/evaluation/evaluate.py
-ml/evaluation/generate_report.py
-```
+- `ml/preprocessing/` for validation, duplicate checks, cleaning, and splitting
+- `ml/training/` for model training
+- `ml/inference/` for local inference
+- `ml/evaluation/` for metrics and reports
+- Root scripts for dataset audits, manifests, crop checks, and duplicate analysis
 
 ## Model Files
 
-| File | Purpose |
+| File | Backend use |
 |---|---|
-| `models/cotton_efficientnet_b0.pth` | Cotton disease classification model |
-| `models/soybean_efficientnet_b0.pth` | Soybean disease classification model used by the backend |
-| `models/soybean_efficientnet_b0_baseline_98_18.pth` | Soybean baseline model checkpoint |
+| `models/cotton_9class_efficientnet_b0.pth` | Cotton, 9 classes |
+| `models/soybean_efficientnet_b0.pth` | Soybean, 5 classes |
+| `models/maize_efficientnet_b0.pth` | Maize, 4 classes |
+| `models/wheat_efficientnet_b0.pth` | Wheat, 3 classes |
+| `models/soybean_efficientnet_b0_baseline_98_18.pth` | Soybean baseline checkpoint |
 
-## Model Performance
+## Data And Recommendations
 
-Soybean evaluation report:
+- Dataset source notes: `docs/DATASET_SOURCES.md`
+- Local recommendation data: `backend/data/disease_recommendations.json`
+- User and detection storage: `backend/data/agrimind_history.db`
+- Dataset folders: `datasets/`
+- Project export utility: `export_project.py`
 
-| Metric | Score |
-|---|---:|
-| Accuracy | 98.18% |
-| Precision | 98.33% |
-| Recall | 98.18% |
-| F1 Score | 98.18% |
+The local recommendation file contains source references and is used as the safe fallback when Claude or live web search is unavailable. Claude prompts restrict searches to official agricultural domains such as TNAU, ICAR, and CICR, and prohibit invented pesticide doses or schedules.
 
-Evaluation files:
+## Testing And Validation
 
-```text
-ml/evaluation/evaluation_results.json
-ml/evaluation/MODEL_REPORT.md
-ml/evaluation/reports/confusion_matrix.png
-ml/evaluation/reports/model_performance.png
+Backend syntax check:
+
+```powershell
+python -m py_compile backend/app/main.py backend/app/claude_service.py
 ```
 
-## Important Files
+Claude configuration/API smoke test:
 
-| File | Purpose |
-|---|---|
-| `backend/app/main.py` | FastAPI app for auth, prediction, history, health checks, and recommendations |
-| `backend/app/auth.py` | Password hashing, user lookup, and JWT helpers |
-| `backend/data/disease_recommendations.json` | Disease guidance returned by the recommendation API |
-| `backend/data/agrimind_history.db` | SQLite database for users and detection history |
-| `frontend/src/App.jsx` | Frontend route configuration and protected route handling |
-| `frontend/src/components/Sidebar.jsx` | Main app navigation and logout UI |
-| `frontend/src/pages/Login.jsx` | User login page |
-| `frontend/src/pages/Register.jsx` | User registration page |
-| `frontend/src/pages/Dashboard.jsx` | Dashboard and overview UI |
-| `frontend/src/pages/DiseaseDetection.jsx` | Main image upload, capture, crop selection, and prediction UI |
-| `frontend/src/pages/Crops.jsx` | Supported crop information |
-| `frontend/src/pages/Analytics.jsx` | Analytics UI based on prediction history |
-| `frontend/src/pages/History.jsx` | User detection history UI |
-| `frontend/src/pages/Settings.jsx` | Application settings UI |
-| `ml/training/train.py` | Model training script |
-| `ml/inference/predict.py` | Local model inference script |
+```powershell
+cd backend
+python app/test_claude.py
+```
 
-## Dataset Notes
+Frontend production build:
 
-- Dataset source notes are documented in `docs/DATASET_SOURCES.md`.
-- Raw, processed, cleaned, split, and inference datasets are stored under `datasets/`.
-- Duplicate reports are stored under `datasets/reports/`.
-- Large dataset folders and model checkpoints can make the repository heavy.
+```powershell
+cd frontend
+npm run build
+```
 
-## Application Screenshots
-
-### Dashboard
-
-The dashboard provides an overview of supported crops, AI model status, total detections, and quick access to disease detection.
-
-### Disease Detection
-
-Users can upload or capture a crop leaf image and analyze it using the trained EfficientNet-B0 model.
-
-### Analytics
-
-The analytics page summarizes detection activity and crop disease trends from saved history.
-
-### History
-
-The history page shows saved prediction records for the logged-in user.
+The Claude smoke test requires `ANTHROPIC_API_KEY`. Do not print or commit the key.
 
 ## Troubleshooting
 
-### Backend cannot import a package
+### Backend does not start
 
-Install dependencies again:
+Install the Python dependencies and verify that all model files exist under `models/`. Import-time model loading can take time and requires PyTorch and Torchvision to be installed correctly.
 
-```bash
-pip install -r requirements.txt
-```
+### Frontend cannot reach the backend
 
-### Model not loaded
+Start FastAPI on `http://127.0.0.1:8000` and Vite on `http://localhost:5173`. The backend CORS configuration allows the local Vite origins.
 
-Check that these files exist:
+### Recommendation stream fails
 
-```text
-models/cotton_efficientnet_b0.pth
-models/soybean_efficientnet_b0.pth
-```
+Check that:
 
-Then restart the backend.
+- The backend is running.
+- The Bearer token is valid.
+- `ANTHROPIC_API_KEY` is present in the root `.env` file.
+- The Anthropic account can access `claude-haiku-4-5-20251001`.
+- The local recommendation JSON is available for fallback.
 
-### Frontend cannot connect to backend
+### Prediction is rejected
 
-Make sure the backend is running on:
-
-```text
-http://127.0.0.1:8000
-```
-
-The frontend pages currently call the FastAPI API at this local address.
+Upload a clear, well-lit image with at least `224x224` resolution and enough contrast. Confirm that the selected crop matches the uploaded leaf.
 
 ### Protected pages redirect to login
 
-Login again so the frontend can store a valid `access_token` in `localStorage`.
+Log in again so the frontend can refresh the `access_token` stored in browser storage.
 
-### Prediction returns unauthorized
+## Safety Note
 
-Make sure the request includes:
-
-```text
-Authorization: Bearer YOUR_ACCESS_TOKEN
-```
-
-### Low confidence or image quality warning
-
-Upload a clear leaf image with enough light, contrast, and resolution. The backend requires at least `224x224` pixels and rejects very dark, very bright, blurry-looking, or low-confidence inputs.
-
-## Notes
-
-AgriMind AI is a decision-support tool. Disease predictions and treatment suggestions should be verified with local agricultural experts before applying chemical treatment or making field-level decisions.
+AgriMind AI provides decision-support information. It does not guarantee a diagnosis. Always compare the prediction with visible field symptoms and consult a qualified local agriculture expert before applying chemical, biological, or botanical products.
