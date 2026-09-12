@@ -1,6 +1,224 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useLanguage } from "../context/LanguageContext";
 
 const API_BASE_URL = "http://127.0.0.1:8000";
+
+
+/* ============================================================
+   MULTILINGUAL UI
+   Internal/API values remain canonical English.
+============================================================ */
+
+const ui = {
+    en: {
+        recordsEyebrow: "AGRIMIND AI • RECORDS",
+        detectionHistory: "Detection History",
+        historyDescription: "Review your previous crop health detection results and AI recommendations.",
+        refresh: "Refresh",
+        refreshing: "Refreshing...",
+        clearHistory: "Clear History",
+        confirmClear: "Are you sure you want to delete all detection history?",
+        notAuthenticated: "Not authenticated. Please login again.",
+        authExpired: "Authentication expired. Please login again.",
+        failedLoad: "Failed to load history.",
+        unableConnect: "Unable to connect to AI server.",
+        failedClear: "Failed to clear history.",
+        unableClear: "Unable to clear history.",
+        loadingMessage: "AgriMind AI is loading your previous results...",
+        unableLoad: "Unable to Load History",
+        tryAgain: "Try Again",
+        detectionRecords: "AI DETECTION RECORDS",
+        moreAttention: "More attention is needed",
+        healthLooksGood: "Your recorded crop health looks good",
+        detectionRecorded: "detection recorded",
+        detectionsRecorded: "detections recorded",
+        averageConfidence: "average AI confidence of",
+        totalRecords: "Total Records",
+        totalDetections: "Total Detections",
+        healthy: "Healthy",
+        diseaseDetected: "Disease Detected",
+        avgConfidence: "Avg. Confidence",
+        searchPlaceholder: "Search crop, disease or ID...",
+        all: "All",
+        disease: "Disease",
+        noHistory: "No Detection History Yet",
+        firstDetection: "Perform your first AI disease detection. Your result will appear here automatically.",
+        noMatching: "No Matching Results",
+        tryAnother: "Try another search term or filter.",
+        resetFilters: "Reset Filters",
+        aiDetection: "AI DETECTION",
+        unknownPrediction: "Unknown Prediction",
+        unknownCrop: "Unknown Crop",
+        crop: "CROP",
+        confidence: "CONFIDENCE",
+        record: "RECORD",
+        aiClassProbabilities: "AI Class Probabilities",
+        probabilityDescription: "Confidence across detected classes.",
+        probabilityModalDescription: "Model confidence distribution.",
+        aiAnalysis: "AI ANALYSIS",
+        agrimindRecord: "AgriMind AI analysis record",
+        viewFullDetails: "View Full Details",
+        detectionEyebrow: "AGRIMIND AI • DETECTION",
+        detectionDetails: "Detection Details",
+        recordNumber: "Record",
+        prediction: "PREDICTION",
+        detectionDate: "Detection Date",
+        agrimindAi: "AGRIMIND AI",
+        recommendationTitle: "AI Crop Health Recommendation",
+        severity: "Severity",
+        symptoms: "Symptoms",
+        immediateAction: "Immediate Action",
+        treatment: "Treatment / What You Should Do",
+        prevention: "Prevention",
+        sprayGuidance: "Spray Guidance",
+        farmerAction: "Farmer Action",
+        closeDetails: "Close Details",
+        close: "Close",
+        unknown: "Unknown",
+        unknownDate: "Unknown date"
+    },
+
+    mr: {
+        recordsEyebrow: "AGRIMIND AI • नोंदी",
+        detectionHistory: "रोग निदान इतिहास",
+        historyDescription: "तुमच्या मागील पीक आरोग्य निदानाचे निकाल आणि AI शिफारसी येथे पहा.",
+        refresh: "रिफ्रेश",
+        refreshing: "रिफ्रेश होत आहे...",
+        clearHistory: "इतिहास साफ करा",
+        confirmClear: "तुम्हाला सर्व रोग निदान इतिहास हटवायचा आहे का?",
+        notAuthenticated: "तुम्ही लॉगिन केलेले नाही. कृपया पुन्हा लॉगिन करा.",
+        authExpired: "ऑथेंटिकेशनची मुदत संपली आहे. कृपया पुन्हा लॉगिन करा.",
+        failedLoad: "इतिहास लोड करण्यात अयशस्वी.",
+        unableConnect: "AI सर्व्हरशी कनेक्ट करता आले नाही.",
+        failedClear: "इतिहास साफ करण्यात अयशस्वी.",
+        unableClear: "इतिहास साफ करता आला नाही.",
+        loadingMessage: "AgriMind AI तुमचे मागील निकाल लोड करत आहे...",
+        unableLoad: "इतिहास लोड करता आला नाही",
+        tryAgain: "पुन्हा प्रयत्न करा",
+        detectionRecords: "AI निदान नोंदी",
+        moreAttention: "अधिक लक्ष देणे आवश्यक आहे",
+        healthLooksGood: "तुमच्या नोंदवलेल्या पिकांचे आरोग्य चांगले दिसत आहे",
+        detectionRecorded: "निदान नोंदवले आहे",
+        detectionsRecorded: "निदान नोंदवले आहेत",
+        averageConfidence: "सरासरी AI विश्वासपातळी",
+        totalRecords: "एकूण नोंदी",
+        totalDetections: "एकूण निदान",
+        healthy: "निरोगी",
+        diseaseDetected: "रोग आढळला",
+        avgConfidence: "सरासरी विश्वासपातळी",
+        searchPlaceholder: "पीक, रोग किंवा ID शोधा...",
+        all: "सर्व",
+        disease: "रोग",
+        noHistory: "अद्याप कोणताही निदान इतिहास नाही",
+        firstDetection: "पहिले AI रोग निदान करा. तुमचा निकाल येथे आपोआप दिसेल.",
+        noMatching: "जुळणारे निकाल नाहीत",
+        tryAnother: "दुसरा शोध शब्द किंवा फिल्टर वापरून पहा.",
+        resetFilters: "फिल्टर रीसेट करा",
+        aiDetection: "AI निदान",
+        unknownPrediction: "अज्ञात अंदाज",
+        unknownCrop: "अज्ञात पीक",
+        crop: "पीक",
+        confidence: "विश्वासपातळी",
+        record: "नोंद",
+        aiClassProbabilities: "AI वर्ग संभाव्यता",
+        probabilityDescription: "आढळलेल्या वर्गांमधील विश्वासपातळी.",
+        probabilityModalDescription: "मॉडेलच्या विश्वासपातळीचे वितरण.",
+        aiAnalysis: "AI विश्लेषण",
+        agrimindRecord: "AgriMind AI विश्लेषण नोंद",
+        viewFullDetails: "संपूर्ण माहिती पहा",
+        detectionEyebrow: "AGRIMIND AI • निदान",
+        detectionDetails: "निदानाची माहिती",
+        recordNumber: "नोंद",
+        prediction: "अंदाज",
+        detectionDate: "निदानाची तारीख",
+        agrimindAi: "AGRIMIND AI",
+        recommendationTitle: "AI पीक आरोग्य शिफारस",
+        severity: "तीव्रता",
+        symptoms: "लक्षणे",
+        immediateAction: "तात्काळ कृती",
+        treatment: "उपचार / तुम्ही काय करावे",
+        prevention: "प्रतिबंध",
+        sprayGuidance: "फवारणी मार्गदर्शन",
+        farmerAction: "शेतकऱ्याची कृती",
+        closeDetails: "माहिती बंद करा",
+        close: "बंद करा",
+        unknown: "अज्ञात",
+        unknownDate: "अज्ञात तारीख"
+    },
+
+    hi: {
+        recordsEyebrow: "AGRIMIND AI • रिकॉर्ड्स",
+        detectionHistory: "रोग पहचान इतिहास",
+        historyDescription: "अपने पिछले फसल स्वास्थ्य पहचान परिणाम और AI सुझाव देखें।",
+        refresh: "रिफ्रेश",
+        refreshing: "रिफ्रेश हो रहा है...",
+        clearHistory: "इतिहास साफ करें",
+        confirmClear: "क्या आप सभी रोग पहचान इतिहास को हटाना चाहते हैं?",
+        notAuthenticated: "आप प्रमाणित नहीं हैं। कृपया फिर से लॉगिन करें।",
+        authExpired: "प्रमाणीकरण समाप्त हो गया है। कृपया फिर से लॉगिन करें।",
+        failedLoad: "इतिहास लोड नहीं हो सका।",
+        unableConnect: "AI सर्वर से कनेक्ट नहीं हो सका।",
+        failedClear: "इतिहास साफ नहीं हो सका।",
+        unableClear: "इतिहास साफ नहीं किया जा सका।",
+        loadingMessage: "AgriMind AI आपके पिछले परिणाम लोड कर रहा है...",
+        unableLoad: "इतिहास लोड नहीं हो सका",
+        tryAgain: "फिर से प्रयास करें",
+        detectionRecords: "AI पहचान रिकॉर्ड",
+        moreAttention: "अधिक ध्यान देने की आवश्यकता है",
+        healthLooksGood: "आपकी दर्ज की गई फसल का स्वास्थ्य अच्छा दिख रहा है",
+        detectionRecorded: "पहचान रिकॉर्ड की गई",
+        detectionsRecorded: "पहचान रिकॉर्ड की गईं",
+        averageConfidence: "औसत AI विश्वास स्तर",
+        totalRecords: "कुल रिकॉर्ड",
+        totalDetections: "कुल पहचान",
+        healthy: "स्वस्थ",
+        diseaseDetected: "रोग पाया गया",
+        avgConfidence: "औसत विश्वास",
+        searchPlaceholder: "फसल, रोग या ID खोजें...",
+        all: "सभी",
+        disease: "रोग",
+        noHistory: "अभी कोई पहचान इतिहास नहीं है",
+        firstDetection: "पहली AI रोग पहचान करें। आपका परिणाम यहाँ अपने आप दिखाई देगा।",
+        noMatching: "कोई मिलान परिणाम नहीं",
+        tryAnother: "कोई दूसरा खोज शब्द या फ़िल्टर आज़माएँ।",
+        resetFilters: "फ़िल्टर रीसेट करें",
+        aiDetection: "AI पहचान",
+        unknownPrediction: "अज्ञात अनुमान",
+        unknownCrop: "अज्ञात फसल",
+        crop: "फसल",
+        confidence: "विश्वास",
+        record: "रिकॉर्ड",
+        aiClassProbabilities: "AI वर्ग संभावनाएँ",
+        probabilityDescription: "पहचाने गए वर्गों में विश्वास स्तर।",
+        probabilityModalDescription: "मॉडल के विश्वास स्तर का वितरण।",
+        aiAnalysis: "AI विश्लेषण",
+        agrimindRecord: "AgriMind AI विश्लेषण रिकॉर्ड",
+        viewFullDetails: "पूरी जानकारी देखें",
+        detectionEyebrow: "AGRIMIND AI • पहचान",
+        detectionDetails: "पहचान विवरण",
+        recordNumber: "रिकॉर्ड",
+        prediction: "अनुमान",
+        detectionDate: "पहचान की तारीख",
+        agrimindAi: "AGRIMIND AI",
+        recommendationTitle: "AI फसल स्वास्थ्य सुझाव",
+        severity: "गंभीरता",
+        symptoms: "लक्षण",
+        immediateAction: "तुरंत कार्रवाई",
+        treatment: "उपचार / आपको क्या करना चाहिए",
+        prevention: "रोकथाम",
+        sprayGuidance: "स्प्रे मार्गदर्शन",
+        farmerAction: "किसान की कार्रवाई",
+        closeDetails: "विवरण बंद करें",
+        close: "बंद करें",
+        unknown: "अज्ञात",
+        unknownDate: "अज्ञात तारीख"
+    }
+};
+
+const usePageText = () => {
+    const { language } = useLanguage();
+    return ui[language] || ui.en;
+};
 
 /* ============================================================
    HELPERS
@@ -211,6 +429,8 @@ function Icon({ type, size = "medium" }) {
 ============================================================ */
 
 function History() {
+    const text = usePageText();
+
     const [history, setHistory] = useState([]);
 
     const [loading, setLoading] =
@@ -306,9 +526,7 @@ function History() {
             const t = token();
 
             if (!t) {
-                throw new Error(
-                    "Not authenticated. Please login again."
-                );
+                throw new Error(text.notAuthenticated);
             }
 
             const res = await fetch(
@@ -328,16 +546,14 @@ function History() {
                 await res.json();
 
             if (res.status === 401) {
-                throw new Error(
-                    "Authentication expired. Please login again."
-                );
+                throw new Error(text.authExpired);
             }
 
             if (!res.ok) {
                 throw new Error(
                     data.detail ||
                         data.message ||
-                        "Failed to load history."
+                        text.failedLoad
                 );
             }
 
@@ -355,7 +571,7 @@ function History() {
 
             setError(
                 e.message ||
-                    "Unable to connect to AI server."
+                    text.unableConnect
             );
         } finally {
             setLoading(false);
@@ -380,7 +596,7 @@ function History() {
     const clearHistory = async () => {
         if (
             !window.confirm(
-                "Are you sure you want to delete all detection history?"
+                text.confirmClear
             )
         ) {
             return;
@@ -390,9 +606,7 @@ function History() {
             const t = token();
 
             if (!t) {
-                throw new Error(
-                    "Not authenticated. Please login again."
-                );
+                throw new Error(text.notAuthenticated);
             }
 
             const res = await fetch(
@@ -419,7 +633,7 @@ function History() {
                 throw new Error(
                     data.detail ||
                         data.message ||
-                        "Failed to clear history."
+                        text.failedClear
                 );
             }
 
@@ -428,7 +642,7 @@ function History() {
         } catch (e) {
             setError(
                 e.message ||
-                    "Unable to clear history."
+                    text.unableClear
             );
         }
     };
@@ -524,7 +738,7 @@ function History() {
 
     const date = (value) => {
         if (!value) {
-            return "Unknown date";
+            return text.unknownDate;
         }
 
         const d =
@@ -566,12 +780,11 @@ function History() {
                     </div>
 
                     <h2>
-                        Loading Detection History
+                        {text.detectionHistory}
                     </h2>
 
                     <p>
-                        AgriMind AI is loading
-                        your previous results...
+                        {text.loadingMessage}
                     </p>
                 </div>
             </>
@@ -656,10 +869,7 @@ function History() {
                     </h1>
 
                     <p>
-                        Review your previous
-                        crop health detection
-                        results and AI
-                        recommendations.
+                        {text.historyDescription}
                     </p>
 
                 </div>
@@ -680,8 +890,8 @@ function History() {
                         />
 
                         {refreshing
-                            ? "Refreshing..."
-                            : "Refresh"}
+                            ? text.refreshing
+                            : text.refresh}
                     </button>
 
 
@@ -698,7 +908,7 @@ function History() {
                                 size="small"
                             />
 
-                            Clear History
+                            {text.clearHistory}
                         </button>
                     )}
 
@@ -741,26 +951,22 @@ function History() {
                         <div className="heroContent">
 
                             <span>
-                                AI DETECTION RECORDS
+                                {text.detectionRecords}
                             </span>
 
                             <h2>
                                 {summary.disease >
                                 summary.healthy
-                                    ? "More attention is needed"
-                                    : "Your recorded crop health looks good"}
+                                    ? text.moreAttention
+                                    : text.healthLooksGood}
                             </h2>
 
                             <p>
                                 {summary.total}{" "}
-                                detection
-                                {summary.total !==
-                                1
-                                    ? "s"
-                                    : ""}{" "}
-                                recorded with
-                                average AI
-                                confidence of{" "}
+                                {summary.total === 1
+                                    ? text.detectionRecorded
+                                    : text.detectionsRecorded}{" "}
+                                {text.averageConfidence}{" "}
                                 <b>
                                     {summary.avg.toFixed(
                                         1
@@ -780,7 +986,7 @@ function History() {
                             </b>
 
                             <span>
-                                Total Records
+                                {text.totalRecords}
                             </span>
 
                         </div>
@@ -794,7 +1000,7 @@ function History() {
 
                         <Stat
                             icon="records"
-                            label="Total Detections"
+                            label={text.totalDetections}
                             value={
                                 summary.total
                             }
@@ -802,7 +1008,7 @@ function History() {
 
                         <Stat
                             icon="healthy"
-                            label="Healthy"
+                            label={text.healthy}
                             value={
                                 summary.healthy
                             }
@@ -811,7 +1017,7 @@ function History() {
 
                         <Stat
                             icon="disease"
-                            label="Disease Detected"
+                            label={text.diseaseDetected}
                             value={
                                 summary.disease
                             }
@@ -820,7 +1026,7 @@ function History() {
 
                         <Stat
                             icon="confidence"
-                            label="Avg. Confidence"
+                            label={text.avgConfidence}
                             value={`${summary.avg.toFixed(
                                 1
                             )}%`}
@@ -849,7 +1055,7 @@ function History() {
                                             .value
                                     )
                                 }
-                                placeholder="Search crop, disease or ID..."
+                                placeholder={text.searchPlaceholder}
                             />
 
                             {search && (
@@ -883,7 +1089,7 @@ function History() {
                                     )
                                 }
                             >
-                                All (
+                                {text.all} (
                                 {
                                     summary.total
                                 }
@@ -909,7 +1115,7 @@ function History() {
                                     size="tiny"
                                 />
 
-                                Healthy (
+                                {text.healthy} (
                                 {
                                     summary.healthy
                                 }
@@ -935,7 +1141,7 @@ function History() {
                                     size="tiny"
                                 />
 
-                                Disease (
+                                {text.disease} (
                                 {
                                     summary.disease
                                 }
@@ -966,14 +1172,11 @@ function History() {
                     </div>
 
                     <h2>
-                        No Detection History Yet
+                        {text.noHistory}
                     </h2>
 
                     <p>
-                        Perform your first AI
-                        disease detection.
-                        Your result will appear
-                        here automatically.
+                        {text.firstDetection}
                     </p>
 
                 </div>
@@ -994,8 +1197,7 @@ function History() {
                     </h2>
 
                     <p>
-                        Try another search
-                        term or filter.
+                        {text.tryAnother}
                     </p>
 
                     <button
@@ -1104,6 +1306,8 @@ function HistoryCard({
     onDetails,
     date,
 }) {
+    const text = usePageText();
+
     const healthy =
         isHealthy(
             item.prediction
@@ -1149,13 +1353,13 @@ function HistoryCard({
                     <div>
 
                         <small>
-                            AI DETECTION
+                            {text.aiDetection}
                         </small>
 
                         <h2>
                             {
                                 item.prediction ||
-                                "Unknown Prediction"
+                                text.unknownPrediction
                             }
                         </h2>
 
@@ -1187,8 +1391,8 @@ function HistoryCard({
                     <span className="statusDot" />
 
                     {healthy
-                        ? "Healthy"
-                        : "Disease Detected"}
+                        ? text.healthy
+                        : text.diseaseDetected}
                 </span>
 
             </div>
@@ -1199,17 +1403,17 @@ function HistoryCard({
             <div className="resultGrid">
 
                 <Info
-                    label="CROP"
+                    label={text.crop}
                     value={
                         item.crop ||
-                        "Unknown Crop"
+                        text.unknownCrop
                     }
                     icon="crop"
                 />
 
 
                 <Info
-                    label="CONFIDENCE"
+                    label={text.confidence}
                     value={`${confidence.toFixed(
                         2
                     )}%`}
@@ -1220,7 +1424,7 @@ function HistoryCard({
 
 
                 <Info
-                    label="RECORD"
+                    label={text.record}
                     value={`#${
                         item.id ?? "—"
                     }`}
@@ -1240,14 +1444,11 @@ function HistoryCard({
                         <div>
 
                             <h3>
-                                AI Class
-                                Probabilities
+                                {text.aiClassProbabilities}
                             </h3>
 
                             <p>
-                                Confidence
-                                across detected
-                                classes.
+                                {text.probabilityDescription}
                             </p>
 
                         </div>
@@ -1291,8 +1492,7 @@ function HistoryCard({
             <div className="footer">
 
                 <span>
-                    AgriMind AI analysis
-                    record
+                    {text.agrimindRecord}
                 </span>
 
                 <button
@@ -1303,7 +1503,7 @@ function HistoryCard({
                         size="tiny"
                     />
 
-                    View Full Details
+                    {text.viewFullDetails}
 
                     <span className="arrow">
                         →
@@ -1474,6 +1674,8 @@ function Modal({
     close,
     date,
 }) {
+    const text = usePageText();
+
     const probs =
         probabilities(
             item.probabilities
@@ -1507,15 +1709,15 @@ function Modal({
                     <div>
 
                         <span className="eyebrow">
-                            AGRIMIND AI • DETECTION
+                            {text.detectionEyebrow}
                         </span>
 
                         <h2>
-                            Detection Details
+                            {text.detectionDetails}
                         </h2>
 
                         <p>
-                            Record #
+                            {text.recordNumber} #
                             {item.id ??
                                 "—"}
                         </p>
@@ -1526,7 +1728,7 @@ function Modal({
                     <button
                         className="x"
                         onClick={close}
-                        aria-label="Close"
+                        aria-label={text.close}
                     >
                         <Icon
                             type="close"
@@ -1542,19 +1744,19 @@ function Modal({
                 <div className="modalGrid">
 
                     <Info
-                        label="CROP"
+                        label={text.crop}
                         value={
                             item.crop ||
-                            "Unknown Crop"
+                            text.unknownCrop
                         }
                         icon="crop"
                     />
 
                     <Info
-                        label="PREDICTION"
+                        label={text.prediction}
                         value={
                             item.prediction ||
-                            "Unknown"
+                            text.unknown
                         }
                         icon={
                             healthy
@@ -1564,7 +1766,7 @@ function Modal({
                     />
 
                     <Info
-                        label="CONFIDENCE"
+                        label={text.confidence}
                         value={`${Number(
                             item.confidence ||
                                 0
@@ -1589,7 +1791,7 @@ function Modal({
                             size="tiny"
                         />
 
-                        Detection Date
+                        {text.detectionDate}
 
                     </b>
 
@@ -1613,13 +1815,11 @@ function Modal({
                             <div>
 
                                 <h3>
-                                    AI Class
-                                    Probabilities
+                                    {text.aiClassProbabilities}
                                 </h3>
 
                                 <p>
-                                    Model confidence
-                                    distribution.
+                                    {text.probabilityModalDescription}
                                 </p>
 
                             </div>
@@ -1675,12 +1875,11 @@ function Modal({
                             <section>
 
                                 <span>
-                                    AGRIMIND AI
+                                    {text.agrimindAi}
                                 </span>
 
                                 <h3>
-                                    AI Crop Health
-                                    Recommendation
+                                    {text.recommendationTitle}
                                 </h3>
 
                             </section>
@@ -1700,7 +1899,7 @@ function Modal({
                                         size="tiny"
                                     />
 
-                                    Severity
+                                    {text.severity}
 
                                 </b>
 
@@ -1715,7 +1914,7 @@ function Modal({
 
 
                         <ListSection
-                            title="Symptoms"
+                            title={text.symptoms}
                             items={
                                 rec.symptoms
                             }
@@ -1723,7 +1922,7 @@ function Modal({
 
 
                         <ListSection
-                            title="Immediate Action"
+                            title={text.immediateAction}
                             items={
                                 rec.immediate_action
                             }
@@ -1731,7 +1930,7 @@ function Modal({
 
 
                         <ListSection
-                            title="Treatment / What You Should Do"
+                            title={text.treatment}
                             items={
                                 rec.treatment
                             }
@@ -1739,7 +1938,7 @@ function Modal({
 
 
                         <ListSection
-                            title="Prevention"
+                            title={text.prevention}
                             items={
                                 rec.prevention
                             }
@@ -1762,7 +1961,7 @@ function Modal({
                                             size="tiny"
                                         />
 
-                                        Spray Guidance
+                                        {text.sprayGuidance}
 
                                     </h4>
 
@@ -1801,7 +2000,7 @@ function Modal({
                                         size="tiny"
                                     />
 
-                                    Farmer Action
+                                    {text.farmerAction}
 
                                 </h4>
 
@@ -1825,7 +2024,7 @@ function Modal({
                     <button
                         onClick={close}
                     >
-                        Close Details
+                        {text.closeDetails}
                     </button>
 
                 </div>
