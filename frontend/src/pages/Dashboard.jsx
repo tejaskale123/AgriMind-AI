@@ -745,6 +745,7 @@ function Dashboard() {
                 .agrimind-dashboard {
                     min-height: 100%;
                     width: 100%;
+                    min-width: 0;
                     max-width: 1500px;
                     margin: 0 auto;
                     padding: 30px 34px 80px;
@@ -761,6 +762,11 @@ function Dashboard() {
 
                 .agrimind-dashboard * {
                     box-sizing: border-box;
+                }
+
+                .agrimind-dashboard img,
+                .agrimind-dashboard svg {
+                    max-width: 100%;
                 }
 
 

@@ -3,6 +3,7 @@ import React, {
     useMemo,
     useState
 } from "react";
+import { useLanguage } from "../context/LanguageContext";
 
 const API_BASE_URL = "http://127.0.0.1:8000";
 
@@ -109,6 +110,282 @@ const formatName = (value) => {
 // ============================================================
 
 function Analytics() {
+
+    const { language } = useLanguage();
+
+    // ========================================================
+    // FARMER-FACING UI TRANSLATIONS
+    // Internal API/history values remain unchanged.
+    // ========================================================
+
+    const ui = {
+        en: {
+            eyebrow: "AGRIMIND AI • INSIGHTS",
+            title: "Analytics",
+            subtitle: "A clear overview of your crop disease detection history.",
+            loadingTitle: "Loading Analytics",
+            loadingText: "AgriMind AI is preparing your crop health insights.",
+            errorTitle: "Unable to Load Analytics",
+            tryAgain: "Try Again",
+            emptyTitle: "No Analytics Yet",
+            emptyText: "Perform a disease detection first. Your results will appear here automatically.",
+            refresh: "Refresh",
+            refreshing: "Refreshing...",
+            aiOverview: "AI CROP HEALTH OVERVIEW",
+            attention: "Attention is needed",
+            healthGood: "Your crop health looks good",
+            detection: "detection",
+            detections: "detections",
+            analyzedWith: "analyzed with an average AI confidence of",
+            healthy: "Healthy",
+            totalDetections: "Total Detections",
+            allRecorded: "All recorded results",
+            diseaseDetected: "Disease Detected",
+            avgConfidence: "Avg. Confidence",
+            aiPredictionAccuracy: "AI prediction accuracy",
+            predictionBreakdown: "PREDICTION BREAKDOWN",
+            distribution: "Detection Distribution",
+            distributionText: "Breakdown of all recorded AI predictions.",
+            results: "Results",
+            healthOverview: "HEALTH OVERVIEW",
+            cropHealth: "Crop Health",
+            healthText: "Healthy vs disease-related results.",
+            disease: "Disease",
+            mostFrequent: "MOST FREQUENTLY DETECTED DISEASE",
+            noDisease: "No disease detected",
+            detected: "Detected",
+            timeSingular: "time in your history.",
+            timePlural: "times in your history.",
+            diseaseInsights: "DISEASE INSIGHTS",
+            diseaseWise: "Disease-wise Analysis",
+            diseaseWiseText: "Frequency of disease-related predictions.",
+            diseaseLabel: "DISEASE",
+            ofDiseaseDetections: "of disease detections",
+            cropPerformance: "CROP PERFORMANCE",
+            cropWise: "Crop-wise Analysis",
+            cropWiseText: "Detection distribution across your crops.",
+            liveData: "Live Data",
+            ofAllDetections: "of all detections",
+            modelPerformance: "MODEL PERFORMANCE",
+            confidenceAnalysis: "Confidence Analysis",
+            confidenceText: "AI prediction confidence distribution.",
+            highConfidence: "HIGH CONFIDENCE",
+            mediumConfidence: "MEDIUM CONFIDENCE",
+            lowConfidence: "LOW CONFIDENCE",
+            aiCropHealth: "AI Crop Health Insights",
+            aiCropHealthText: "AgriMind AI summarizes your detection history to help understand crop health.",
+            healthStatus: "HEALTH STATUS",
+            attentionRequired: "Attention Required",
+            overallGood: "Overall Health Looks Good",
+            analyzed: "analyzed.",
+            wereHealthy: "were classified as healthy and",
+            wereDisease: "were disease-related.",
+            confidenceAcross: "Average AI confidence across the stored detection history.",
+            farmerAction: "FARMER ACTION",
+            monitorCrops: "Monitor Your Crops",
+            farmerActionText: "Inspect affected plants regularly and consult local agricultural guidance before applying chemical treatment.",
+            analyticsNote: "Analytics are generated from AgriMind AI detection history.",
+            unknown: "Unknown",
+            ranges: { high: "{text.ranges.high}", medium: "{text.ranges.medium}", low: "< 60%" },
+            crops: {},
+            diseases: {},
+        },
+        mr: {
+            eyebrow: "AGRIMIND AI • अंतर्दृष्टी",
+            title: "विश्लेषण",
+            subtitle: "तुमच्या पिकांच्या रोग शोध इतिहासाचा स्पष्ट आढावा.",
+            loadingTitle: "विश्लेषण लोड होत आहे",
+            loadingText: "AgriMind AI तुमच्या पिकांच्या आरोग्यविषयक माहितीची तयारी करत आहे.",
+            errorTitle: "विश्लेषण लोड करता आले नाही",
+            tryAgain: "पुन्हा प्रयत्न करा",
+            emptyTitle: "अजून विश्लेषण उपलब्ध नाही",
+            emptyText: "प्रथम रोग शोध करा. तुमचे परिणाम येथे आपोआप दिसतील.",
+            refresh: "रिफ्रेश",
+            refreshing: "रिफ्रेश होत आहे...",
+            aiOverview: "AI पीक आरोग्य आढावा",
+            attention: "लक्ष देणे आवश्यक आहे",
+            healthGood: "तुमच्या पिकांचे आरोग्य चांगले दिसत आहे",
+            detection: "शोध",
+            detections: "शोध",
+            analyzedWith: "चे विश्लेषण झाले असून सरासरी AI विश्वास पातळी",
+            healthy: "निरोगी",
+            totalDetections: "एकूण शोध",
+            allRecorded: "नोंदवलेले सर्व परिणाम",
+            diseaseDetected: "रोग आढळला",
+            avgConfidence: "सरासरी विश्वास पातळी",
+            aiPredictionAccuracy: "AI अंदाजाची विश्वास पातळी",
+            predictionBreakdown: "अंदाजाचे विभाजन",
+            distribution: "शोध वितरण",
+            distributionText: "नोंदवलेल्या सर्व AI अंदाजांचे विभाजन.",
+            results: "परिणाम",
+            healthOverview: "आरोग्य आढावा",
+            cropHealth: "पीक आरोग्य",
+            healthText: "निरोगी आणि रोग-संबंधित परिणाम.",
+            disease: "रोग",
+            mostFrequent: "सर्वाधिक वेळा आढळलेला रोग",
+            noDisease: "कोणताही रोग आढळला नाही",
+            detected: "आढळला",
+            timeSingular: "वेळा तुमच्या इतिहासात.",
+            timePlural: "वेळा तुमच्या इतिहासात.",
+            diseaseInsights: "रोगविषयक अंतर्दृष्टी",
+            diseaseWise: "रोगनिहाय विश्लेषण",
+            diseaseWiseText: "रोग-संबंधित अंदाजांची वारंवारता.",
+            diseaseLabel: "रोग",
+            ofDiseaseDetections: "रोग शोधांपैकी",
+            cropPerformance: "पीक कामगिरी",
+            cropWise: "पिकानुसार विश्लेषण",
+            cropWiseText: "तुमच्या पिकांमधील शोधांचे वितरण.",
+            liveData: "थेट डेटा",
+            ofAllDetections: "सर्व शोधांपैकी",
+            modelPerformance: "मॉडेल कामगिरी",
+            confidenceAnalysis: "विश्वास पातळी विश्लेषण",
+            confidenceText: "AI अंदाजाच्या विश्वास पातळीचे वितरण.",
+            highConfidence: "उच्च विश्वास पातळी",
+            mediumConfidence: "मध्यम विश्वास पातळी",
+            lowConfidence: "कमी विश्वास पातळी",
+            aiCropHealth: "AI पीक आरोग्य अंतर्दृष्टी",
+            aiCropHealthText: "AgriMind AI तुमच्या पीक आरोग्याचे आकलन करण्यासाठी शोध इतिहासाचा सारांश देते.",
+            healthStatus: "आरोग्य स्थिती",
+            attentionRequired: "लक्ष देणे आवश्यक",
+            overallGood: "एकूण आरोग्य चांगले दिसते",
+            analyzed: "चे विश्लेषण झाले.",
+            wereHealthy: "निरोगी म्हणून वर्गीकृत झाले आणि",
+            wereDisease: "रोग-संबंधित होते.",
+            confidenceAcross: "साठवलेल्या शोध इतिहासातील सरासरी AI विश्वास पातळी.",
+            farmerAction: "शेतकरी कृती",
+            monitorCrops: "पिकांचे निरीक्षण करा",
+            farmerActionText: "प्रभावित झाडांची नियमित पाहणी करा आणि रासायनिक उपचार करण्यापूर्वी स्थानिक कृषी मार्गदर्शन घ्या.",
+            analyticsNote: "हे विश्लेषण AgriMind AI च्या शोध इतिहासावर आधारित आहे.",
+            unknown: "अज्ञात",
+            ranges: { high: "{text.ranges.high}", medium: "{text.ranges.medium}", low: "< 60%" },
+            crops: { Soybean: "सोयाबीन", Cotton: "कापूस", Maize: "मका", Wheat: "गहू", Tomato: "टोमॅटो", "Bell Pepper": "ढोबळी मिरची" },
+            diseases: {
+                "Bacterial Blight": "जिवाणूजन्य करपा",
+                "Cercospora Leaf Blight": "सर्कोस्पोरा पान करपा",
+                "Healthy": "निरोगी",
+                "Healthy Leaf": "निरोगी पान",
+                "Fusarium Wilt": "फ्युजेरियम मर",
+                "Verticillium Wilt": "व्हर्टिसिलियम मर",
+                "Alternaria Leaf Spot": "अल्टरनेरिया पानावरील ठिपके",
+                Rust: "तांबेरा",
+                Blight: "करपा",
+                "Common Rust": "सामान्य तांबेरा",
+                "Gray Leaf Spot": "करड्या पानावरील ठिपके",
+                "Brown Rust": "तपकिरी तांबेरा",
+                "Yellow Rust": "पिवळा तांबेरा",
+                "Early Blight": "लवकर येणारा करपा",
+                "Late Blight": "उशिरा येणारा करपा",
+                "Leaf Mold": "पानांवरील बुरशी",
+                "Bacterial Spot": "जिवाणूजन्य ठिपके",
+                "Leaf Spot": "पानावरील ठिपके",
+                "Mosaic Virus": "मोझॅक विषाणू",
+                "Sudden Death Syndrome": "अचानक कोमेजणे सिंड्रोम",
+            },
+        },
+        hi: {
+            eyebrow: "AGRIMIND AI • अंतर्दृष्टि",
+            title: "विश्लेषण",
+            subtitle: "आपके फसल रोग पहचान इतिहास का स्पष्ट अवलोकन।",
+            loadingTitle: "विश्लेषण लोड हो रहा है",
+            loadingText: "AgriMind AI आपकी फसल स्वास्थ्य जानकारी तैयार कर रहा है।",
+            errorTitle: "विश्लेषण लोड नहीं हो सका",
+            tryAgain: "फिर से प्रयास करें",
+            emptyTitle: "अभी कोई विश्लेषण नहीं",
+            emptyText: "पहले रोग पहचान करें। आपके परिणाम यहाँ अपने आप दिखाई देंगे।",
+            refresh: "रिफ्रेश",
+            refreshing: "रिफ्रेश हो रहा है...",
+            aiOverview: "AI फसल स्वास्थ्य अवलोकन",
+            attention: "ध्यान देने की आवश्यकता है",
+            healthGood: "आपकी फसल का स्वास्थ्य अच्छा दिख रहा है",
+            detection: "पहचान",
+            detections: "पहचानें",
+            analyzedWith: "का विश्लेषण हुआ, औसत AI विश्वास स्तर",
+            healthy: "स्वस्थ",
+            totalDetections: "कुल पहचान",
+            allRecorded: "सभी दर्ज परिणाम",
+            diseaseDetected: "रोग पाया गया",
+            avgConfidence: "औसत विश्वास स्तर",
+            aiPredictionAccuracy: "AI अनुमान का विश्वास स्तर",
+            predictionBreakdown: "अनुमान विवरण",
+            distribution: "पहचान वितरण",
+            distributionText: "सभी दर्ज AI अनुमानों का विवरण।",
+            results: "परिणाम",
+            healthOverview: "स्वास्थ्य अवलोकन",
+            cropHealth: "फसल स्वास्थ्य",
+            healthText: "स्वस्थ और रोग-संबंधित परिणाम।",
+            disease: "रोग",
+            mostFrequent: "सबसे अधिक पाया गया रोग",
+            noDisease: "कोई रोग नहीं पाया गया",
+            detected: "पाया गया",
+            timeSingular: "बार आपके इतिहास में।",
+            timePlural: "बार आपके इतिहास में।",
+            diseaseInsights: "रोग संबंधी अंतर्दृष्टि",
+            diseaseWise: "रोग-वार विश्लेषण",
+            diseaseWiseText: "रोग-संबंधित अनुमानों की आवृत्ति।",
+            diseaseLabel: "रोग",
+            ofDiseaseDetections: "रोग पहचानों में",
+            cropPerformance: "फसल प्रदर्शन",
+            cropWise: "फसल-वार विश्लेषण",
+            cropWiseText: "आपकी फसलों में पहचान का वितरण।",
+            liveData: "लाइव डेटा",
+            ofAllDetections: "सभी पहचानों में",
+            modelPerformance: "मॉडल प्रदर्शन",
+            confidenceAnalysis: "विश्वास स्तर विश्लेषण",
+            confidenceText: "AI अनुमान के विश्वास स्तर का वितरण।",
+            highConfidence: "उच्च विश्वास",
+            mediumConfidence: "मध्यम विश्वास",
+            lowConfidence: "कम विश्वास",
+            aiCropHealth: "AI फसल स्वास्थ्य अंतर्दृष्टि",
+            aiCropHealthText: "AgriMind AI फसल स्वास्थ्य समझने में मदद के लिए आपके पहचान इतिहास का सारांश देता है।",
+            healthStatus: "स्वास्थ्य स्थिति",
+            attentionRequired: "ध्यान आवश्यक",
+            overallGood: "कुल स्वास्थ्य अच्छा दिखता है",
+            analyzed: "का विश्लेषण हुआ।",
+            wereHealthy: "स्वस्थ वर्गीकृत हुए और",
+            wereDisease: "रोग-संबंधित थे।",
+            confidenceAcross: "सहेजे गए पहचान इतिहास में औसत AI विश्वास स्तर।",
+            farmerAction: "किसान कार्रवाई",
+            monitorCrops: "अपनी फसलों की निगरानी करें",
+            farmerActionText: "प्रभावित पौधों का नियमित निरीक्षण करें और रासायनिक उपचार करने से पहले स्थानीय कृषि मार्गदर्शन लें।",
+            analyticsNote: "यह विश्लेषण AgriMind AI के पहचान इतिहास से तैयार किया गया है।",
+            unknown: "अज्ञात",
+            ranges: { high: "{text.ranges.high}", medium: "{text.ranges.medium}", low: "< 60%" },
+            crops: { Soybean: "सोयाबीन", Cotton: "कपास", Maize: "मक्का", Wheat: "गेहूँ", Tomato: "टमाटर", "Bell Pepper": "शिमला मिर्च" },
+            diseases: {
+                "Bacterial Blight": "जीवाणु झुलसा",
+                "Cercospora Leaf Blight": "सर्कोस्पोरा पत्ती झुलसा",
+                "Healthy": "स्वस्थ",
+                "Healthy Leaf": "स्वस्थ पत्ती",
+                "Fusarium Wilt": "फ्यूजेरियम मुरझान",
+                "Verticillium Wilt": "वर्टिसिलियम मुरझान",
+                "Alternaria Leaf Spot": "अल्टरनेरिया पत्ती धब्बा",
+                Rust: "रस्ट",
+                Blight: "झुलसा",
+                "Common Rust": "सामान्य रस्ट",
+                "Gray Leaf Spot": "ग्रे पत्ती धब्बा",
+                "Brown Rust": "भूरा रस्ट",
+                "Yellow Rust": "पीला रस्ट",
+                "Early Blight": "अर्ली ब्लाइट",
+                "Late Blight": "लेट ब्लाइट",
+                "Leaf Mold": "पत्ती फफूंद",
+                "Bacterial Spot": "जीवाणु धब्बा",
+                "Leaf Spot": "पत्ती धब्बा",
+                "Mosaic Virus": "मोज़ेक वायरस",
+                "Sudden Death Syndrome": "अचानक मृत्यु सिंड्रोम",
+            },
+        },
+    };
+
+    const text = ui[language] || ui.en;
+
+    const getCropLabel = (value) =>
+        text.crops[value] || ui.en.crops[value] || formatName(value);
+
+    const getDiseaseLabel = (value) =>
+        text.diseases[value] || ui.en.diseases[value] || formatName(value);
+
+    const getCountLabel = (count) =>
+        count === 1 ? text.detection : text.detections;
 
     const [history, setHistory] = useState([]);
 
@@ -511,12 +788,11 @@ function Analytics() {
                     <div className="state-loader"></div>
 
                     <h2>
-                        Loading Analytics
+                        {text.loadingTitle}
                     </h2>
 
                     <p>
-                        AgriMind AI is preparing
-                        your crop health insights.
+                        {text.loadingText}
                     </p>
 
                 </div>
@@ -544,7 +820,7 @@ function Analytics() {
                     </div>
 
                     <h2>
-                        Unable to Load Analytics
+                        {text.errorTitle}
                     </h2>
 
                     <p>
@@ -557,7 +833,7 @@ function Analytics() {
                             fetchHistory(true)
                         }
                     >
-                        Try Again
+                        {text.tryAgain}
                     </button>
 
                 </div>
@@ -609,13 +885,11 @@ function Analytics() {
                         </div>
 
                         <h2>
-                            No Analytics Yet
+                            {text.emptyTitle}
                         </h2>
 
                         <p>
-                            Perform a disease detection
-                            first. Your results will
-                            appear here automatically.
+                            {text.emptyText}
                         </p>
 
                     </div>
@@ -648,11 +922,11 @@ function Analytics() {
                 <div>
 
                     <span className="eyebrow">
-                        AGRIMIND AI • INSIGHTS
+                        {text.eyebrow}
                     </span>
 
                     <h1>
-                        Analytics
+                        {text.title}
                     </h1>
 
                     <p>
@@ -676,8 +950,8 @@ function Analytics() {
                     </span>
 
                     {refreshing
-                        ? "Refreshing..."
-                        : "Refresh"}
+                        ? text.refreshing
+                        : text.refresh}
 
                 </button>
 
@@ -695,7 +969,7 @@ function Analytics() {
                 <div className="hero-content">
 
                     <span className="hero-label">
-                        AI CROP HEALTH OVERVIEW
+                        {text.aiOverview}
                     </span>
 
                     <h2>
@@ -703,19 +977,15 @@ function Analytics() {
                         {analytics.diseased >
                         analytics.healthy
 
-                            ? "Attention is needed"
+                            ? text.attention
 
-                            : "Your crop health looks good"}
+                            : text.healthGood}
 
                     </h2>
 
                     <p>
 
-                        {analytics.total} detection
-                        {analytics.total !== 1
-                            ? "s"
-                            : ""} analyzed with an
-                        average AI confidence of{" "}
+                        {analytics.total} {getCountLabel(analytics.total)} {text.analyzedWith}{" "}
 
                         <strong>
                             {analytics.averageConfidence.toFixed(
@@ -739,7 +1009,7 @@ function Analytics() {
                         </strong>
 
                         <span>
-                            Healthy
+                            {text.healthy}
                         </span>
 
                     </div>
@@ -771,7 +1041,7 @@ function Analytics() {
                     <div>
 
                         <span>
-                            Total Detections
+                            {text.totalDetections}
                         </span>
 
                         <strong>
@@ -779,7 +1049,7 @@ function Analytics() {
                         </strong>
 
                         <small>
-                            All recorded results
+                            {text.allRecorded}
                         </small>
 
                     </div>
@@ -802,7 +1072,7 @@ function Analytics() {
                     <div>
 
                         <span>
-                            Healthy
+                            {text.healthy}
                         </span>
 
                         <strong className="green-text">
@@ -835,7 +1105,7 @@ function Analytics() {
                     <div>
 
                         <span>
-                            Disease Detected
+                            {text.diseaseDetected}
                         </span>
 
                         <strong className="red-text">
@@ -868,7 +1138,7 @@ function Analytics() {
                     <div>
 
                         <span>
-                            Avg. Confidence
+                            {text.avgConfidence}
                         </span>
 
                         <strong className="blue-text">
@@ -878,7 +1148,7 @@ function Analytics() {
                         </strong>
 
                         <small>
-                            AI prediction accuracy
+                            {text.aiPredictionAccuracy}
                         </small>
 
                     </div>
@@ -904,22 +1174,21 @@ function Analytics() {
                         <div>
 
                             <div className="section-kicker">
-                                PREDICTION BREAKDOWN
+                                {text.predictionBreakdown}
                             </div>
 
                             <h2>
-                                Detection Distribution
+                                {text.distribution}
                             </h2>
 
                             <p>
-                                Breakdown of all recorded
-                                AI predictions.
+                                {text.distributionText}
                             </p>
 
                         </div>
 
                         <span className="result-count">
-                            {analytics.total} Results
+                            {analytics.total} {text.results}
                         </span>
 
                     </div>
@@ -961,9 +1230,7 @@ function Analytics() {
                                                     }
                                                 />
 
-                                                {formatName(
-                                                    disease
-                                                )}
+                                                {getDiseaseLabel(disease)}
 
                                             </span>
 
@@ -1022,16 +1289,15 @@ function Analytics() {
                         <div>
 
                             <div className="section-kicker">
-                                HEALTH OVERVIEW
+                                {text.healthOverview}
                             </div>
 
                             <h2>
-                                Crop Health
+                                {text.cropHealth}
                             </h2>
 
                             <p>
-                                Healthy vs disease-related
-                                results.
+                                {text.healthText}
                             </p>
 
                         </div>
@@ -1056,7 +1322,7 @@ function Analytics() {
                             </strong>
 
                             <span>
-                                Healthy
+                                {text.healthy}
                             </span>
 
                         </div>
@@ -1084,7 +1350,7 @@ function Analytics() {
 
                             <span>
                                 <i className="legend-red" />
-                                Disease
+                                {text.disease}
                             </span>
 
                             <strong>
@@ -1115,29 +1381,24 @@ function Analytics() {
                 <div>
 
                     <span>
-                        MOST FREQUENTLY DETECTED DISEASE
+                        {text.mostFrequent}
                     </span>
 
                     <h2>
-                        {formatName(
-                            analytics.mostCommonDisease
-                        )}
+                        {analytics.mostCommonDisease === "No disease detected"
+                            ? text.noDisease
+                            : getDiseaseLabel(analytics.mostCommonDisease)}
                     </h2>
 
                     <p>
 
-                        Detected{" "}
-
+                        {text.detected}{" "}
                         <strong>
                             {analytics.mostCommonDiseaseCount}
                         </strong>{" "}
-
-                        time
-                        {analytics.mostCommonDiseaseCount !==
-                        1
-                            ? "s"
-                            : ""}{" "}
-                        in your history.
+                        {analytics.mostCommonDiseaseCount === 1
+                            ? text.timeSingular
+                            : text.timePlural}
 
                     </p>
 
@@ -1157,16 +1418,15 @@ function Analytics() {
                     <div>
 
                         <div className="section-kicker">
-                            DISEASE INSIGHTS
+                            {text.diseaseInsights}
                         </div>
 
                         <h2>
-                            Disease-wise Analysis
+                            {text.diseaseWise}
                         </h2>
 
                         <p>
-                            Frequency of disease-related
-                            predictions.
+                            {text.diseaseWiseText}
                         </p>
 
                     </div>
@@ -1207,13 +1467,11 @@ function Analytics() {
                                             <div>
 
                                                 <span>
-                                                    DISEASE
+                                                    {text.diseaseLabel}
                                                 </span>
 
                                                 <h3>
-                                                    {formatName(
-                                                        disease
-                                                    )}
+                                                    {getDiseaseLabel(disease)}
                                                 </h3>
 
                                             </div>
@@ -1244,7 +1502,7 @@ function Analytics() {
                                         <p>
                                             {percentage.toFixed(
                                                 1
-                                            )}% of disease detections
+                                            )}% {text.ofDiseaseDetections}
                                         </p>
 
                                     </div>
@@ -1270,22 +1528,21 @@ function Analytics() {
                     <div>
 
                         <div className="section-kicker">
-                            CROP PERFORMANCE
+                            {text.cropPerformance}
                         </div>
 
                         <h2>
-                            Crop-wise Analysis
+                            {text.cropWise}
                         </h2>
 
                         <p>
-                            Detection distribution across
-                            your crops.
+                            {text.cropWiseText}
                         </p>
 
                     </div>
 
                     <span className="chart-badge">
-                        Live Data
+                        {text.liveData}
                     </span>
 
                 </div>
@@ -1378,9 +1635,7 @@ function Analytics() {
                                             </div>
 
                                             <div className="chart-label">
-                                                {formatName(
-                                                    crop
-                                                )}
+                                                {getCropLabel(crop)}
                                             </div>
 
                                         </div>
@@ -1425,7 +1680,7 @@ function Analytics() {
                                         </span>
 
                                         <strong>
-                                            {formatName(crop)}
+                                            {getCropLabel(crop)}
                                         </strong>
 
                                     </div>
@@ -1455,7 +1710,7 @@ function Analytics() {
                                     <small>
                                         {percentage.toFixed(
                                             1
-                                        )}% of all detections
+                                        )}% {text.ofAllDetections}
                                     </small>
 
                                 </div>
@@ -1481,16 +1736,15 @@ function Analytics() {
                     <div>
 
                         <div className="section-kicker">
-                            MODEL PERFORMANCE
+                            {text.modelPerformance}
                         </div>
 
                         <h2>
-                            Confidence Analysis
+                            {text.confidenceAnalysis}
                         </h2>
 
                         <p>
-                            AI prediction confidence
-                            distribution.
+                            {text.confidenceText}
                         </p>
 
                     </div>
@@ -1509,7 +1763,7 @@ function Analytics() {
                         <div>
 
                             <small>
-                                HIGH CONFIDENCE
+                                {text.highConfidence}
                             </small>
 
                             <strong>
@@ -1517,7 +1771,7 @@ function Analytics() {
                             </strong>
 
                             <p>
-                                ≥ 80%
+                                {text.ranges.high}
                             </p>
 
                         </div>
@@ -1533,7 +1787,7 @@ function Analytics() {
                         <div>
 
                             <small>
-                                MEDIUM CONFIDENCE
+                                {text.mediumConfidence}
                             </small>
 
                             <strong>
@@ -1541,7 +1795,7 @@ function Analytics() {
                             </strong>
 
                             <p>
-                                60% - 79%
+                                {text.ranges.medium}
                             </p>
 
                         </div>
@@ -1557,7 +1811,7 @@ function Analytics() {
                         <div>
 
                             <small>
-                                LOW CONFIDENCE
+                                {text.lowConfidence}
                             </small>
 
                             <strong>
@@ -1565,7 +1819,7 @@ function Analytics() {
                             </strong>
 
                             <p>
-                                &lt; 60%
+                                {text.ranges.low}
                             </p>
 
                         </div>
@@ -1590,13 +1844,11 @@ function Analytics() {
                     </span>
 
                     <h2>
-                        AI Crop Health Insights
+                        {text.aiCropHealth}
                     </h2>
 
                     <p>
-                        AgriMind AI summarizes your
-                        detection history to help
-                        understand crop health.
+                        {text.aiCropHealthText}
                     </p>
 
                 </div>
@@ -1614,7 +1866,7 @@ function Analytics() {
                         </div>
 
                         <span>
-                            HEALTH STATUS
+                            {text.healthStatus}
                         </span>
 
                         <h3>
@@ -1622,26 +1874,17 @@ function Analytics() {
                             {analytics.diseased >
                             analytics.healthy
 
-                                ? "Attention Required"
+                                ? text.attentionRequired
 
-                                : "Overall Health Looks Good"}
+                                : text.overallGood}
 
                         </h3>
 
                         <p>
 
-                            {analytics.total} detection
-                            {analytics.total !== 1
-                                ? "s"
-                                : ""} analyzed.
-
-                            {" "}
-
-                            {analytics.healthy} were
-                            classified as healthy and{" "}
-
-                            {analytics.diseased} were
-                            disease-related.
+                            {analytics.total} {getCountLabel(analytics.total)} {text.analyzed}{" "}
+                            {analytics.healthy} {text.wereHealthy}{" "}
+                            {analytics.diseased} {text.wereDisease}
 
                         </p>
 
@@ -1683,18 +1926,15 @@ function Analytics() {
                         </div>
 
                         <span>
-                            FARMER ACTION
+                            {text.farmerAction}
                         </span>
 
                         <h3>
-                            Monitor Your Crops
+                            {text.monitorCrops}
                         </h3>
 
                         <p>
-                            Inspect affected plants
-                            regularly and consult local
-                            agricultural guidance before
-                            applying chemical treatment.
+                            {text.farmerActionText}
                         </p>
 
                     </div>
@@ -1712,8 +1952,7 @@ function Analytics() {
 
                 <span className="note-dot"></span>
 
-                Analytics are generated from
-                AgriMind AI detection history.
+                {text.analyticsNote}
 
             </div>
 

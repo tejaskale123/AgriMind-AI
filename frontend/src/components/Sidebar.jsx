@@ -1,4 +1,6 @@
 import { NavLink, useNavigate } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
+import { useLanguage } from "../context/LanguageContext";
 
 
 /* ============================================================
@@ -103,7 +105,7 @@ function Icon({ name }) {
             return (
                 <svg {...commonProps}>
                     <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" />
-                    <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.8 1.8-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.55V20h-2.55v-.11a1.7 1.7 0 0 0-1.03-1.55 1.7 1.7 0 0 0-1.88.34l-.06.06-1.8-1.8.06-.06A1.7 1.7 0 0 0 8.2 15a1.7 1.7 0 0 0-1.55-1.03H6.5v-2.55h.15A1.7 1.7 0 0 0 8.2 10.4a1.7 1.7 0 0 0-.34-1.88L7.8 8.46l1.8-1.8.06.06a1.7 1.7 0 0 0 1.88.34A1.7 1.7 0 0 0 12.57 5.5V5h2.55v.5a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06 1.8 1.8-.06.06a1.7 1.7 0 0 0-.34 1.88 1.7 1.7 0 0 0 1.55 1.03h.46v2.55h-.46A1.7 1.7 0 0 0 19.4 15Z" />
+                    <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.8 1.8-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.55V20h-2.55v-.11a1.7 1.7 0 0 0-1.03-1.55 1.7 1.7 0 0 0-1.88.34l-.06.06-1.8-1.8.06-.06A1.7 1.7 0 0 0 8.2 15a1.7 1.7 0 0 0-1.55-1.03H6.5v-2.55h.15A1.7 1.7 0 0 0 8.2 10.4a1.7 1.7 0 0 0-.34-1.88L7.8 8.46l1.8-1.8.06.06a1.7 1.7 0 0 0 1.88.34A1.7 1.7 0 0 0 12.57 5.5V5h2.55v.5a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06 1.8 1.8-.06.06a1.7 1.7 0 0 0-.34 1.88 1.7 1.7 0 0 0-.34 1.88 1.7 1.7 0 0 0 1.55 1.03h.46v2.55h-.46A1.7 1.7 0 0 0 19.4 15Z" />
                 </svg>
             );
 
@@ -152,6 +154,21 @@ function Icon({ name }) {
             );
 
 
+        /* ====================================================
+           LANGUAGE
+        ==================================================== */
+
+        case "language":
+            return (
+                <svg {...commonProps}>
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M3 12h18" />
+                    <path d="M12 3c2.2 2.4 3.4 5.4 3.4 9s-1.2 6.6-3.4 9" />
+                    <path d="M12 3c-2.2 2.4-3.4 5.4-3.4 9s1.2 6.6 3.4 9" />
+                </svg>
+            );
+
+
         default:
             return null;
     }
@@ -166,12 +183,62 @@ function Sidebar() {
 
     const navigate = useNavigate();
 
+    const {
+        language,
+        setLanguage,
+        t,
+        currentLanguage,
+        supportedLanguages
+    } = useLanguage();
+
+    const [languageOpen, setLanguageOpen] =
+        useState(false);
+
+    const languageRef = useRef(null);
+
+
+    /* ========================================================
+       CLOSE LANGUAGE POPUP WHEN CLICKING OUTSIDE
+    ======================================================== */
+
+    useEffect(() => {
+
+        const handleOutsideClick = (event) => {
+
+            if (
+                languageRef.current &&
+                !languageRef.current.contains(event.target)
+            ) {
+
+                setLanguageOpen(false);
+
+            }
+
+        };
+
+        document.addEventListener(
+            "mousedown",
+            handleOutsideClick
+        );
+
+        return () => {
+
+            document.removeEventListener(
+                "mousedown",
+                handleOutsideClick
+            );
+
+        };
+
+    }, []);
+
 
     /* ========================================================
        GET LOGGED-IN USER
     ======================================================== */
 
-    const storedUser = localStorage.getItem("user");
+    const storedUser =
+        localStorage.getItem("user");
 
     let user = null;
 
@@ -215,19 +282,19 @@ function Sidebar() {
         {
             path: "/",
             icon: "dashboard",
-            label: "Dashboard",
+            label: t("navigation.dashboard"),
         },
 
         {
             path: "/detection",
             icon: "detection",
-            label: "Disease Detection",
+            label: t("navigation.diseaseDetection"),
         },
 
         {
             path: "/crops",
             icon: "crops",
-            label: "My Crops",
+            label: t("navigation.myCrops"),
         },
 
     ];
@@ -242,13 +309,13 @@ function Sidebar() {
         {
             path: "/analytics",
             icon: "analytics",
-            label: "Analytics",
+            label: t("navigation.analytics"),
         },
 
         {
             path: "/history",
             icon: "history",
-            label: "History",
+            label: t("navigation.history"),
         },
 
     ];
@@ -265,6 +332,19 @@ function Sidebar() {
         localStorage.removeItem("user");
 
         navigate("/login");
+
+    };
+
+
+    /* ========================================================
+       CHANGE LANGUAGE
+    ======================================================== */
+
+    const handleLanguageChange = (languageCode) => {
+
+        setLanguage(languageCode);
+
+        setLanguageOpen(false);
 
     };
 
@@ -325,7 +405,6 @@ function Sidebar() {
 
             <div className="logo">
 
-
                 <div className="logo-icon">
 
                     <Icon name="leaf" />
@@ -363,7 +442,7 @@ function Sidebar() {
                 <div className="menu-section">
 
                     <div className="menu-title">
-                        MAIN
+                        {t("navigation.main")}
                     </div>
 
 
@@ -383,7 +462,7 @@ function Sidebar() {
                 <div className="menu-section">
 
                     <div className="menu-title">
-                        INSIGHTS
+                        {t("navigation.insights")}
                     </div>
 
 
@@ -403,6 +482,124 @@ function Sidebar() {
             ================================================== */}
 
             <div className="sidebar-bottom">
+
+
+                {/* ==================================================
+                    LANGUAGE SELECTOR
+                ================================================== */}
+
+                <div
+                    className="sidebar-language"
+                    ref={languageRef}
+                >
+
+                    <button
+                        type="button"
+                        className="language-selector"
+                        onClick={() =>
+                            setLanguageOpen(
+                                previous =>
+                                    !previous
+                            )
+                        }
+                        aria-haspopup="menu"
+                        aria-expanded={languageOpen}
+                    >
+
+                        <span className="language-selector-left">
+
+                            <span className="language-icon">
+
+                                <Icon name="language" />
+
+                            </span>
+
+
+                            <span className="language-selector-text">
+
+                                {t("common.language")}
+
+                            </span>
+
+                        </span>
+
+
+                        <span className="language-current">
+
+                            {currentLanguage.nativeLabel}
+
+                        </span>
+
+                    </button>
+
+
+                    {languageOpen && (
+
+                        <div
+                            className="language-popup"
+                            role="menu"
+                        >
+
+                            <div className="language-popup-title">
+
+                                {t("common.selectLanguage")}
+
+                            </div>
+
+
+                            {supportedLanguages.map(
+                                (item) => (
+
+                                    <button
+                                        key={item.code}
+                                        type="button"
+                                        className={
+                                            language === item.code
+                                                ? "language-option selected"
+                                                : "language-option"
+                                        }
+                                        onClick={() =>
+                                            handleLanguageChange(
+                                                item.code
+                                            )
+                                        }
+                                        role="menuitem"
+                                    >
+
+                                        <span>
+
+                                            {item.nativeLabel}
+
+                                        </span>
+
+
+                                        <small>
+
+                                            {item.label}
+
+                                        </small>
+
+
+                                        {language === item.code && (
+
+                                            <span className="language-check">
+
+                                                ✓
+
+                                            </span>
+
+                                        )}
+
+                                    </button>
+
+                                )
+                            )}
+
+                        </div>
+
+                    )}
+
+                </div>
 
 
                 {/* ==================================================
@@ -427,7 +624,7 @@ function Sidebar() {
 
                     <span className="nav-label">
 
-                        Settings
+                        {t("navigation.settings")}
 
                     </span>
 
@@ -447,7 +644,6 @@ function Sidebar() {
 
                 <div className="sidebar-user">
 
-
                     <div className="sidebar-user-info">
 
 
@@ -464,7 +660,6 @@ function Sidebar() {
 
                         <div className="sidebar-user-details">
 
-
                             <div className="sidebar-user-name">
 
                                 {userName}
@@ -474,7 +669,7 @@ function Sidebar() {
 
                             <div className="sidebar-user-role">
 
-                                Farmer
+                                {t("auth.farmer")}
 
                             </div>
 
@@ -502,7 +697,7 @@ function Sidebar() {
 
                         <span>
 
-                            Logout
+                            {t("common.logout")}
 
                         </span>
 
@@ -517,7 +712,6 @@ function Sidebar() {
 
                 <div className="sidebar-version">
 
-
                     <span>
                         AgriMind AI
                     </span>
@@ -529,7 +723,7 @@ function Sidebar() {
 
                 </div>
 
-            </div>
+            </div>  
 
         </aside>
 

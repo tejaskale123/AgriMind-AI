@@ -156,6 +156,70 @@ def get_unknown_disease_fallback():
 
 
 # ============================================================
+# RESPONSE LANGUAGE
+# ============================================================
+
+SUPPORTED_LANGUAGES = {
+    "en": "English",
+    "mr": "Marathi",
+    "hi": "Hindi",
+}
+
+
+def normalize_language(language: str | None) -> str:
+    """Return a supported language code without breaking old callers."""
+
+    if not language:
+        return "en"
+
+    language = str(language).strip().lower()
+
+    # Accept common full-name values as well.
+    aliases = {
+        "english": "en",
+        "marathi": "mr",
+        "hindi": "hi",
+    }
+
+    language = aliases.get(language, language)
+
+    if language not in SUPPORTED_LANGUAGES:
+        return "en"
+
+    return language
+
+
+def get_response_language_instruction(language: str | None) -> str:
+    """Create a strict output-language instruction for Claude."""
+
+    code = normalize_language(language)
+    language_name = SUPPORTED_LANGUAGES[code]
+
+    return f"""
+OUTPUT LANGUAGE REQUIREMENT:
+
+Write ALL farmer-facing recommendation text in {language_name}.
+
+Language code: {code}
+
+Important:
+- Keep the JSON field names exactly in English:
+  severity, symptoms, immediate_action, prevention,
+  spray_guidance, treatment, farmer_action, source.
+- Translate the VALUES of those fields into {language_name}.
+- Keep scientific names, pathogen names, product names, organization
+  names, URLs, units, percentages and other technical identifiers
+  accurate.
+- Do not translate URLs.
+- Do not change the ML prediction itself.
+- Do not invent a disease name.
+- If an official source title is available, preserve the official
+  organization/source name accurately.
+- The final JSON must remain valid JSON.
+"""
+
+
+# ============================================================
 # CLAUDE RECOMMENDATION GENERATION
 # ============================================================
 
@@ -163,10 +227,11 @@ def generate_claude_recommendation(
     crop: str,
     disease: str,
     confidence: float | None = None,
+    language: str = "en",
 ):
     """
     Generate current Plant Care & Management information
-    using Claude Sonnet 4.5 and live web search.
+    using Claude and live web search in the selected language.
 
     Flow:
 
@@ -210,6 +275,8 @@ def generate_claude_recommendation(
     # --------------------------------------------------------
     # LIVE WEB SEARCH PROMPT
     # --------------------------------------------------------
+
+    language_instruction = get_response_language_instruction(language)
 
     prompt = f"""
 You are the agricultural management assistant for AgriMind AI.
@@ -307,6 +374,8 @@ The local fallback database may be used only when:
 - live web search fails,
 - no useful trusted source is found, or
 - a specific management detail cannot safely be established.
+
+{language_instruction}
 
 SOURCE REQUIREMENT:
 
@@ -492,6 +561,7 @@ def _generate_recommendation_section(
     disease,
     confidence,
     section,
+    language="en",
 ):
     fields = SECTION_FIELDS[section]
     confidence_text = (
@@ -499,6 +569,8 @@ def _generate_recommendation_section(
         if confidence is not None
         else "Not provided"
     )
+
+    language_instruction = get_response_language_instruction(language)
 
     prompt = f"""
 You are one section of AgriMind AI's agricultural assistant.
@@ -516,6 +588,8 @@ guidance. Mention local labels and expert advice where applicable.
 
 Return only valid JSON with exactly these string fields:
 {', '.join(fields)}
+
+{language_instruction}
 """
 
     if _call_claude_with_web_search is None:
@@ -559,8 +633,13 @@ async def stream_claude_recommendation(
     crop: str,
     disease: str,
     confidence: float | None = None,
+    language: str = "en",
 ):
-    """Yield three concurrent recommendation sections as they finish."""
+    """Yield three concurrent recommendation sections as they finish.
+
+    The language parameter is optional for backward compatibility.
+    Existing callers continue to receive English.
+    """
 
     async def run_section(section):
         try:
@@ -570,6 +649,7 @@ async def stream_claude_recommendation(
                 disease,
                 confidence,
                 section,
+                language,
             )
         except Exception as error:
             print(
@@ -601,6 +681,7 @@ def _generate_realtime_recommendation(
     crop: str,
     disease: str,
     confidence: float | None,
+    language: str = "en",
 ):
     """
     Generate a real-time recommendation using Claude
@@ -612,6 +693,8 @@ def _generate_realtime_recommendation(
         if confidence is not None
         else "Not provided"
     )
+
+    language_instruction = get_response_language_instruction(language)
 
     prompt = f"""
 You are the agricultural management assistant for AgriMind AI.
@@ -649,6 +732,8 @@ IMPORTANT:
   management when supported.
 - Do not claim 100% certainty.
 - Give practical farmer-facing advice.
+
+{language_instruction}
 
 The response MUST contain exactly these fields:
 
@@ -725,6 +810,7 @@ def generate_claude_recommendation(
     crop: str,
     disease: str,
     confidence: float | None = None,
+    language: str = "en",
 ):
     """
     Main AgriMind AI recommendation function.
@@ -743,7 +829,8 @@ def generate_claude_recommendation(
         realtime_result = _generate_realtime_recommendation(
             crop=crop,
             disease=disease,
-            confidence=confidence
+            confidence=confidence,
+            language=language,
         )
 
         print(

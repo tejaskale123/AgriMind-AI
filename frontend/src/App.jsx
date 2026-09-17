@@ -17,6 +17,10 @@ import Settings from "./pages/Settings";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 
+import {
+    LanguageProvider
+} from "./context/LanguageContext";
+
 
 /* ============================================================
    APP LAYOUT
@@ -26,9 +30,11 @@ function AppLayout() {
 
     const location = useLocation();
 
-    const token = localStorage.getItem("access_token");
+    const token =
+        localStorage.getItem("access_token");
 
-    const isAuthenticated = Boolean(token);
+    const isAuthenticated =
+        Boolean(token);
 
 
     /* ============================================================
@@ -44,7 +50,10 @@ function AppLayout() {
        PROTECTED ROUTES
     ============================================================ */
 
-    if (!publicPage && !isAuthenticated) {
+    if (
+        !publicPage &&
+        !isAuthenticated
+    ) {
 
         return (
             <Navigate
@@ -61,7 +70,10 @@ function AppLayout() {
        CANNOT OPEN LOGIN / REGISTER
     ============================================================ */
 
-    if (publicPage && isAuthenticated) {
+    if (
+        publicPage &&
+        isAuthenticated
+    ) {
 
         return (
             <Navigate
@@ -226,11 +238,15 @@ function App() {
 
     return (
 
-        <BrowserRouter>
+        <LanguageProvider>
 
-            <AppLayout />
+            <BrowserRouter>
 
-        </BrowserRouter>
+                <AppLayout />
+
+            </BrowserRouter>
+
+        </LanguageProvider>
 
     );
 

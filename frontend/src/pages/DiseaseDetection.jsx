@@ -1,7 +1,273 @@
 ﻿import React, { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useLanguage } from "../context/LanguageContext";
 
 function DiseaseDetection() {
+    const { language } = useLanguage();
+
+    const ui = {
+        en: {
+            title: "Disease Detection",
+            subtitle: "AI-powered crop leaf health analysis",
+            aiReady: "AI Ready",
+            analyzeLeaf: (crop) => `Analyze ${crop} Leaf`,
+            uploadClear: "Upload a clear leaf image for AI analysis",
+            maxSize: "Maximum file size: 10 MB",
+            uploadTitle: "Upload your leaf image",
+            uploadDesc: "Drag & drop an image here or select one from your computer",
+            chooseImage: "Choose Image",
+            formats: "JPG / PNG / WEBP",
+            size: "Up to 10 MB",
+            clearLeaf: "Clear leaf image",
+            useCamera: "Use Camera",
+            cameraCapture: "Camera Capture",
+            live: "LIVE",
+            capturePhoto: "Capture Photo",
+            cancel: "Cancel",
+            selectedImage: "Selected image:",
+            analyze: "Analyze with AI",
+            analyzing: "Analyzing Image...",
+            chooseAnother: "Choose Another",
+            analyzingLeaf: (crop) => `EfficientNet-B0 is analyzing your ${crop} leaf...`,
+            howWorks: "How AI Detection Works",
+            uploadStep: "Upload Leaf Image",
+            uploadStepDesc: "Upload a clear, well-lit photograph of the crop leaf.",
+            analysisStep: "AI Analysis",
+            analysisStepDesc: "EfficientNet-B0 analyzes visual patterns in the submitted image.",
+            resultStep: "Get Result",
+            resultStepDesc: "Receive the predicted condition and confidence score.",
+            aiModel: "AI MODEL",
+            cropDiseaseClassification: "Crop disease classification",
+            somethingWrong: "Something went wrong",
+            resultTitle: "Disease Detection Result",
+            completed: "Analysis completed successfully",
+            analysisComplete: "Analysis Complete",
+            crop: "Crop",
+            predictedCondition: "Predicted Condition",
+            confidenceScore: "Confidence Score",
+            aiExplanation: "AI Explanation",
+            geminiAssistant: "Gemini AI Assistant",
+            lowConfidence: "Low Confidence Prediction",
+            lowConfidenceDesc: "AgriMind AI is not confident enough in this prediction to provide a reliable disease recommendation.",
+            currentConfidence: "Current confidence:",
+            required: "Required:",
+            clearImage: "Upload a clearer leaf image.",
+            completeLeaf: "Keep the complete leaf visible.",
+            avoidBlurry: "Avoid blurry or dark images.",
+            correctCrop: "Make sure the crop type is correct.",
+            dontRely: "Do not rely on a low-confidence prediction alone.",
+            plantCare: "Plant Care & Management",
+            verify: "Please verify this result",
+            verifyDesc: "AI prediction may not be completely accurate. Please compare the detected condition with the visible symptoms on your crop. If the result does not match your crop, upload a clear image again or consult a local agricultural expert before taking treatment or spray action.",
+            severity: "Severity:",
+            notSpecified: "Not specified",
+            symptoms: "Symptoms",
+            immediateAction: "Immediate Action",
+            prevention: "Prevention",
+            sprayGuidance: "Spray Guidance",
+            treatment: "Treatment / What You Should Do",
+            farmerAction: "Farmer Action",
+            recommendationFailed: "Recommendation could not be loaded for this prediction.",
+            preparingRecommendation: "Preparing AI recommendation...",
+            probabilities: "AI Class Probabilities",
+            probabilityNote: "Model confidence by class",
+            anotherImage: "Analyze Another Image",
+            noDetections: "No detections yet",
+            invalidImage: "Please select a valid crop leaf image.",
+            tooLarge: "Image size must be less than 10 MB.",
+            cameraUnsupported: "Camera is not supported by this browser.",
+            cameraFailed: "Camera access failed. Please allow camera permission and try again.",
+            cameraNotReady: "Camera is not ready yet. Please wait a moment and try again.",
+            captureFailed: "Unable to capture the camera image.",
+            createImageFailed: "Unable to create the captured image.",
+            noCrop: "No crop selected. Please go back to Crops and select a supported crop.",
+            unsupportedCrop: "Unsupported crop. Please select a supported crop.",
+            notAuthenticated: "Not authenticated. Please logout and login again.",
+            authExpired: "Authentication expired or invalid. Please logout and login again.",
+            predictionFailed: "Prediction failed.",
+            invalidResponse: "Invalid response received from AI server.",
+            predictionNotSuccessful: "AI prediction was not successful.",
+            unableConnect: "Unable to connect to AI server.",
+            streamFailed: "Recommendation stream could not be started.",
+            recommendationError: "Unable to load the recommendation.",
+            loading: "Loading..."
+        },
+        mr: {
+            title: "रोग शोध",
+            subtitle: "AI द्वारे पिकाच्या पानांच्या आरोग्याचे विश्लेषण",
+            aiReady: "AI तयार आहे",
+            analyzeLeaf: (crop) => `${crop} पानाचे विश्लेषण करा`,
+            uploadClear: "AI विश्लेषणासाठी पिकाच्या पानाचा स्पष्ट फोटो अपलोड करा",
+            maxSize: "कमाल फाइल आकार: 10 MB",
+            uploadTitle: "पानाचा फोटो अपलोड करा",
+            uploadDesc: "इमेज इथे Drag & Drop करा किंवा संगणकातून निवडा",
+            chooseImage: "इमेज निवडा",
+            formats: "JPG / PNG / WEBP",
+            size: "10 MB पर्यंत",
+            clearLeaf: "पानाचा स्पष्ट फोटो",
+            useCamera: "कॅमेरा वापरा",
+            cameraCapture: "कॅमेरा कॅप्चर",
+            live: "LIVE",
+            capturePhoto: "फोटो कॅप्चर करा",
+            cancel: "रद्द करा",
+            selectedImage: "निवडलेली इमेज:",
+            analyze: "AI ने विश्लेषण करा",
+            analyzing: "इमेजचे विश्लेषण सुरू आहे...",
+            chooseAnother: "दुसरी इमेज निवडा",
+            analyzingLeaf: (crop) => `EfficientNet-B0 तुमच्या ${crop} पानाचे विश्लेषण करत आहे...`,
+            howWorks: "AI रोग शोध कसा काम करतो",
+            uploadStep: "पानाचा फोटो अपलोड करा",
+            uploadStepDesc: "पिकाच्या पानाचा स्पष्ट आणि योग्य प्रकाशातील फोटो अपलोड करा.",
+            analysisStep: "AI विश्लेषण",
+            analysisStepDesc: "EfficientNet-B0 अपलोड केलेल्या पानातील दृश्य नमुन्यांचे विश्लेषण करते.",
+            resultStep: "निकाल मिळवा",
+            resultStepDesc: "संभाव्य स्थिती आणि confidence score मिळवा.",
+            aiModel: "AI मॉडेल",
+            cropDiseaseClassification: "पिकांच्या रोगांचे वर्गीकरण",
+            somethingWrong: "काहीतरी चूक झाली",
+            resultTitle: "रोग शोध परिणाम",
+            completed: "विश्लेषण यशस्वीरित्या पूर्ण झाले",
+            analysisComplete: "विश्लेषण पूर्ण",
+            crop: "पीक",
+            predictedCondition: "अंदाजित स्थिती",
+            confidenceScore: "विश्वास पातळी",
+            aiExplanation: "AI स्पष्टीकरण",
+            geminiAssistant: "Gemini AI सहाय्यक",
+            lowConfidence: "कमी Confidence असलेला अंदाज",
+            lowConfidenceDesc: "या अंदाजावर विश्वासार्ह रोगाची शिफारस देण्यासाठी AgriMind AI ला पुरेसा विश्वास नाही.",
+            currentConfidence: "सध्याचा confidence:",
+            required: "आवश्यक:",
+            clearImage: "पानाचा अधिक स्पष्ट फोटो अपलोड करा.",
+            completeLeaf: "संपूर्ण पान फोटोमध्ये दिसू द्या.",
+            avoidBlurry: "धूसर किंवा अंधुक फोटो टाळा.",
+            correctCrop: "पिकाचा प्रकार योग्य आहे याची खात्री करा.",
+            dontRely: "फक्त कमी-confidence अंदाजावर अवलंबून राहू नका.",
+            plantCare: "पिकाची काळजी व व्यवस्थापन",
+            verify: "हा निकाल पडताळून पहा",
+            verifyDesc: "AI चा अंदाज पूर्णपणे अचूक असेलच असे नाही. तुमच्या पिकावर दिसणाऱ्या लक्षणांशी आढळलेली स्थिती तपासा. निकाल पिकाशी जुळत नसल्यास पुन्हा स्पष्ट फोटो अपलोड करा किंवा उपचार अथवा फवारणी करण्यापूर्वी स्थानिक कृषी तज्ज्ञांचा सल्ला घ्या.",
+            severity: "तीव्रता:",
+            notSpecified: "नमूद केलेले नाही",
+            symptoms: "लक्षणे",
+            immediateAction: "तात्काळ कृती",
+            prevention: "प्रतिबंध",
+            sprayGuidance: "फवारणी मार्गदर्शन",
+            treatment: "उपचार / आपण काय करावे",
+            farmerAction: "शेतकऱ्याची कृती",
+            recommendationFailed: "या अंदाजासाठी शिफारस लोड करता आली नाही.",
+            preparingRecommendation: "AI शिफारस तयार करत आहे...",
+            probabilities: "AI वर्ग संभाव्यता",
+            probabilityNote: "प्रत्येक वर्गाची Model confidence",
+            anotherImage: "दुसऱ्या इमेजचे विश्लेषण करा",
+            noDetections: "अजून कोणतेही डिटेक्शन नाही",
+            invalidImage: "कृपया पिकाच्या पानाची वैध इमेज निवडा.",
+            tooLarge: "इमेजचा आकार 10 MB पेक्षा कमी असावा.",
+            cameraUnsupported: "या ब्राउझरमध्ये कॅमेरा समर्थित नाही.",
+            cameraFailed: "कॅमेरा सुरू करता आला नाही. कृपया कॅमेरा परवानगी द्या आणि पुन्हा प्रयत्न करा.",
+            cameraNotReady: "कॅमेरा अजून तयार नाही. कृपया थोडा वेळ थांबा आणि पुन्हा प्रयत्न करा.",
+            captureFailed: "कॅमेऱ्यातील इमेज कॅप्चर करता आली नाही.",
+            createImageFailed: "कॅप्चर केलेली इमेज तयार करता आली नाही.",
+            noCrop: "पीक निवडलेले नाही. कृपया Crops मध्ये जाऊन समर्थित पीक निवडा.",
+            unsupportedCrop: "असमर्थित पीक. कृपया समर्थित पीक निवडा.",
+            notAuthenticated: "तुम्ही लॉगिन केलेले नाही. कृपया logout करून पुन्हा login करा.",
+            authExpired: "Authentication कालबाह्य किंवा अवैध आहे. कृपया logout करून पुन्हा login करा.",
+            predictionFailed: "Prediction अयशस्वी झाले.",
+            invalidResponse: "AI server कडून अवैध response मिळाला.",
+            predictionNotSuccessful: "AI prediction यशस्वी झाले नाही.",
+            unableConnect: "AI server शी कनेक्ट होता आले नाही.",
+            streamFailed: "Recommendation stream सुरू करता आला नाही.",
+            recommendationError: "शिफारस लोड करता आली नाही.",
+            loading: "लोड होत आहे..."
+        },
+        hi: {
+            title: "रोग पहचान",
+            subtitle: "AI द्वारा फसल के पत्ते के स्वास्थ्य का विश्लेषण",
+            aiReady: "AI तैयार है",
+            analyzeLeaf: (crop) => `${crop} पत्ते का विश्लेषण करें`,
+            uploadClear: "AI विश्लेषण के लिए फसल के पत्ते की स्पष्ट फोटो अपलोड करें",
+            maxSize: "अधिकतम फ़ाइल आकार: 10 MB",
+            uploadTitle: "पत्ते की फोटो अपलोड करें",
+            uploadDesc: "इमेज यहाँ Drag & Drop करें या कंप्यूटर से चुनें",
+            chooseImage: "इमेज चुनें",
+            formats: "JPG / PNG / WEBP",
+            size: "10 MB तक",
+            clearLeaf: "पत्ते की स्पष्ट इमेज",
+            useCamera: "कैमरा इस्तेमाल करें",
+            cameraCapture: "कैमरा कैप्चर",
+            live: "LIVE",
+            capturePhoto: "फोटो कैप्चर करें",
+            cancel: "रद्द करें",
+            selectedImage: "चयनित इमेज:",
+            analyze: "AI से विश्लेषण करें",
+            analyzing: "इमेज का विश्लेषण हो रहा है...",
+            chooseAnother: "दूसरी इमेज चुनें",
+            analyzingLeaf: (crop) => `EfficientNet-B0 आपके ${crop} पत्ते का विश्लेषण कर रहा है...`,
+            howWorks: "AI रोग पहचान कैसे काम करती है",
+            uploadStep: "पत्ते की इमेज अपलोड करें",
+            uploadStepDesc: "फसल के पत्ते की स्पष्ट और अच्छी रोशनी वाली फोटो अपलोड करें।",
+            analysisStep: "AI विश्लेषण",
+            analysisStepDesc: "EfficientNet-B0 अपलोड किए गए पत्ते के दृश्य पैटर्न का विश्लेषण करता है।",
+            resultStep: "परिणाम प्राप्त करें",
+            resultStepDesc: "अनुमानित स्थिति और confidence score प्राप्त करें।",
+            aiModel: "AI मॉडल",
+            cropDiseaseClassification: "फसल रोग वर्गीकरण",
+            somethingWrong: "कुछ गलत हो गया",
+            resultTitle: "रोग पहचान परिणाम",
+            completed: "विश्लेषण सफलतापूर्वक पूरा हुआ",
+            analysisComplete: "विश्लेषण पूरा",
+            crop: "फसल",
+            predictedCondition: "अनुमानित स्थिति",
+            confidenceScore: "Confidence Score",
+            aiExplanation: "AI स्पष्टीकरण",
+            geminiAssistant: "Gemini AI सहायक",
+            lowConfidence: "कम Confidence वाला अनुमान",
+            lowConfidenceDesc: "विश्वसनीय रोग की सिफारिश देने के लिए AgriMind AI को इस अनुमान पर पर्याप्त विश्वास नहीं है।",
+            currentConfidence: "वर्तमान confidence:",
+            required: "आवश्यक:",
+            clearImage: "पत्ते की अधिक स्पष्ट फोटो अपलोड करें।",
+            completeLeaf: "पूरा पत्ता फोटो में दिखाई देना चाहिए।",
+            avoidBlurry: "धुंधली या अंधेरी फोटो से बचें।",
+            correctCrop: "सुनिश्चित करें कि फसल का प्रकार सही है।",
+            dontRely: "केवल कम-confidence वाले अनुमान पर निर्भर न रहें।",
+            plantCare: "पौधे की देखभाल और प्रबंधन",
+            verify: "कृपया इस परिणाम की पुष्टि करें",
+            verifyDesc: "AI का अनुमान पूरी तरह सटीक नहीं हो सकता। अपने खेत में दिखाई देने वाले लक्षणों से पहचानी गई स्थिति की तुलना करें। यदि परिणाम आपकी फसल से मेल नहीं खाता है, तो दोबारा स्पष्ट फोटो अपलोड करें या उपचार अथवा छिड़काव से पहले स्थानीय कृषि विशेषज्ञ से सलाह लें।",
+            severity: "गंभीरता:",
+            notSpecified: "निर्दिष्ट नहीं",
+            symptoms: "लक्षण",
+            immediateAction: "तत्काल कार्रवाई",
+            prevention: "रोकथाम",
+            sprayGuidance: "छिड़काव मार्गदर्शन",
+            treatment: "उपचार / आपको क्या करना चाहिए",
+            farmerAction: "किसान की कार्रवाई",
+            recommendationFailed: "इस अनुमान के लिए सिफारिश लोड नहीं हो सकी।",
+            preparingRecommendation: "AI सिफारिश तैयार कर रहा है...",
+            probabilities: "AI क्लास संभावनाएँ",
+            probabilityNote: "प्रत्येक क्लास का Model confidence",
+            anotherImage: "दूसरी इमेज का विश्लेषण करें",
+            noDetections: "अभी कोई डिटेक्शन नहीं है",
+            invalidImage: "कृपया फसल के पत्ते की वैध इमेज चुनें।",
+            tooLarge: "इमेज का आकार 10 MB से कम होना चाहिए।",
+            cameraUnsupported: "इस ब्राउज़र में कैमरा समर्थित नहीं है।",
+            cameraFailed: "कैमरा एक्सेस नहीं हो सका। कृपया कैमरा अनुमति दें और फिर प्रयास करें।",
+            cameraNotReady: "कैमरा अभी तैयार नहीं है। कृपया थोड़ी देर प्रतीक्षा करें और फिर प्रयास करें।",
+            captureFailed: "कैमरा इमेज कैप्चर नहीं हो सकी।",
+            createImageFailed: "कैप्चर की गई इमेज बनाई नहीं जा सकी।",
+            noCrop: "कोई फसल चयनित नहीं है। कृपया Crops में जाकर समर्थित फसल चुनें।",
+            unsupportedCrop: "असमर्थित फसल। कृपया समर्थित फसल चुनें।",
+            notAuthenticated: "आप प्रमाणित नहीं हैं। कृपया logout करके फिर login करें।",
+            authExpired: "Authentication समाप्त या अमान्य है। कृपया logout करके फिर login करें।",
+            predictionFailed: "Prediction विफल हुआ।",
+            invalidResponse: "AI server से अमान्य response मिला।",
+            predictionNotSuccessful: "AI prediction सफल नहीं हुआ।",
+            unableConnect: "AI server से कनेक्ट नहीं हो सका।",
+            streamFailed: "Recommendation stream शुरू नहीं हो सका।",
+            recommendationError: "सिफारिश लोड नहीं हो सकी।",
+            loading: "लोड हो रहा है..."
+        }
+    };
+
+    const text = ui[language] || ui.en;
+
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -264,6 +530,8 @@ function DiseaseDetection() {
                     prediction
                 )}&confidence=${encodeURIComponent(
                     confidence
+                )}&language=${encodeURIComponent(
+                    language
                 )}`,
                 {
                     headers: {
@@ -275,7 +543,7 @@ function DiseaseDetection() {
 
             if (!response.ok || !response.body) {
                 throw new Error(
-                    "Recommendation stream could not be started."
+                    text.streamFailed
                 );
             }
 
@@ -333,7 +601,7 @@ function DiseaseDetection() {
             setRecommendation(null);
             setError(
                 err.message ||
-                "Unable to load the recommendation."
+                text.recommendationError
             );
         } finally {
             setRecommendationLoading(false);
@@ -355,7 +623,7 @@ function DiseaseDetection() {
             !file.type.startsWith("image/")
         ) {
             setError(
-                "Please select a valid crop leaf image."
+                text.invalidImage
             );
 
             return;
@@ -366,7 +634,7 @@ function DiseaseDetection() {
             10 * 1024 * 1024
         ) {
             setError(
-                "Image size must be less than 10 MB."
+                text.tooLarge
             );
 
             return;
@@ -442,7 +710,7 @@ function DiseaseDetection() {
                 !navigator.mediaDevices?.getUserMedia
             ) {
                 setError(
-                    "Camera is not supported by this browser."
+                    text.cameraUnsupported
                 );
 
                 return;
@@ -470,7 +738,7 @@ function DiseaseDetection() {
             );
 
             setError(
-                "Camera access failed. Please allow camera permission and try again."
+                text.cameraFailed
             );
 
             setCameraOpen(false);
@@ -506,7 +774,7 @@ function DiseaseDetection() {
             !video.videoHeight
         ) {
             setError(
-                "Camera is not ready yet. Please wait a moment and try again."
+                text.cameraNotReady
             );
 
             return;
@@ -528,7 +796,7 @@ function DiseaseDetection() {
 
         if (!context) {
             setError(
-                "Unable to capture the camera image."
+                text.captureFailed
             );
 
             return;
@@ -546,7 +814,7 @@ function DiseaseDetection() {
             (blob) => {
                 if (!blob) {
                     setError(
-                        "Unable to create the captured image."
+                        text.createImageFailed
                     );
 
                     return;
@@ -618,7 +886,7 @@ function DiseaseDetection() {
 
         if (!selectedCrop) {
             setError(
-                "No crop selected. Please go back to Crops and select a supported crop."
+                text.noCrop
             );
 
             return;
@@ -630,7 +898,7 @@ function DiseaseDetection() {
             )
         ) {
             setError(
-                "Unsupported crop. Please select a supported crop."
+                text.unsupportedCrop
             );
 
             return;
@@ -647,7 +915,7 @@ function DiseaseDetection() {
 
             if (!token) {
                 throw new Error(
-                    "Not authenticated. Please logout and login again."
+                    text.notAuthenticated
                 );
             }
 
@@ -686,7 +954,7 @@ function DiseaseDetection() {
                     await response.json();
             } catch {
                 throw new Error(
-                    "Invalid response received from AI server."
+                    text.invalidResponse
                 );
             }
 
@@ -695,14 +963,14 @@ function DiseaseDetection() {
                     response.status === 401
                 ) {
                     throw new Error(
-                        "Authentication expired or invalid. Please logout and login again."
+                        text.authExpired
                     );
                 }
 
                 throw new Error(
                     data.detail ||
                     data.message ||
-                    "Prediction failed."
+                    text.predictionFailed
                 );
             }
 
@@ -719,7 +987,7 @@ function DiseaseDetection() {
                 }
 
                 throw new Error(
-                    "AI prediction was not successful."
+                    text.predictionNotSuccessful
                 );
             }
 
@@ -746,7 +1014,7 @@ function DiseaseDetection() {
 
             setError(
                 err.message ||
-                "Unable to connect to AI server."
+                text.unableConnect
             ); 
         } finally {
             setLoading(false);
@@ -847,7 +1115,7 @@ function DiseaseDetection() {
 
     const CheckIcon = () => (
         <span className="check-icon">
-            âœ“
+            ✓
         </span>
     );
 
@@ -1268,7 +1536,7 @@ function DiseaseDetection() {
                 }
 
                 .upload-line::after {
-                    content: "";
+                    content: ";
 
                     position: absolute;
 
@@ -1432,7 +1700,7 @@ function DiseaseDetection() {
                 }
 
                 .camera-icon::before {
-                    content: "";
+                    content: ";
 
                     position: absolute;
 
@@ -1654,7 +1922,7 @@ function DiseaseDetection() {
                 }
 
                 .live-indicator::before {
-                    content: "";
+                    content: ";
 
                     width: 6px;
                     height: 6px;
@@ -2864,12 +3132,11 @@ function DiseaseDetection() {
                     <div>
 
                         <h1>
-                            Disease Detection
+                            {text.title}
                         </h1>
 
                         <p>
-                            AI-powered crop leaf
-                            health analysis
+                            {text.subtitle}
                         </p>
 
                     </div>
@@ -2886,7 +3153,7 @@ function DiseaseDetection() {
                     {cropName}
 
                     <span>
-                        â€¢ AI Ready
+                        • AI Ready
                     </span>
 
                 </div>
@@ -2913,18 +3180,17 @@ function DiseaseDetection() {
                             <div>
 
                                 <h2>
-                                    Analyze {cropName} Leaf
+                                    {text.analyzeLeaf(cropName)}
                                 </h2>
 
                                 <p>
-                                    Upload a clear leaf image
-                                    for AI analysis
+                                    {text.uploadClear}
                                 </p>
 
                             </div>
 
                             <span className="file-limit">
-                                Maximum file size: 10 MB
+                                {text.maxSize}
                             </span>
 
                         </div>
@@ -2969,17 +3235,15 @@ function DiseaseDetection() {
                                     <UploadIcon />
 
                                     <h3>
-                                        Upload your leaf image
+                                        {text.uploadTitle}
                                     </h3>
 
                                     <p>
-                                        Drag & drop an image
-                                        here or select one
-                                        from your computer
+                                        {text.uploadDesc}
                                     </p>
 
                                     <div className="choose-button">
-                                        Choose Image
+                                        {text.chooseImage}
                                     </div>
 
                                     <input
@@ -3005,23 +3269,23 @@ function DiseaseDetection() {
 
                                     <span>
                                         <span className="meta-check">
-                                            âœ“
+                                            ✓
                                         </span>{" "}
-                                        JPG / PNG / WEBP
+                                        {text.formats}
                                     </span>
 
                                     <span>
                                         <span className="meta-check">
-                                            âœ“
+                                            ✓
                                         </span>{" "}
-                                        Up to 10 MB
+                                        {text.size}
                                     </span>
 
                                     <span>
                                         <span className="meta-check">
-                                            âœ“
+                                            ✓
                                         </span>{" "}
-                                        Clear leaf image
+                                        {text.clearLeaf}
                                     </span>
 
                                 </div>
@@ -3042,7 +3306,7 @@ function DiseaseDetection() {
 
                                         <CameraIcon />
 
-                                        Use Camera
+                                        {text.useCamera}
 
                                     </button>
 
@@ -3060,11 +3324,11 @@ function DiseaseDetection() {
                                         <div className="camera-panel-title">
 
                                             <span>
-                                                Camera Capture
+                                                {text.cameraCapture}
                                             </span>
 
                                             <span className="live-indicator">
-                                                LIVE
+                                                {text.live}
                                             </span>
 
                                         </div>
@@ -3090,7 +3354,7 @@ function DiseaseDetection() {
                                                     capturePhoto
                                                 }
                                             >
-                                                Capture Photo
+                                                {text.capturePhoto}
                                             </button>
 
                                             <button
@@ -3100,7 +3364,7 @@ function DiseaseDetection() {
                                                     stopCamera
                                                 }
                                             >
-                                                Cancel
+                                                {text.cancel}
                                             </button>
 
                                         </div>
@@ -3129,7 +3393,7 @@ function DiseaseDetection() {
 
                                     <div className="file-name">
 
-                                        Selected image:{" "}
+                                        {text.selectedImage}{" "}
 
                                         <strong>
                                             {selectedFile?.name}
@@ -3154,8 +3418,8 @@ function DiseaseDetection() {
                                     >
 
                                         {loading
-                                            ? "Analyzing Image..."
-                                            : "Analyze with AI"}
+                                            ? text.analyzing
+                                            : text.analyze}
 
                                     </button>
 
@@ -3170,7 +3434,7 @@ function DiseaseDetection() {
                                             loading
                                         }
                                     >
-                                        Choose Another
+                                        {text.chooseAnother}
                                     </button>
 
                                 </div>
@@ -3182,10 +3446,7 @@ function DiseaseDetection() {
 
                                         <span className="loading-spinner"></span>
 
-                                        EfficientNet-B0 is
-                                        analyzing your{" "}
-                                        {cropName}
-                                        {" "}leaf...
+                                        {text.analyzingLeaf(cropName)}
 
                                     </div>
 
@@ -3211,7 +3472,7 @@ function DiseaseDetection() {
                             </div>
 
                             <h2>
-                                How AI Detection Works
+                                {text.howWorks}
                             </h2>
 
                         </div>
@@ -3226,13 +3487,11 @@ function DiseaseDetection() {
                             <div>
 
                                 <h3>
-                                    Upload Leaf Image
+                                    {text.uploadStep}
                                 </h3>
 
                                 <p>
-                                    Upload a clear,
-                                    well-lit photograph
-                                    of the crop leaf.
+                                    {text.uploadStepDesc}
                                 </p>
 
                             </div>
@@ -3249,14 +3508,11 @@ function DiseaseDetection() {
                             <div>
 
                                 <h3>
-                                    AI Analysis
+                                    {text.analysisStep}
                                 </h3>
 
                                 <p>
-                                    EfficientNet-B0
-                                    analyzes visual
-                                    patterns in the
-                                    submitted image.
+                                    {text.analysisStepDesc}
                                 </p>
 
                             </div>
@@ -3273,13 +3529,11 @@ function DiseaseDetection() {
                             <div>
 
                                 <h3>
-                                    Get Result
+                                    {text.resultStep}
                                 </h3>
 
                                 <p>
-                                    Receive the predicted
-                                    condition and
-                                    confidence score.
+                                    {text.resultStepDesc}
                                 </p>
 
                             </div>
@@ -3290,7 +3544,7 @@ function DiseaseDetection() {
                         <div className="model-box">
 
                             <div className="model-label">
-                                AI MODEL
+                                {text.aiModel}
                             </div>
 
                             <div className="model-name">
@@ -3298,8 +3552,7 @@ function DiseaseDetection() {
                             </div>
 
                             <div className="model-description">
-                                Crop disease
-                                classification
+                                {text.cropDiseaseClassification}
                             </div>
 
                         </div>
@@ -3322,7 +3575,7 @@ function DiseaseDetection() {
                     <div>
 
                         <div className="error-title">
-                            Something went wrong
+                            {text.somethingWrong}
                         </div>
 
                         <div>
@@ -3355,12 +3608,11 @@ function DiseaseDetection() {
                             <div>
 
                                 <h2> 
-                                    Disease Detection Result 
+                                    {text.resultTitle} 
                                 </h2>
 
                                 <p>
-                                    Analysis completed
-                                    successfully
+                                    {text.completed}
                                 </p>
 
                             </div>
@@ -3372,7 +3624,7 @@ function DiseaseDetection() {
 
                             <CheckIcon />
 
-                            Analysis Complete
+                            {text.analysisComplete}
 
                         </div>
 
@@ -3409,7 +3661,7 @@ function DiseaseDetection() {
                         >
 
                             <div className="result-label">
-                                Predicted Condition
+                                {text.predictedCondition}
                             </div>
 
                             <div
@@ -3430,7 +3682,7 @@ function DiseaseDetection() {
                         <div className="result-box blue">
 
                             <div className="result-label">
-                                Confidence Score
+                                {text.confidenceScore}
                             </div>
 
                             <div className="result-value blue-text">
@@ -3461,13 +3713,13 @@ function DiseaseDetection() {
                                 </div>
 
                                 <h2>
-                                    AI Explanation
+                                    {text.aiExplanation}
                                 </h2>
 
                             </div>
 
                             <p className="ai-explanation-label">
-                                Gemini AI Assistant
+                                {text.geminiAssistant}
                             </p>
 
                             <p>
@@ -3484,20 +3736,16 @@ function DiseaseDetection() {
                         <div className="low-confidence">
 
                             <h2>
-                                Low Confidence Prediction
+                                {text.lowConfidence}
                             </h2>
 
                             <p>
-                                AgriMind AI is not
-                                confident enough in
-                                this prediction to
-                                provide a reliable
-                                disease recommendation.
+                                {text.lowConfidenceDesc}
                             </p>
 
                             <div className="confidence-warning">
 
-                                Current confidence:{" "}
+                                {text.currentConfidence}{" "}
 
                                 {confidenceValue.toFixed(
                                     2
@@ -3505,9 +3753,9 @@ function DiseaseDetection() {
 
                                 %
 
-                                {" â€¢ "}
+                                {" • "}
 
-                                Required:
+                                {text.required}:
 
                                 {" "}
 
@@ -3518,29 +3766,23 @@ function DiseaseDetection() {
                             <ul>
 
                                 <li>
-                                    Upload a clearer
-                                    leaf image.
+                                    {text.clearImage}
                                 </li>
 
                                 <li>
-                                    Keep the complete
-                                    leaf visible.
+                                    {text.completeLeaf}
                                 </li>
 
                                 <li>
-                                    Avoid blurry or
-                                    dark images.
+                                    {text.avoidBlurry}
                                 </li>
 
                                 <li>
-                                    Make sure the crop
-                                    type is correct.
+                                    {text.correctCrop}
                                 </li>
 
                                 <li>
-                                    Do not rely on a
-                                    low-confidence
-                                    prediction alone.
+                                    {text.dontRely}
                                 </li>
 
                             </ul>
@@ -3555,8 +3797,7 @@ function DiseaseDetection() {
 
                                 <span className="loading-spinner"></span>
 
-                                Preparing AI
-                                recommendation...
+                                {text.preparingRecommendation}
 
                             </div>
 
@@ -3577,22 +3818,17 @@ function DiseaseDetection() {
                                 </div>
 
                                 <h2>
-                                    Plant Care & Management
+                                    {text.plantCare}
                                 </h2>
 
                             </div>
 
 
                             <div className="ai-verification-warning">
-                                <strong>⚠️ Please verify this result</strong>
+                                <strong>⚠️ {text.verify}</strong>
 
                                 <p>
-                                    AI prediction may not be completely accurate.
-                                    Please compare the detected condition with the
-                                    visible symptoms on your crop. If the result does
-                                    not match your crop, upload a clear image again
-                                    or consult a local agricultural expert before
-                                    taking treatment or spray action.
+                                    {text.verifyDesc}
                                 </p>
                             </div>
 
@@ -3603,10 +3839,10 @@ function DiseaseDetection() {
 
                             <span className="severity">
 
-                                Severity:{" "}
+                                {text.severity}{" "}
 
                                 {recommendation.severity ||
-                                    "Not specified"}
+                                    text.notSpecified}
 
                             </span>
 
@@ -3619,7 +3855,7 @@ function DiseaseDetection() {
                                 <div>
 
                                     <h3>
-                                        Symptoms
+                                        {text.symptoms}
                                     </h3>
 
                                     <ul>
@@ -3656,7 +3892,7 @@ function DiseaseDetection() {
                                 <div className="action-info">
 
                                     <h3>
-                                        Immediate Action
+                                        {text.immediateAction}
                                     </h3>
 
                                     <ul>
@@ -3693,7 +3929,7 @@ function DiseaseDetection() {
                                 <div className="prevention-info">
 
                                     <h3>
-                                        Prevention
+                                        {text.prevention}
                                     </h3>
 
                                     <ul>
@@ -3730,7 +3966,7 @@ function DiseaseDetection() {
                                 <div className="spray-info">
 
                                     <h3>
-                                        Spray Guidance
+                                        {text.sprayGuidance}
                                     </h3>
 
                                     <ul>
@@ -3767,8 +4003,7 @@ function DiseaseDetection() {
                                 <div>
 
                                     <h3>
-                                        Treatment / What
-                                        You Should Do
+                                        {text.treatment}
                                     </h3>
 
                                     <ul>
@@ -3804,7 +4039,7 @@ function DiseaseDetection() {
                                 <div className="prevention-info">
 
                                     <h3>
-                                        Farmer Action
+                                        {text.farmerAction}
                                     </h3>
 
                                     <p
@@ -3846,9 +4081,7 @@ function DiseaseDetection() {
                                         "12px",
                                 }}
                             >
-                                Recommendation could
-                                not be loaded for
-                                this prediction.
+                                {text.recommendationFailed}
                             </div>
 
                         </div>
@@ -3870,11 +4103,11 @@ function DiseaseDetection() {
                             <div className="probabilities-header">
 
                                 <h2>
-                                    AI Class Probabilities
+                                    {text.probabilities}
                                 </h2>
 
                                 <span className="probability-note">
-                                    Model confidence by class
+                                    {text.probabilityNote}
                                 </span>
 
                             </div>
@@ -3983,7 +4216,7 @@ function DiseaseDetection() {
                                 handleReset
                             }
                         >
-                            Analyze Another Image
+                            {text.anotherImage}
                         </button>
 
                     </div>

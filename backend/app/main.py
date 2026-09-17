@@ -97,9 +97,12 @@ COTTON_CLASSES = [
 SOYBEAN_CLASSES = [
     "Bacterial_Blight",
     "Cercospora_Leaf_Blight",
+    "Downy_Mildew",
+    "Frogeye_Leaf_Spot",
     "Healthy",
     "Rust",
     "Sudden_Death_Syndrome",
+    "Target_Spot",
 ]
 
 MAIZE_CLASSES = [
@@ -1180,6 +1183,7 @@ async def recommendation_stream(
     crop: str,
     disease: str,
     confidence: float | None = None,
+    language: str = "en",
     token: str = Depends(oauth2_scheme),
 ):
     current_user = verify_access_token(token)
@@ -1192,18 +1196,19 @@ async def recommendation_stream(
 
     async def event_stream():
         try:
-            async for event in stream_claude_recommendation(
-                crop=crop,
-                disease=disease,
-                confidence=confidence,
-            ):
+           async for event in stream_claude_recommendation(
+            crop=crop,
+            disease=disease,
+            confidence=confidence,
+            language=language,
+        ):
                 yield (
                     "data: "
                     + json.dumps(event, ensure_ascii=False)
                     + "\n\n"
                 )
 
-            yield "data: {\"done\": true}\n\n"
+           yield "data: {\"done\": true}\n\n"
 
         except Exception as error:
             yield (
@@ -1623,3 +1628,4 @@ def get_me(
         "success": True,
          "user": current_user
     }
+

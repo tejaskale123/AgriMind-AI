@@ -15,13 +15,15 @@ from sklearn.metrics import (
 
 # ============================================================
 # AGRIMIND AI
-# COTTON MODEL EVALUATION
+# MODEL EVALUATION PIPELINE
 # ============================================================
-
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
-DATASET_ROOT = PROJECT_ROOT / "datasets" / "disease"
+# IMPORTANT:
+# Training uses datasets/processed, so evaluation must use
+# the same processed dataset structure.
+DATASET_ROOT = PROJECT_ROOT / "datasets" / "processed"
 
 MODEL_ROOT = PROJECT_ROOT / "models"
 
@@ -30,6 +32,10 @@ IMAGE_SIZE = 224
 
 BATCH_SIZE = 32
 
+
+# ============================================================
+# DEVICE
+# ============================================================
 
 DEVICE = torch.device(
     "cuda"
@@ -71,9 +77,13 @@ TEST_TRANSFORM = transforms.Compose(
 # LOAD MODEL
 # ============================================================
 
-def load_model(model_path, num_classes):
+def load_model(model_path, checkpoint):
 
     print("\nLoading EfficientNet-B0...")
+
+    class_names = checkpoint["classes"]
+
+    num_classes = len(class_names)
 
     model = models.efficientnet_b0(
         weights=None
@@ -88,11 +98,6 @@ def load_model(model_path, num_classes):
         num_classes
     )
 
-    checkpoint = torch.load(
-        model_path,
-        map_location=DEVICE
-    )
-
     model.load_state_dict(
         checkpoint["model_state_dict"]
     )
@@ -101,7 +106,7 @@ def load_model(model_path, num_classes):
 
     model.eval()
 
-    return model, checkpoint
+    return model
 
 
 # ============================================================
@@ -184,6 +189,45 @@ def evaluate_model(crop):
 
 
     # --------------------------------------------------------
+    # Load checkpoint FIRST
+    # --------------------------------------------------------
+
+    print(
+        "\nLoading checkpoint..."
+    )
+
+    checkpoint = torch.load(
+        model_path,
+        map_location=DEVICE
+    )
+
+
+    if "classes" not in checkpoint:
+
+        print(
+            "\nERROR: Model checkpoint does not contain class names."
+        )
+
+        return
+
+
+    model_classes = checkpoint["classes"]
+
+
+    print(
+        "\nModel classes:"
+    )
+
+    for index, name in enumerate(
+        model_classes
+    ):
+
+        print(
+            f"  {index}: {name}"
+        )
+
+
+    # --------------------------------------------------------
     # Load test dataset
     # --------------------------------------------------------
 
@@ -201,7 +245,7 @@ def evaluate_model(crop):
     )
 
 
-    class_names = test_dataset.classes
+    dataset_classes = test_dataset.classes
 
 
     print(
@@ -211,12 +255,11 @@ def evaluate_model(crop):
 
 
     print(
-        "\nClasses:"
+        "\nTest dataset classes:"
     )
 
-
     for index, name in enumerate(
-        class_names
+        dataset_classes
     ):
 
         print(
@@ -225,12 +268,50 @@ def evaluate_model(crop):
 
 
     # --------------------------------------------------------
-    # Load trained model
+    # Verify class compatibility
     # --------------------------------------------------------
 
-    model, checkpoint = load_model(
+    if model_classes != dataset_classes:
+
+        print(
+            "\n❌ ERROR: Model classes and test dataset classes do not match."
+        )
+
+        print(
+            "\nModel classes:"
+        )
+
+        print(
+            model_classes
+        )
+
+        print(
+            "\nDataset classes:"
+        )
+
+        print(
+            dataset_classes
+        )
+
+        print(
+            "\nEvaluation stopped to prevent an invalid benchmark."
+        )
+
+        return
+
+
+    print(
+        "\n✅ Model classes and dataset classes match."
+    )
+
+
+    # --------------------------------------------------------
+    # Load model
+    # --------------------------------------------------------
+
+    model = load_model(
         model_path,
-        len(class_names)
+        checkpoint
     )
 
 
@@ -345,7 +426,7 @@ def evaluate_model(crop):
     report = classification_report(
         all_labels,
         all_predictions,
-        target_names=class_names,
+        target_names=model_classes,
         digits=4,
         zero_division=0
     )
@@ -411,7 +492,7 @@ def evaluate_model(crop):
 
 
     for index, class_name in enumerate(
-        class_names
+        model_classes
     ):
 
         actual_count = matrix[
@@ -478,7 +559,10 @@ def main():
     parser.add_argument(
         "--crop",
         required=True,
-        help="Crop name (example: cotton)"
+        help=(
+            "Crop name "
+            "(example: soybean)"
+        )
     )
 
 

@@ -576,6 +576,23 @@ def train_model(crop):
 
 
     # --------------------------------------------------------
+    # Load best model before final test evaluation
+    # --------------------------------------------------------
+
+    checkpoint = torch.load(
+        model_path,
+        map_location=DEVICE
+    )
+
+    model.load_state_dict(
+        checkpoint["model_state_dict"]
+    )
+
+    print(
+        "\nBest model loaded for final test evaluation."
+    )
+
+    # --------------------------------------------------------
     # Final test evaluation
     # --------------------------------------------------------
 

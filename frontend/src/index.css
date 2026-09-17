@@ -509,7 +509,7 @@ button {
 /* ================= MAIN ================= */
 
 .main-content {
-    flex: 1;
+    margin-left: 260px;
 
     min-width: 0;
 
@@ -1523,7 +1523,7 @@ html.agrimind-dark::-webkit-scrollbar-thumb {
 .sidebar {
     width: 260px;
     min-width: 260px;
-    min-height: 100vh;
+    height: 100vh;
 
     background: #ffffff;
     border-right: 1px solid #e8eee9;
@@ -1533,8 +1533,9 @@ html.agrimind-dark::-webkit-scrollbar-thumb {
     display: flex;
     flex-direction: column;
 
-    position: sticky;
+    position: fixed;
     top: 0;
+    left: 0;
 
     box-shadow: 4px 0 20px rgba(22, 101, 52, 0.04);
 
@@ -1785,7 +1786,12 @@ html.agrimind-dark .sidebar-version {
     .sidebar {
         width: 76px;
         min-width: 76px;
+        height: 100vh;
         padding: 18px 9px;
+    }
+
+    .main-content {
+        margin-left: 76px;
     }
 
     .logo {
