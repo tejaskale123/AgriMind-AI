@@ -11,7 +11,11 @@ import os
 
 import bcrypt
 
-from jose import JWTError, jwt
+try:
+    from jose import JWTError, jwt
+except ImportError:
+    import jwt
+    from jwt.exceptions import PyJWTError as JWTError
 from dotenv import load_dotenv
 
 

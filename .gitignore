@@ -178,3 +178,10 @@ models/
 Thumbs.db
 # Old backup files
 archive/
+
+# Project backups and generated audit files
+*.backup
+*_backup/
+backend_backup/
+frontend_backup/
+*.csv

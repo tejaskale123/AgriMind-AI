@@ -1,8 +1,9 @@
-﻿from pathlib import Path
+from pathlib import Path
 import argparse
 
 import torch
 import torch.nn as nn
+from torch.amp import autocast, GradScaler
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms, models
 
@@ -22,7 +23,7 @@ MODEL_ROOT = PROJECT_ROOT / "models"
 
 IMAGE_SIZE = 224
 
-BATCH_SIZE = 32
+BATCH_SIZE = 24
 
 NUM_EPOCHS = 20
 
@@ -40,6 +41,8 @@ DEVICE = torch.device(
     if torch.cuda.is_available()
     else "cpu"
 )
+
+scaler = GradScaler("cuda", enabled=(DEVICE.type == "cuda"))
 
 
 # ============================================================
@@ -110,7 +113,10 @@ VAL_TEST_TRANSFORM = transforms.Compose(
 
 def load_data(crop):
 
-    crop_dir = DATASET_ROOT / crop
+    if crop == "soybean_11class":
+        crop_dir = DATASET_ROOT / "soybean_11class_balanced"
+    else:
+        crop_dir = DATASET_ROOT / crop
 
     train_dir = crop_dir / "train"
 
@@ -162,7 +168,8 @@ def load_data(crop):
         train_dataset,
         batch_size=BATCH_SIZE,
         shuffle=True,
-        num_workers=0
+        num_workers=2,
+        pin_memory=True
     )
 
 
@@ -170,7 +177,8 @@ def load_data(crop):
         val_dataset,
         batch_size=BATCH_SIZE,
         shuffle=False,
-        num_workers=0
+        num_workers=2,
+        pin_memory=True
     )
 
 
@@ -178,7 +186,8 @@ def load_data(crop):
         test_dataset,
         batch_size=BATCH_SIZE,
         shuffle=False,
-        num_workers=0
+        num_workers=2,
+        pin_memory=True
     )
 
 
@@ -252,18 +261,16 @@ def train_one_epoch(
         optimizer.zero_grad()
 
 
-        outputs = model(images)
+        with autocast("cuda", enabled=(DEVICE.type == "cuda")):
+            outputs = model(images)
+            loss = criterion(
+                outputs,
+                labels
+            )
 
-
-        loss = criterion(
-            outputs,
-            labels
-        )
-
-
-        loss.backward()
-
-        optimizer.step()
+        scaler.scale(loss).backward()
+        scaler.step(optimizer)
+        scaler.update()
 
 
         total_loss += (
@@ -454,7 +461,29 @@ def train_model(crop):
     model = model.to(DEVICE)
 
 
-    criterion = nn.CrossEntropyLoss()
+    if crop == "soybean_11class":
+        class_counts = torch.bincount(
+            torch.tensor(train_dataset.targets),
+            minlength=len(train_dataset.classes)
+        ).float()
+
+        class_weights = class_counts.sum() / (
+            len(train_dataset.classes) * class_counts
+        )
+
+        class_weights = class_weights.to(DEVICE)
+
+        print("\nSoybean 11-class weighted loss enabled.")
+        print("Class weights:")
+        for class_name, weight in zip(
+            train_dataset.classes,
+            class_weights.tolist()
+        ):
+            print(f"  {class_name}: {weight:.3f}")
+
+        criterion = nn.CrossEntropyLoss(weight=class_weights)
+    else:
+        criterion = nn.CrossEntropyLoss()
 
 
     optimizer = torch.optim.AdamW(

@@ -2,6 +2,7 @@
 import sqlite3
 import json
 from datetime import datetime
+from typing import Optional, Dict, Any, List
 import io
 
 import torch
@@ -69,7 +70,7 @@ MODEL_PATH = (
 SOYBEAN_MODEL_PATH = (
     PROJECT_ROOT
     / "models"
-    / "soybean_efficientnet_b0.pth"
+    / "soybean_11class_efficientnet_b0.pth"
 )
 
 MAIZE_MODEL_PATH = (
@@ -96,13 +97,16 @@ COTTON_CLASSES = [
 ]
 SOYBEAN_CLASSES = [
     "Bacterial_Blight",
+    "Bacterial_Pustule",
     "Cercospora_Leaf_Blight",
     "Downy_Mildew",
     "Frogeye_Leaf_Spot",
     "Healthy",
     "Rust",
+    "Septoria_Brown_Spot",
     "Sudden_Death_Syndrome",
     "Target_Spot",
+    "Yellow_Mosaic_Disease",
 ]
 
 MAIZE_CLASSES = [
@@ -112,8 +116,15 @@ MAIZE_CLASSES = [
     "Healthy",
 ]
 WHEAT_CLASSES = [
+    "Black_Rust",
     "Brown_Rust",
+    "Fusarium_Head_Blight",
     "Healthy",
+    "Leaf_Blight",
+    "Loose_Smut",
+    "Powdery_Mildew",
+    "Septoria",
+    "Tan_Spot",
     "Yellow_Rust",
 ]
 MODEL_PATHS = {
@@ -242,6 +253,22 @@ def init_database():
         """
     )
 
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS user_settings (
+            user_id INTEGER PRIMARY KEY,
+            confidence_threshold INTEGER DEFAULT 70,
+            auto_history INTEGER DEFAULT 1,
+            show_probabilities INTEGER DEFAULT 1,
+            notifications INTEGER DEFAULT 1,
+            language TEXT DEFAULT 'English',
+            theme TEXT DEFAULT 'Light',
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+        """
+    )
+
     existing_user_columns = {
         row[1]
         for row in cursor.execute(
@@ -255,6 +282,15 @@ def init_database():
             """
             ALTER TABLE users
             ADD COLUMN full_name TEXT
+            """
+        )
+
+    if "avatar" not in existing_user_columns:
+
+        cursor.execute(
+            """
+            ALTER TABLE users
+            ADD COLUMN avatar TEXT
             """
         )
 
@@ -503,14 +539,14 @@ class RegisterRequest(BaseModel):
 
     full_name: str
 
-    email: EmailStr
+    email: str
 
     password: str
 
 
 class LoginRequest(BaseModel):
 
-    email: EmailStr
+    email: str
 
     password: str
 
@@ -546,6 +582,10 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",
         "http://127.0.0.1:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5174",
+        "http://localhost:5175",
+        "http://127.0.0.1:5175",
     ],
 
     allow_credentials=True,
@@ -697,14 +737,18 @@ Trained {crop_name} model not found:
         f"\nLoading AgriMind AI {crop_name} model..."
     )
 
-    model = create_model(
-        len(classes)
-    )
-
     checkpoint = torch.load(
         model_path,
         map_location=DEVICE,
         weights_only=False,
+    )
+
+    loaded_classes = classes
+    if isinstance(checkpoint, dict) and "classes" in checkpoint and checkpoint["classes"]:
+        loaded_classes = checkpoint["classes"]
+
+    model = create_model(
+        len(loaded_classes)
     )
 
     if (
@@ -1622,10 +1666,661 @@ def get_me(
         get_current_user
     )
 ):
+    user_id = current_user["user_id"]
+    connection = sqlite3.connect(DATABASE_PATH)
+    connection.row_factory = sqlite3.Row
+    cursor = connection.cursor()
+    cursor.execute(
+        """
+        SELECT id, full_name, email, created_at, avatar
+        FROM users
+        WHERE id = ?
+        """,
+        (user_id,)
+    )
+    db_user = cursor.fetchone()
+    connection.close()
 
-     return {
+    if not db_user:
+        return {
+            "success": True,
+            "user": {
+                "id": user_id,
+                "email": current_user.get("email"),
+                "full_name": "Farmer",
+                "created_at": datetime.now().isoformat(),
+                "role": "Farmer",
+                "status": "Active"
+            }
+        }
 
+    return {
         "success": True,
-         "user": current_user
+        "user": {
+            "id": db_user["id"],
+            "user_id": db_user["id"],
+            "userId": f"#AGM-{db_user['id']:04d}",
+            "full_name": db_user["full_name"] or "Farmer",
+            "email": db_user["email"],
+            "created_at": db_user["created_at"],
+            "avatar": db_user["avatar"] or "/images/farmer_avatar.jpg",
+            "role": "Farmer",
+            "status": "Active",
+            "accountType": "Farmer"
+        }
     }
+
+
+class ProfileUpdateRequest(BaseModel):
+    full_name: str
+    email: Optional[str] = None
+    avatar: Optional[str] = None
+
+
+@app.put("/auth/profile")
+def update_profile(
+    data: ProfileUpdateRequest,
+    current_user = Depends(get_current_user)
+):
+    user_id = current_user["user_id"]
+    new_name = data.full_name.strip()
+    if len(new_name) < 2:
+        raise HTTPException(
+            status_code=400,
+            detail="Full name must be at least 2 characters."
+        )
+
+    connection = sqlite3.connect(DATABASE_PATH)
+    cursor = connection.cursor()
+
+    if data.avatar:
+        cursor.execute(
+            """
+            UPDATE users
+            SET full_name = ?, avatar = ?
+            WHERE id = ?
+            """,
+            (new_name, data.avatar, user_id)
+        )
+    else:
+        cursor.execute(
+            """
+            UPDATE users
+            SET full_name = ?
+            WHERE id = ?
+            """,
+            (new_name, user_id)
+        )
+
+    connection.commit()
+
+    connection.row_factory = sqlite3.Row
+    cursor = connection.cursor()
+    cursor.execute(
+        """
+        SELECT id, full_name, email, created_at, avatar
+        FROM users
+        WHERE id = ?
+        """,
+        (user_id,)
+    )
+    updated_user = cursor.fetchone()
+    connection.close()
+
+    return {
+        "success": True,
+        "message": "Profile updated successfully.",
+        "user": {
+            "id": updated_user["id"],
+            "user_id": updated_user["id"],
+            "userId": f"#AGM-{updated_user['id']:04d}",
+            "full_name": updated_user["full_name"],
+            "email": updated_user["email"],
+            "created_at": updated_user["created_at"],
+            "avatar": updated_user["avatar"] or "/images/farmer_avatar.jpg",
+            "role": "Farmer",
+            "status": "Active",
+            "accountType": "Farmer"
+        }
+    }
+
+
+# ============================================================
+# USER SETTINGS PERSISTENCE ENDPOINTS
+# ============================================================
+
+class UserSettingsPayload(BaseModel):
+    confidence_threshold: Optional[int] = 70
+    auto_history: Optional[bool] = True
+    show_probabilities: Optional[bool] = True
+    notifications: Optional[bool] = True
+    language: Optional[str] = "English"
+    theme: Optional[str] = "Light"
+
+
+@app.get("/settings")
+def get_user_settings(current_user = Depends(get_current_user)):
+    user_id = current_user["user_id"]
+    connection = sqlite3.connect(DATABASE_PATH)
+    connection.row_factory = sqlite3.Row
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        SELECT confidence_threshold, auto_history, show_probabilities, notifications, language, theme, updated_at
+        FROM user_settings
+        WHERE user_id = ?
+        """,
+        (user_id,)
+    )
+    row = cursor.fetchone()
+    connection.close()
+
+    if not row:
+        return {
+            "success": True,
+            "settings": {
+                "confidenceThreshold": 70,
+                "autoHistory": True,
+                "showProbabilities": True,
+                "notifications": True,
+                "language": "English",
+                "theme": "Light",
+            }
+        }
+
+    return {
+        "success": True,
+        "settings": {
+            "confidenceThreshold": row["confidence_threshold"],
+            "autoHistory": bool(row["auto_history"]),
+            "showProbabilities": bool(row["show_probabilities"]),
+            "notifications": bool(row["notifications"]),
+            "language": row["language"] or "English",
+            "theme": row["theme"] or "Light",
+            "updatedAt": row["updated_at"]
+        }
+    }
+
+
+@app.put("/settings")
+def save_user_settings(
+    payload: UserSettingsPayload,
+    current_user = Depends(get_current_user)
+):
+    user_id = current_user["user_id"]
+    threshold = max(50, min(95, payload.confidence_threshold or 70))
+    now_iso = datetime.now().isoformat()
+
+    connection = sqlite3.connect(DATABASE_PATH)
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        INSERT INTO user_settings (
+            user_id, confidence_threshold, auto_history, show_probabilities,
+            notifications, language, theme, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(user_id) DO UPDATE SET
+            confidence_threshold = excluded.confidence_threshold,
+            auto_history = excluded.auto_history,
+            show_probabilities = excluded.show_probabilities,
+            notifications = excluded.notifications,
+            language = excluded.language,
+            theme = excluded.theme,
+            updated_at = excluded.updated_at
+        """,
+        (
+            user_id,
+            threshold,
+            1 if payload.auto_history else 0,
+            1 if payload.show_probabilities else 0,
+            1 if payload.notifications else 0,
+            payload.language or "English",
+            payload.theme or "Light",
+            now_iso
+        )
+    )
+    connection.commit()
+    connection.close()
+
+    return {
+        "success": True,
+        "message": "Settings updated and persisted successfully.",
+        "settings": {
+            "confidenceThreshold": threshold,
+            "autoHistory": payload.auto_history,
+            "showProbabilities": payload.show_probabilities,
+            "notifications": payload.notifications,
+            "language": payload.language,
+            "theme": payload.theme,
+            "updatedAt": now_iso
+        }
+    }
+
+
+# ============================================================
+# REAL AI MODEL & RUNTIME INFO ENDPOINT
+# ============================================================
+
+@app.get("/system/model-info")
+def get_system_model_info():
+    """
+    Returns actual loaded multi-crop AI models, input parameters, and runtime devices.
+    """
+    return {
+        "success": True,
+        "modelName": "EfficientNet-B0",
+        "supportedCrops": list(CROP_CLASSES.keys()),
+        "totalCrops": len(CROP_CLASSES),
+        "inputImageSize": f"{IMAGE_SIZE} Ã— {IMAGE_SIZE}",
+        "device": str(DEVICE).upper(),
+        "totalDiseaseClasses": sum(len(v) for v in CROP_CLASSES.values()),
+        "status": "Online & Calibrated"
+    }
+
+
+# ============================================================
+# AGRIMIND AI - WEATHER & ADVISORY ENDPOINTS
+# ============================================================
+
+from typing import Optional
+from .weather_service import fetch_weather_data, search_locations
+
+@app.get("/weather")
+async def get_weather(
+    location: Optional[str] = None,
+    lat: Optional[float] = None,
+    lon: Optional[float] = None,
+):
+    """
+    Get full weather, forecast (hourly/daily), crop advisories, alerts, and farming tips.
+    Supports location name (e.g., 'Pune', 'Mumbai') or latitude/longitude coordinates.
+    """
+    try:
+        data = await fetch_weather_data(
+            location_query=location,
+            latitude=lat,
+            longitude=lon
+        )
+        return data
+    except Exception as e:
+        print(f"[API /weather] Error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Weather data is temporarily unavailable: {str(e)}"
+        )
+
+@app.get("/weather/current")
+async def get_current_weather(
+    location: Optional[str] = None,
+    lat: Optional[float] = None,
+    lon: Optional[float] = None,
+):
+    """
+    Get only current weather snapshot.
+    """
+    try:
+        data = await fetch_weather_data(location_query=location, latitude=lat, longitude=lon)
+        return {
+            "success": True,
+            "location": data.get("location"),
+            "current": data.get("current"),
+            "updatedAt": data.get("updatedAt"),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/weather/forecast")
+async def get_weather_forecast(
+    location: Optional[str] = None,
+    lat: Optional[float] = None,
+    lon: Optional[float] = None,
+):
+    """
+    Get 24-hour and 7-day forecast.
+    """
+    try:
+        data = await fetch_weather_data(location_query=location, latitude=lat, longitude=lon)
+        return {
+            "success": True,
+            "location": data.get("location"),
+            "hourly": data.get("hourly"),
+            "daily": data.get("daily"),
+            "updatedAt": data.get("updatedAt"),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/weather/advisory")
+async def get_weather_advisory(
+    location: Optional[str] = None,
+    lat: Optional[float] = None,
+    lon: Optional[float] = None,
+):
+    """
+    Get crop advisories, weather alerts, and farming tips.
+    """
+    try:
+        data = await fetch_weather_data(location_query=location, latitude=lat, longitude=lon)
+        return {
+            "success": True,
+            "location": data.get("location"),
+            "advisory": data.get("advisory"),
+            "alerts": data.get("alerts"),
+            "farmingTips": data.get("farmingTips"),
+            "updatedAt": data.get("updatedAt"),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/weather/search")
+async def search_weather_locations(q: str):
+    """
+    Search location suggestions for dynamic city/region lookup.
+    """
+    if not q or len(q.strip()) < 2:
+        return {"success": True, "results": []}
+    results = await search_locations(q)
+    return {"success": True, "results": results}
+
+
+# ============================================================
+# AGRIMIND AI - GLOBAL APPLICATION SEARCH ENDPOINT
+# ============================================================
+
+from fastapi import Header
+
+@app.get("/search")
+async def global_search(
+    q: str = "",
+    authorization: Optional[str] = Header(None)
+):
+    """
+    End-to-end global search across crops, diseases, recommendations/advisory,
+    detection history (user-specific when authenticated), and AI insights.
+    """
+    raw_query = q.strip()
+    if not raw_query or len(raw_query) < 2:
+        return {
+            "success": True,
+            "query": raw_query,
+            "total": 0,
+            "results": {
+                "crops": [],
+                "diseases": [],
+                "history": [],
+                "insights": [],
+                "advice": []
+            }
+        }
+
+    query_lower = raw_query.lower()
+    query_tokens = [t for t in query_lower.split() if len(t) > 1]
+    if not query_tokens:
+        query_tokens = [query_lower]
+
+    matched_crops = []
+    matched_diseases = []
+    matched_history = []
+    matched_insights = []
+    matched_advice = []
+
+    # 1. SEARCH CROPS
+    crop_info_map = {
+        "cotton": {
+            "name": "Cotton",
+            "key": "cotton",
+            "status": "AI Available",
+            "type": "Crop",
+            "description": "Multi-class leaf disease detection & management for cotton crops.",
+            "route": "/crops"
+        },
+        "soybean": {
+            "name": "Soybean",
+            "key": "soybean",
+            "status": "AI Available",
+            "type": "Crop",
+            "description": "High-accuracy disease diagnostics for soybean foliage & pods.",
+            "route": "/crops"
+        },
+        "maize": {
+            "name": "Maize",
+            "key": "maize",
+            "status": "AI Available",
+            "type": "Crop",
+            "description": "Corn leaf blight, common rust & gray leaf spot identification.",
+            "route": "/crops"
+        },
+        "wheat": {
+            "name": "Wheat",
+            "key": "wheat",
+            "status": "AI Available",
+            "type": "Crop",
+            "description": "Rust identification and healthy crop monitoring for wheat.",
+            "route": "/crops"
+        },
+        "tomato": {
+            "name": "Tomato",
+            "key": "tomato",
+            "status": "Coming Soon",
+            "type": "Crop",
+            "description": "Upcoming disease detection models for horticultural tomato crops.",
+            "route": "/management"
+        },
+        "bell_pepper": {
+            "name": "Bell Pepper",
+            "key": "bell_pepper",
+            "status": "Coming Soon",
+            "type": "Crop",
+            "description": "Upcoming foliage and fruit rot analysis models.",
+            "route": "/management"
+        }
+    }
+
+    for crop_key, crop_data in crop_info_map.items():
+        name_lower = crop_data["name"].lower()
+        desc_lower = crop_data["description"].lower()
+        if any(tok in name_lower or tok in desc_lower or tok in crop_key for tok in query_tokens):
+            matched_crops.append(crop_data)
+
+    # 2. SEARCH DISEASES & RECOMMENDATIONS
+    # Load all classes from CROP_CLASSES and disease_recommendations.json
+    all_diseases = {}
+    for crop_name, classes in CROP_CLASSES.items():
+        for cls_name in classes:
+            norm_name = cls_name.replace("_", " ").strip()
+            if norm_name.lower() not in all_diseases:
+                all_diseases[norm_name.lower()] = {
+                    "name": norm_name,
+                    "crop": crop_name.capitalize(),
+                    "raw_name": cls_name
+                }
+
+    # Add any extra from recommendations
+    for rec_name in DISEASE_RECOMMENDATIONS.keys():
+        norm_name = rec_name.replace("_", " ").strip()
+        if norm_name.lower() not in all_diseases:
+            all_diseases[norm_name.lower()] = {
+                "name": norm_name,
+                "crop": "Multi-Crop",
+                "raw_name": rec_name
+            }
+
+    for disease_lower, d_data in all_diseases.items():
+        rec = DISEASE_RECOMMENDATIONS.get(d_data["name"]) or DISEASE_RECOMMENDATIONS.get(d_data["raw_name"])
+        symptoms = ""
+        severity = "Moderate"
+        if rec:
+            severity = rec.get("severity", "Moderate")
+            sym_list = rec.get("symptoms", [])
+            symptoms = " ".join(sym_list) if isinstance(sym_list, list) else str(sym_list)
+
+        searchable_text = f"{disease_lower} {d_data['crop'].lower()} {symptoms.lower()}"
+        if any(tok in searchable_text for tok in query_tokens):
+            matched_diseases.append({
+                "name": d_data["name"],
+                "crop": d_data["crop"],
+                "severity": severity,
+                "type": "Disease",
+                "description": symptoms[:120] + "..." if len(symptoms) > 120 else (symptoms or f"Disease details and management for {d_data['name']}."),
+                "route": f"/detection?crop={d_data['crop'].lower()}"
+            })
+
+    # 3. SEARCH DETECTION HISTORY (User-Specific Authentication)
+    user_id = None
+    if authorization and authorization.startswith("Bearer "):
+        token_str = authorization.split("Bearer ", 1)[1].strip()
+        token_data = verify_access_token(token_str)
+        if token_data and "user_id" in token_data:
+            user_id = token_data["user_id"]
+
+    if user_id is not None:
+        try:
+            conn = sqlite3.connect(DATABASE_PATH)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT id, filename, crop, prediction, confidence, severity, symptoms, created_at
+                FROM detection_history
+                WHERE user_id = ?
+                ORDER BY id DESC
+                """,
+                (user_id,)
+            )
+            rows = cursor.fetchall()
+            conn.close()
+
+            for row in rows:
+                crop_val = (row["crop"] or "").lower()
+                pred_val = (row["prediction"] or "").lower().replace("_", " ")
+                sym_val = (row["symptoms"] or "").lower()
+                text_to_search = f"{crop_val} {pred_val} {sym_val}"
+
+                if any(tok in text_to_search for tok in query_tokens):
+                    matched_history.append({
+                        "id": row["id"],
+                        "crop": (row["crop"] or "").capitalize(),
+                        "prediction": (row["prediction"] or "").replace("_", " "),
+                        "confidence": f"{round((row['confidence'] or 0) * 100, 1)}%",
+                        "created_at": row["created_at"],
+                        "type": "Detection History",
+                        "description": f"{row['prediction']} ({round((row['confidence'] or 0) * 100, 1)}% confidence)",
+                        "route": "/history"
+                    })
+        except Exception as err:
+            print(f"[Global Search History Error] {err}")
+
+    # 4. SEARCH AI INSIGHTS
+    insight_topics = [
+        {
+            "title": "Disease Risk Analytics & Early Warning",
+            "category": "Risk Forecast",
+            "type": "AI Insight",
+            "description": "Predictive risk assessments for foliar diseases based on recent crop scans and weather patterns.",
+            "route": "/insights"
+        },
+        {
+            "title": "Crop Health & Trend Intelligence",
+            "category": "Diagnostics",
+            "type": "AI Insight",
+            "description": "Historical detection trends and distribution across cotton, soybean, maize, and wheat.",
+            "route": "/insights"
+        },
+        {
+            "title": "Smart Treatment Efficiency & Guidance",
+            "category": "Optimization",
+            "type": "AI Insight",
+            "description": "AI-powered efficacy tracking for bio-fungicides and integrated pest management.",
+            "route": "/insights"
+        }
+    ]
+
+    for ins in insight_topics:
+        ins_text = f"{ins['title'].lower()} {ins['category'].lower()} {ins['description'].lower()}"
+        if any(tok in ins_text for tok in query_tokens):
+            matched_insights.append(ins)
+
+    # 5. SEARCH FARMING ADVICE & AGRONOMIC RECOMMENDATIONS
+    advice_catalogue = [
+        {
+            "title": "Spray Guidance & Moisture Management",
+            "category": "Farming Advice",
+            "type": "Advisory",
+            "description": "Avoid spraying during peak leaf wetness or approaching rainfall. Prefer early morning application.",
+            "route": "/weather"
+        },
+        {
+            "title": "Crop Spacing & Field Aeration",
+            "category": "Farming Advice",
+            "type": "Advisory",
+            "description": "Ensure optimal plant-to-plant distance to prevent dense canopy humidity and fungal spread.",
+            "route": "/management"
+        },
+        {
+            "title": "Integrated Pest & Disease Management (IPM)",
+            "category": "Farming Advice",
+            "type": "Advisory",
+            "description": "Combine bio-control agents, resistant seed varieties, and clean tillage practices.",
+            "route": "/learning-hub"
+        },
+        {
+            "title": "Weather-Adaptive Irrigation Strategy",
+            "category": "Farming Advice",
+            "type": "Advisory",
+            "description": "Adjust irrigation schedules around upcoming rain forecasts to prevent root rot and nutrient runoff.",
+            "route": "/weather"
+        }
+    ]
+
+    # Also search inside disease recommendations for specific treatment/spray guidance
+    for rec_name, rec_body in DISEASE_RECOMMENDATIONS.items():
+        if isinstance(rec_body, dict):
+            treatment = " ".join(rec_body.get("treatment", []))
+            spray = " ".join(rec_body.get("spray_guidance", []))
+            prevention = " ".join(rec_body.get("prevention", []))
+            combined_adv = f"{treatment} {spray} {prevention}".lower()
+
+            if any(tok in combined_adv for tok in query_tokens):
+                clean_title = f"{rec_name.replace('_', ' ')} Management Advice"
+                if not any(a["title"] == clean_title for a in matched_advice):
+                    snippet = treatment or spray or prevention or "Consult local agronomic advisory for recommended schedule."
+                    matched_advice.append({
+                        "title": clean_title,
+                        "category": "Disease Advisory",
+                        "type": "Farming Advice",
+                        "description": snippet[:130] + "..." if len(snippet) > 130 else snippet,
+                        "route": "/weather"
+                    })
+
+    for adv in advice_catalogue:
+        adv_text = f"{adv['title'].lower()} {adv['category'].lower()} {adv['description'].lower()}"
+        if any(tok in adv_text for tok in query_tokens):
+            matched_advice.append(adv)
+
+    total_count = (
+        len(matched_crops)
+        + len(matched_diseases)
+        + len(matched_history)
+        + len(matched_insights)
+        + len(matched_advice)
+    )
+
+    return {
+        "success": True,
+        "query": raw_query,
+        "total": total_count,
+        "results": {
+            "crops": matched_crops[:6],
+            "diseases": matched_diseases[:6],
+            "history": matched_history[:6],
+            "insights": matched_insights[:4],
+            "advice": matched_advice[:4]
+        }
+    }
+
+
+
+
 
