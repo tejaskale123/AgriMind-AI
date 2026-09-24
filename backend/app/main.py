@@ -12,8 +12,7 @@ import torch.nn as nn
 from PIL import Image, ImageStat
 from torchvision import models, transforms
 
-from fastapi import FastAPI, File, UploadFile, HTTPException, Form
-from fastapi import Depends
+from fastapi import FastAPI, File, UploadFile, HTTPException, Form, Depends, Header
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.responses import StreamingResponse
 
@@ -2067,7 +2066,6 @@ async def search_weather_locations(q: str):
 # AGRIMIND AI - GLOBAL APPLICATION SEARCH ENDPOINT
 # ============================================================
 
-from fastapi import Header
 
 @app.get("/search")
 async def global_search(
