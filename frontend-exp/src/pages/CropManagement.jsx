@@ -278,18 +278,18 @@ export default function CropManagement() {
             guidance: "Tomato AI leaf diagnostics and automated blight classification releasing in upcoming update."
         },
         {
-            id: "bell_pepper",
-            name: "Bell Pepper",
-            season: "Rabi Season",
-            sowing: "Sep - Oct",
-            harvest: "Dec - Feb",
-            health: null,
-            status: "comingSoon",
-            image: "/images/crop_bell_pepper.jpg",
-            category: "Vegetable Crop",
-            description: "Protected and open-field capsicum crop. AI leaf pattern recognition models in testing.",
-            tasks: ["Bacterial spot surveillance", "Shade net temperature control", "Nutrient deficiency testing"],
-            guidance: "Capsicum leaf health pattern recognition models currently undergoing multi-region testing."
+            id: "tur",
+            name: "Tur (Pigeon Pea)",
+            season: "Kharif Season",
+            sowing: "Jun - Jul",
+            harvest: "Dec - Jan",
+            health: 95,
+            status: "active",
+            image: "/images/crop_tur.jpg",
+            category: "Pulse Crop",
+            description: "AI-powered disease detection for Tur (Pigeon Pea) leaves.",
+            tasks: ["Leaf spot surveillance", "Micronutrient spray", "Pest monitoring"],
+            guidance: "Monitor for leaf spot and webber. Ensure proper drainage during monsoon."
         }
     ]);
 
@@ -368,13 +368,13 @@ export default function CropManagement() {
         if (!matchesSearch) return false;
 
         // Tab Filter Logic
-        if (activeTab === "myCrops" || activeTab === "active") {
+        if (activeTab === "active") {
             return crop.status === "active";
         }
         if (activeTab === "comingSoon") {
             return crop.status === "comingSoon";
         }
-        return true; // "all"
+        return true; // "all" and "myCrops"
     });
 
     // Dynamic Statistics
@@ -399,6 +399,40 @@ export default function CropManagement() {
             [id]: !prev[id]
         }));
     };
+
+    const promoBanner = (
+        <div className="management-promo-banner">
+            <img
+                src="/images/crop_management_sprout.jpg"
+                alt="Sprout Seedling"
+                className="banner-sprout-art"
+            />
+            <div className="banner-text-content">
+                <h3>{text.bannerHeading}</h3>
+                <div className="banner-subhead">{text.bannerSubheading}</div>
+                <div className="banner-checklist">
+                    <div className="banner-check-item">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        <span>{text.benefit1}</span>
+                    </div>
+                    <div className="banner-check-item">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        <span>{text.benefit2}</span>
+                    </div>
+                    <div className="banner-check-item">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        <span>{text.benefit3}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
 
     return (
         <div className="exp-crop-management-page">
@@ -1589,7 +1623,7 @@ export default function CropManagement() {
                             <path d="M20.5 4.5C13.5 4.5 7 7 5 14c-1 3.5 1 5.5 4.5 4.5C16.5 16.5 19.5 10 20.5 4.5Z" />
                             <path d="M4 21c3-4 6.5-6.5 11-9" />
                         </svg>
-                        <span>{text.tabMyCrops} ({activeCount})</span>
+                        <span>{text.tabMyCrops} ({totalCount})</span>
                     </button>
 
                     <button
@@ -1779,6 +1813,7 @@ export default function CropManagement() {
                             </div>
                         </div>
                     ))}
+                    {(!trimmedQuery && (activeTab === "myCrops" || activeTab === "active")) && promoBanner}
                 </div>
             ) : (
                 /* List View */
@@ -1853,105 +1888,7 @@ export default function CropManagement() {
                             </div>
                         </div>
                     ))}
-                </div>
-            )}
-
-            {/* ================= BOTTOM SECTION: COMING SOON + PROMO BANNER ================= */}
-            {/* Display bottom section when not searching or when viewing active / myCrops */}
-            {(!trimmedQuery && (activeTab === "myCrops" || activeTab === "active")) && (
-                <div className="bottom-section-grid">
-                    {/* Coming Soon Card 1: Tomato */}
-                    <div className="coming-soon-card">
-                        <div className="card-photo-wrapper">
-                            <img src="/images/crop_tomato.jpg" alt="Tomato" />
-                            <div className="status-badge-floating badge-coming">
-                                <span>{text.comingSoonBadge}</span>
-                            </div>
-                        </div>
-                        <div className="card-details-body">
-                            <div>
-                                <div className="crop-header-titles">
-                                    <h3>Tomato</h3>
-                                    <span className="crop-season-tag">{text.seasonRabi} • Vegetable Crop</span>
-                                </div>
-                            </div>
-                            <button
-                                className={`btn-card-notify ${notifiedCrops["tomato"] ? "notified" : ""}`}
-                                onClick={() => handleToggleNotify("tomato")}
-                            >
-                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                                </svg>
-                                <span>{notifiedCrops["tomato"] ? text.notifiedBtn : text.notifyMeBtn}</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Coming Soon Card 2: Bell Pepper */}
-                    <div className="coming-soon-card">
-                        <div className="card-photo-wrapper">
-                            <img src="/images/crop_bell_pepper.jpg" alt="Bell Pepper" />
-                            <div className="status-badge-floating badge-coming">
-                                <span>{text.comingSoonBadge}</span>
-                            </div>
-                        </div>
-                        <div className="card-details-body">
-                            <div>
-                                <div className="crop-header-titles">
-                                    <h3>Bell Pepper</h3>
-                                    <span className="crop-season-tag">{text.seasonRabi} • Vegetable Crop</span>
-                                </div>
-                            </div>
-                            <button
-                                className={`btn-card-notify ${notifiedCrops["bell_pepper"] ? "notified" : ""}`}
-                                onClick={() => handleToggleNotify("bell_pepper")}
-                            >
-                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                                </svg>
-                                <span>{notifiedCrops["bell_pepper"] ? text.notifiedBtn : text.notifyMeBtn}</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Promotional Management Banner (Spans 2 columns) */}
-                    <div className="management-promo-banner">
-                        <img
-                            src="/images/crop_management_sprout.jpg"
-                            alt="Sprout Seedling"
-                            className="banner-sprout-art"
-                        />
-
-                        <div className="banner-text-content">
-                            <h3>{text.bannerHeading}</h3>
-                            <div className="banner-subhead">{text.bannerSubheading}</div>
-
-                            <div className="banner-checklist">
-                                <div className="banner-check-item">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                        <polyline points="20 6 9 17 4 12" />
-                                    </svg>
-                                    <span>{text.benefit1}</span>
-                                </div>
-
-                                <div className="banner-check-item">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                        <polyline points="20 6 9 17 4 12" />
-                                    </svg>
-                                    <span>{text.benefit2}</span>
-                                </div>
-
-                                <div className="banner-check-item">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                        <polyline points="20 6 9 17 4 12" />
-                                    </svg>
-                                    <span>{text.benefit3}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    {(!trimmedQuery && (activeTab === "myCrops" || activeTab === "active")) && promoBanner}
                 </div>
             )}
 

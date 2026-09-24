@@ -279,14 +279,19 @@ function DiseaseDetection() {
     const storageCrop =
         sessionStorage.getItem("selectedCrop") || null;
 
-    const selectedCrop =
+    const rawSelectedCrop =
         routeCrop || storageCrop || null;
 
+    const selectedCrop =
+        rawSelectedCrop === "tur"
+            ? "pigeon_pea"
+            : rawSelectedCrop;
     const supportedCrops = [
         "cotton",
         "soybean",
         "maize",
         "wheat",
+        "pigeon_pea",
     ];
 
     const cropName =
@@ -298,7 +303,9 @@ function DiseaseDetection() {
                     ? "Maize"
                     : selectedCrop === "wheat"
                         ? "Wheat"
-                        : "Crop";
+                        : selectedCrop === "pigeon_pea"
+                            ? "Tur (Pigeon Pea)"
+                            : "Crop";
 
     // =========================================================
     // CROP VISUAL

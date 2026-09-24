@@ -4,7 +4,6 @@ import json
 from datetime import datetime
 from typing import Optional, Dict, Any, List
 import io
-import base64
 
 import torch
 import torch.nn as nn
@@ -85,19 +84,6 @@ WHEAT_MODEL_PATH = (
     / "wheat_efficientnet_b0.pth"
 )
 
-PIGEON_PEA_MODEL_PATH = (
-    PROJECT_ROOT
-    / "models"
-    / "pigeon_pea_targeted_efficientnet_b0.pth"
-)
-
-PIGEON_PEA_CLASSES = [
-    "Healthy",
-    "Leaf_Spot",
-    "Leaf_webber",
-    "Sterilic_mosaic",
-]
-
 COTTON_CLASSES = [
     "Alternaria Leaf Spot",
     "Anthracnose",
@@ -151,7 +137,6 @@ WHEAT_CLASSES = [
     "Yellow_Rust",
 ]
 MODEL_PATHS = {
-    "pigeon_pea": PIGEON_PEA_MODEL_PATH,
     "cotton": MODEL_PATH,
     "soybean": SOYBEAN_MODEL_PATH,
     "maize": MAIZE_MODEL_PATH,
@@ -159,7 +144,6 @@ MODEL_PATHS = {
 }
 
 CROP_CLASSES = {
-    "pigeon_pea": PIGEON_PEA_CLASSES,
     "cotton": COTTON_CLASSES,
     "soybean": SOYBEAN_CLASSES,
     "maize": MAIZE_CLASSES,
@@ -826,12 +810,6 @@ Trained {crop_name} model not found:
     return model
 
 
-pigeon_pea_model = load_model(
-    PIGEON_PEA_MODEL_PATH,
-    PIGEON_PEA_CLASSES,
-    "pigeon_pea",
-)
-
 cotton_model = load_model(
     MODEL_PATH,
     COTTON_CLASSES,
@@ -943,7 +921,6 @@ async def predict(
         "soybean",
         "maize",
         "wheat",
-        "pigeon_pea",
     ]:
 
         raise HTTPException(
@@ -1048,11 +1025,6 @@ async def predict(
 
         selected_model = maize_model
         selected_classes = MAIZE_CLASSES
-
-    elif crop == "pigeon_pea":
-
-        selected_model = pigeon_pea_model
-        selected_classes = PIGEON_PEA_CLASSES
 
     elif crop == "wheat":
 
@@ -1190,15 +1162,14 @@ async def predict(
     # SAVE HISTORY
     # --------------------------------------------------------
 
-    b64_img = base64.b64encode(image_bytes).decode("utf-8")
-    content_type = file.content_type or "image/jpeg"
-    data_uri = f"data:{content_type};base64,{b64_img}"
-
     save_detection_history(
 
     user_id=user_id,
 
-    filename=data_uri,
+    filename=(
+        file.filename
+        or "unknown.jpg"
+    ),
 
     crop=crop,
 
@@ -1951,7 +1922,7 @@ def get_system_model_info():
         "modelName": "EfficientNet-B0",
         "supportedCrops": list(CROP_CLASSES.keys()),
         "totalCrops": len(CROP_CLASSES),
-        "inputImageSize": f"{IMAGE_SIZE} Ã— {IMAGE_SIZE}",
+        "inputImageSize": f"{IMAGE_SIZE} × {IMAGE_SIZE}",
         "device": str(DEVICE).upper(),
         "totalDiseaseClasses": sum(len(v) for v in CROP_CLASSES.values()),
         "status": "Online & Calibrated"

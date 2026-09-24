@@ -2,6 +2,46 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "../context/LanguageContext";
 
+const DiseaseTagsList = ({ diseases, getDiseaseLabel }) => {
+    const [expanded, setExpanded] = useState(false);
+    const maxVisible = 5;
+    const visibleDiseases = expanded ? diseases : diseases.slice(0, maxVisible);
+    const hasMore = diseases.length > maxVisible;
+
+    return (
+        <div className="disease-tags-flow">
+            {visibleDiseases.map((disease) => (
+                <span key={disease} className="disease-pill-tag">
+                    {getDiseaseLabel(disease)}
+                </span>
+            ))}
+            {hasMore && (
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setExpanded(!expanded);
+                    }}
+                    style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#15803d',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        padding: '4px 4px',
+                        textDecoration: 'underline',
+                        display: 'inline-block'
+                    }}
+                >
+                    {expanded ? "Show less" : `View all ${diseases.length} conditions`}
+                </button>
+            )}
+        </div>
+    );
+};
+
+
 export default function Crops() {
     const navigate = useNavigate();
     const { language } = useLanguage();
@@ -72,7 +112,7 @@ export default function Crops() {
                 Maize: "AI-powered disease detection for maize leaves.",
                 Wheat: "AI-powered disease detection for wheat leaves.",
                 Tomato: "Coming soon for disease detection. We are training our AI model.",
-                "Bell Pepper": "Coming soon for disease detection. We are training our AI model.",
+                "Tur (Pigeon Pea)": "AI-powered disease detection for Tur (Pigeon Pea) leaves.",
             },
         },
         mr: {
@@ -138,7 +178,7 @@ export default function Crops() {
                 Maize: "मक्याच्या पानांसाठी AI-आधारित रोग शोध.",
                 Wheat: "गव्हाच्या पानांसाठी AI-आधारित रोग शोध.",
                 Tomato: "रोग शोधासाठी लवकरच उपलब्ध. आम्ही आमच्या AI मॉडेलला प्रशिक्षित करत आहोत.",
-                "Bell Pepper": "रोग शोधासाठी लवकरच उपलब्ध. आम्ही आमच्या AI मॉडेलला प्रशिक्षित करत आहोत.",
+                "Tur (Pigeon Pea)": "तूर (पिजन पी) च्या पानांसाठी AI-आधारित रोग शोध.",
             },
         },
         hi: {
@@ -204,7 +244,7 @@ export default function Crops() {
                 Maize: "मक्का के पत्तों के लिए AI-आधारित रोग पहचान।",
                 Wheat: "गेहूँ के पत्तों के लिए AI-आधारित रोग पहचान।",
                 Tomato: "रोग पहचान के लिए जल्द उपलब्ध। हम अपने AI मॉडल को प्रशिक्षित कर रहे हैं।",
-                "Bell Pepper": "रोग पहचान के लिए जल्द उपलब्ध। हम अपने AI मॉडल को प्रशिक्षित कर रहे हैं।",
+                "Tur (Pigeon Pea)": "तूर (कबूतर मटर) के पत्तों के लिए AI-आधारित रोग पहचान।",
             },
         },
     };
@@ -214,8 +254,13 @@ export default function Crops() {
     const getCategoryLabel = (value) =>
         text.categories[value] || ui.en.categories[value] || value;
 
-    const getDiseaseLabel = (value) =>
-        text.diseases[value] || ui.en.diseases[value] || value;
+    const getDiseaseLabel = (value) => {
+        let label = text.diseases[value] || ui.en.diseases[value];
+        if (!label && typeof value === 'string') {
+            label = value.replace(/_/g, " ");
+        }
+        return label || value;
+    };
 
     const getCropDescription = (name, fallback) =>
         text.descriptions[name] || ui.en.descriptions[name] || fallback;
@@ -228,15 +273,37 @@ export default function Crops() {
             fallbackImage: "https://commons.wikimedia.org/wiki/Special:FilePath/Soybean_leaves.jpg",
             description: "AI-powered disease detection for soybean leaves.",
             diseases: [
-                "Bacterial Blight",
-                "Cercospora Leaf Blight",
-                "Rust",
-                "Sudden Death Syndrome",
+                "Bacterial_Blight",
+                "Bacterial_Pustule",
+                "Cercospora_Leaf_Blight",
+                "Downy_Mildew",
+                "Frogeye_Leaf_Spot",
                 "Healthy",
+                "Rust",
+                "Septoria_Brown_Spot",
+                "Sudden_Death_Syndrome",
+                "Target_Spot",
+                "Yellow_Mosaic_Disease",
             ],
             category: "Pulse Crop",
             supported: true,
             cropKey: "soybean",
+            icon: "🌱",
+        },
+        {
+            name: "Tur (Pigeon Pea)",
+            image: "/images/crop_tur.jpg",
+            fallbackImage: "https://commons.wikimedia.org/wiki/Special:FilePath/Pigeon_pea.jpg",
+            description: "AI-powered disease detection for Tur (Pigeon Pea) leaves.",
+            diseases: [
+                "Healthy",
+                "Leaf_Spot",
+                "Leaf_Webber",
+                "Sterilic_Mosaic",
+            ],
+            category: "Pulse Crop",
+            supported: true,
+            cropKey: "tur",
             icon: "🌱",
         },
         {
@@ -246,8 +313,12 @@ export default function Crops() {
             description: "AI-powered disease detection for cotton leaves.",
             diseases: [
                 "Alternaria Leaf Spot",
+                "Anthracnose",
                 "Bacterial Blight",
+                "Boll Rot",
+                "Cercospora Leaf Spot",
                 "Fusarium Wilt",
+                "Grey Areolate Mildew",
                 "Healthy Leaf",
                 "Verticillium Wilt",
             ],
@@ -262,10 +333,19 @@ export default function Crops() {
             fallbackImage: "https://commons.wikimedia.org/wiki/Special:FilePath/Maize_plant.jpg",
             description: "AI-powered disease detection for maize leaves.",
             diseases: [
+                "Asphalt_Stain",
+                "Bacterial_Leaf_Streak",
+                "Bipolaris",
                 "Blight",
-                "Common Rust",
-                "Gray Leaf Spot",
+                "Common_Rust",
+                "Eyespot",
+                "Gray_Leaf_Spot",
                 "Healthy",
+                "Maize_Lethal_Necrosis",
+                "Maize_Streak_Disease",
+                "Phaeosphaeria_Leaf_Spot",
+                "Southern_Rust",
+                "Stenocarpella",
             ],
             category: "Cereal Crop",
             supported: true,
@@ -278,11 +358,16 @@ export default function Crops() {
             fallbackImage: "https://commons.wikimedia.org/wiki/Special:FilePath/The_wheat_field.jpg",
             description: "AI-powered disease detection for wheat leaves.",
             diseases: [
-                "Brown Rust",
-                "Yellow Rust",
-                "Leaf Spot",
-                "Powdery Mildew",
+                "Black_Rust",
+                "Brown_Rust",
+                "Fusarium_Head_Blight",
                 "Healthy",
+                "Leaf_Blight",
+                "Loose_Smut",
+                "Powdery_Mildew",
+                "Septoria",
+                "Tan_Spot",
+                "Yellow_Rust",
             ],
             category: "Cereal Crop",
             supported: true,
@@ -299,17 +384,6 @@ export default function Crops() {
             supported: false,
             cropKey: "tomato",
             icon: "🍅",
-        },
-        {
-            name: "Bell Pepper",
-            image: "/images/crop_bell_pepper.jpg",
-            fallbackImage: "https://commons.wikimedia.org/wiki/Special:FilePath/Green_Bell_pepper_plant.jpg",
-            description: "Coming soon for disease detection. We are training our AI model.",
-            diseases: [],
-            category: "Vegetable Crop",
-            supported: false,
-            cropKey: "bell_pepper",
-            icon: "🫑",
         },
     ];
 
@@ -1201,13 +1275,7 @@ export default function Crops() {
                                             </svg>
                                             <span>{text.detectableConditions}</span>
                                         </div>
-                                        <div className="disease-tags-flow">
-                                            {crop.diseases.map((disease) => (
-                                                <span key={disease} className="disease-pill-tag">
-                                                    {getDiseaseLabel(disease)}
-                                                </span>
-                                            ))}
-                                        </div>
+                                        <DiseaseTagsList diseases={crop.diseases} getDiseaseLabel={getDiseaseLabel} />
                                     </>
                                 )}
                             </div>

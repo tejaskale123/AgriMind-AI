@@ -317,6 +317,8 @@ export default function DetectionHistory() {
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedRecord, setSelectedRecord] = useState(null);
     const [detailTab, setDetailTab] = useState("aiAnalysis"); // "aiAnalysis" | "classProbabilities" | "originalImage"
+    const [analysisCache, setAnalysisCache] = useState({});
+    const [analysisLoading, setAnalysisLoading] = useState(false);
 
     // Toggle favorite
     const toggleFavorite = (id, e) => {
@@ -430,16 +432,121 @@ export default function DetectionHistory() {
         fetchHistory();
     }, [fetchHistory]);
 
+    // Helper to normalize crop key for API requests
+    const normalizeCropKey = (crop) => {
+        const c = String(crop || "").toLowerCase().trim();
+        if (c.includes("cotton")) return "cotton";
+        if (c.includes("soybean") || c.includes("soy")) return "soybean";
+        if (c.includes("maize") || c.includes("corn")) return "maize";
+        if (c.includes("wheat")) return "wheat";
+        if (c.includes("pigeon") || c.includes("tur")) return "pigeon_pea";
+        return c;
+    };
+
+    // Fetch live AI Analysis on-demand when opening modal if not already present
+    const fetchAnalysisForRecord = useCallback(async (record) => {
+        if (!record) return;
+
+        // If this record already has symptoms or treatment, it already has analysis
+        if (record.symptoms || record.treatment || record.farmer_action) {
+            return;
+        }
+
+        const cacheKey = String(record.id || `${record.crop}_${record.prediction}`);
+        if (analysisCache[cacheKey]) {
+            const cached = analysisCache[cacheKey];
+            setSelectedRecord((prev) => (prev && prev.id === record.id ? { ...prev, ...cached } : prev));
+            return;
+        }
+
+        try {
+            setAnalysisLoading(true);
+            const token = getToken();
+            const cropKey = normalizeCropKey(record.crop);
+            const diseaseKey = record.prediction;
+            const conf = record.confidence || 0;
+
+            const res = await fetch(
+                `${API_BASE_URL}/recommendation/stream?crop=${encodeURIComponent(cropKey)}&disease=${encodeURIComponent(diseaseKey)}&confidence=${encodeURIComponent(conf)}&language=en`,
+                {
+                    headers: token ? { Authorization: `Bearer ${token}` } : {}
+                }
+            );
+
+            if (!res.ok || !res.body) {
+                setAnalysisLoading(false);
+                return;
+            }
+
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = "";
+            let accumulated = {};
+
+            while (true) {
+                const { value, done } = await reader.read();
+                buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
+                const events = buffer.split("\n\n");
+                buffer = events.pop() || "";
+
+                for (const event of events) {
+                    const line = event.split("\n").find((item) => item.startsWith("data: "));
+                    if (!line) continue;
+                    try {
+                        const payload = JSON.parse(line.slice(6));
+                        if (payload.data) {
+                            const d = payload.data;
+                            accumulated = {
+                                ...accumulated,
+                                ...(d.severity ? { severity: d.severity } : {}),
+                                ...(d.symptoms ? { symptoms: d.symptoms } : {}),
+                                ...(d.immediate_action ? { immediate_action: d.immediate_action } : {}),
+                                ...(d.prevention ? { prevention: d.prevention } : {}),
+                                ...(d.spray_guidance ? { spray_guidance: d.spray_guidance } : {}),
+                                ...(d.treatment ? { treatment: d.treatment } : {}),
+                                ...(d.farmer_action ? { farmer_action: d.farmer_action } : {}),
+                                ...(d.source ? { source: d.source } : {}),
+                                ...(d.ai_explanation || d.explanation ? { ai_explanation: d.ai_explanation || d.explanation } : {})
+                            };
+                            setSelectedRecord((prev) => (prev && prev.id === record.id ? { ...prev, ...accumulated } : prev));
+                        }
+                    } catch {
+                        // ignore malformed chunk
+                    }
+                }
+                if (done) break;
+            }
+
+            // Save to cache and update record in history list
+            setAnalysisCache((prev) => ({ ...prev, [cacheKey]: accumulated }));
+            setHistory((prevList) =>
+                prevList.map((item) => (item.id === record.id ? { ...item, ...accumulated } : item))
+            );
+        } catch (err) {
+            console.error("AI Analysis fetch error:", err);
+        } finally {
+            setAnalysisLoading(false);
+        }
+    }, [analysisCache]);
+
     // Handle Modal Open & Close
     const handleOpenModal = (record, e) => {
         if (e) e.stopPropagation();
-        setSelectedRecord(record);
+        const cacheKey = String(record.id || `${record.crop}_${record.prediction}`);
+        const cached = analysisCache[cacheKey];
+        const mergedRecord = cached ? { ...record, ...cached } : record;
+        setSelectedRecord(mergedRecord);
         setDetailTab("aiAnalysis");
         setModalOpen(true);
+
+        if (!mergedRecord.symptoms && !mergedRecord.treatment && !mergedRecord.farmer_action) {
+            fetchAnalysisForRecord(mergedRecord);
+        }
     };
 
     const handleCloseModal = () => {
         setModalOpen(false);
+        setAnalysisLoading(false);
     };
 
     // Keyboard listener for Escape key
@@ -1893,6 +2000,21 @@ export default function DetectionHistory() {
                     padding: 16px 18px;
                 }
 
+                .exp-analysis-spinner {
+                    display: inline-block;
+                    width: 22px;
+                    height: 22px;
+                    border: 2.5px solid #cbd5e1;
+                    border-top-color: #16a34a;
+                    border-radius: 50%;
+                    animation: expSpin 0.8s linear infinite;
+                }
+
+                @keyframes expSpin {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
+                }
+
                 .exp-modal-card-section h5 {
                     margin: 0 0 10px 0;
                     font-size: 14px;
@@ -2746,7 +2868,12 @@ export default function DetectionHistory() {
                             <div className="exp-modal-subtabs">
                                 <button
                                     className={`exp-modal-subtab-btn ${detailTab === "aiAnalysis" ? "active" : ""}`}
-                                    onClick={() => setDetailTab("aiAnalysis")}
+                                    onClick={() => {
+                                        setDetailTab("aiAnalysis");
+                                        if (selectedRecord && !selectedRecord.symptoms && !selectedRecord.treatment && !selectedRecord.farmer_action) {
+                                            fetchAnalysisForRecord(selectedRecord);
+                                        }
+                                    }}
                                 >
                                     {text.aiAnalysisBtn}
                                 </button>
@@ -2779,6 +2906,24 @@ export default function DetectionHistory() {
                                             </div>
                                         </div>
                                     </div>
+
+                                    {/* AI Analysis Loading State */}
+                                    {analysisLoading && (
+                                        <div style={{ padding: "20px", textAlign: "center", background: "#f8fafc", borderRadius: "14px", border: "1px dashed #cbd5e1" }}>
+                                            <span className="exp-analysis-spinner" />
+                                            <p style={{ marginTop: "10px", color: "#64748b", fontSize: "13px", fontWeight: 600 }}>
+                                                Loading AI analysis & management advisory...
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {/* Disease Overview */}
+                                    {(selectedRecord.disease_overview || selectedRecord.ai_explanation || selectedRecord.explanation) && (
+                                        <div className="exp-modal-card-section">
+                                            <h5>📋 Disease Overview</h5>
+                                            {renderFormattedText(selectedRecord.disease_overview || selectedRecord.ai_explanation || selectedRecord.explanation)}
+                                        </div>
+                                    )}
 
                                     {/* Symptoms */}
                                     {selectedRecord.symptoms && (
@@ -2825,6 +2970,22 @@ export default function DetectionHistory() {
                                         <div className="exp-modal-card-section">
                                             <h5>🧑‍🌾 {text.farmerActionTitle}</h5>
                                             {renderFormattedText(selectedRecord.farmer_action)}
+                                        </div>
+                                    )}
+
+                                    {/* Source Reference */}
+                                    {selectedRecord.source && (
+                                        <div style={{ fontSize: "11.5px", color: "#64748b", padding: "4px 8px" }}>
+                                            <span>Source: {typeof selectedRecord.source === "object" ? (selectedRecord.source.name || JSON.stringify(selectedRecord.source)) : selectedRecord.source}</span>
+                                        </div>
+                                    )}
+
+                                    {/* Fallback when analysis is unavailable */}
+                                    {!analysisLoading && !selectedRecord.symptoms && !selectedRecord.treatment && !selectedRecord.prevention && !selectedRecord.farmer_action && (
+                                        <div className="exp-modal-card-section" style={{ textAlign: "center", padding: "28px 20px", color: "#64748b" }}>
+                                            <p style={{ margin: 0, fontWeight: 500, fontSize: "13.5px" }}>
+                                                Detailed AI analysis is not available for this detection record.
+                                            </p>
                                         </div>
                                     )}
                                 </div>

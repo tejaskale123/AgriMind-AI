@@ -1457,10 +1457,196 @@ export default function LandingPage() {
                 }
 
                 /* ================= RESPONSIVE ================= */
+                /* ================= LUXURY MOTION GRAPHICS & SCROLL REVEAL ================= */
+                @keyframes floatGentle {
+                    0%, 100% { transform: translateY(0px); }
+                    50% { transform: translateY(-8px); }
+                }
+
+                @keyframes pulseGlow {
+                    0%, 100% { opacity: 0.55; transform: scale(1); }
+                    50% { opacity: 0.85; transform: scale(1.04); }
+                }
+
+                @keyframes shimmerEffect {
+                    0% { background-position: -200% 0; }
+                    100% { background-position: 200% 0; }
+                }
+
+                @keyframes cardSlideUp {
+                    from { opacity: 0; transform: translateY(22px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+
+                /* Scroll animation triggers */
+                .motion-reveal {
+                    animation: cardSlideUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                }
+
+                /* Luxury Glassmorphism & High-Gloss Highlights */
+                .feature-app-card, .workflow-card, .crop-landing-card, .need-card, .weather-live-tile {
+                    position: relative;
+                    overflow: hidden;
+                    transition: all 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+                }
+
+                .feature-app-card::after, .crop-landing-card::after, .workflow-card::after {
+                    content: "";
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    height: 2px;
+                    background: linear-gradient(90deg, transparent, rgba(45, 122, 88, 0.4), transparent);
+                    opacity: 0;
+                    transition: opacity 0.3s ease;
+                }
+
+                .feature-app-card:hover::after, .crop-landing-card:hover::after, .workflow-card:hover::after {
+                    opacity: 1;
+                }
+
+                /* Mobile Drawer Menu */
+                .mobile-drawer-overlay {
+                    display: none;
+                }
+
+                @media (max-width: 900px) {
+                    .nav-links-menu {
+                        display: none;
+                    }
+                    .mobile-toggle-btn {
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        width: 40px;
+                        height: 40px;
+                        border-radius: 12px;
+                        background: #ffffff;
+                        border: 1.5px solid #d5e5dc;
+                        color: #0d281e;
+                        cursor: pointer;
+                        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+                    }
+                    .mobile-drawer-overlay {
+                        display: block;
+                        position: fixed;
+                        inset: 0;
+                        background: rgba(13, 40, 30, 0.65);
+                        backdrop-filter: blur(8px);
+                        z-index: 1200;
+                        animation: dropdownFade 0.25s ease;
+                    }
+                    .mobile-drawer-panel {
+                        position: fixed;
+                        top: 0;
+                        right: 0;
+                        width: 82%;
+                        max-width: 320px;
+                        height: 100%;
+                        background: #ffffff;
+                        box-shadow: -10px 0 40px rgba(0, 0, 0, 0.2);
+                        z-index: 1201;
+                        display: flex;
+                        flex-direction: column;
+                        padding: 24px;
+                        overflow-y: auto;
+                        gap: 18px;
+                    }
+                    .mobile-drawer-header {
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                        padding-bottom: 14px;
+                        border-bottom: 1px solid #e2ece6;
+                    }
+                    .mobile-drawer-close {
+                        background: #f0f7f3;
+                        border: none;
+                        width: 34px;
+                        height: 34px;
+                        border-radius: 10px;
+                        font-size: 16px;
+                        font-weight: 800;
+                        color: #0d281e;
+                        cursor: pointer;
+                    }
+                    .mobile-drawer-nav {
+                        display: flex;
+                        flex-direction: column;
+                        gap: 8px;
+                    }
+                    .mobile-drawer-link {
+                        display: flex;
+                        align-items: center;
+                        gap: 12px;
+                        padding: 12px 14px;
+                        border-radius: 12px;
+                        background: #f8faf9;
+                        border: 1px solid #e2ece6;
+                        color: #0d281e;
+                        font-size: 14.5px;
+                        font-weight: 700;
+                        cursor: pointer;
+                        text-align: left;
+                        width: 100%;
+                    }
+                    .mobile-drawer-link:hover {
+                        background: #eef7f2;
+                        color: #1b5c3e;
+                    }
+                }
+
+                /* Footer Social Icons & Badges */
+                .footer-social-row {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    margin-top: 18px;
+                }
+
+                .footer-social-btn {
+                    width: 38px;
+                    height: 38px;
+                    border-radius: 10px;
+                    background: rgba(255, 255, 255, 0.08);
+                    border: 1px solid rgba(255, 255, 255, 0.12);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: #c2ded0;
+                    cursor: pointer;
+                    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+                }
+
+                .footer-social-btn:hover {
+                    background: #2d7a58;
+                    color: #ffffff;
+                    transform: translateY(-3px);
+                    box-shadow: 0 6px 16px rgba(45, 122, 88, 0.4);
+                }
+
+                /* Floating animation on showcase frame */
+                .phone-mockup-frame {
+                    animation: floatGentle 5s ease-in-out infinite;
+                }
+
+                /* Ambient Hero Pulse */
+                .hero-bg-glow {
+                    animation: pulseGlow 7s ease-in-out infinite;
+                }
+
+                /* Luxury Badge Shimmer */
+                .hero-eyebrow-pill {
+                    position: relative;
+                    overflow: hidden;
+                }
+
+                /* Responsive Layout Fixes */
                 @media (max-width: 1024px) {
                     .hero-grid-2col {
                         grid-template-columns: 1fr;
-                        gap: 50px;
+                        gap: 46px;
                     }
                     .features-six-grid {
                         grid-template-columns: repeat(2, 1fr);
@@ -1479,23 +1665,23 @@ export default function LandingPage() {
                     }
                 }
 
-                @media (max-width: 768px) {
+                @media (max-width: 640px) {
                     .landing-container {
-                        padding: 0 18px;
-                    }
-                    .nav-links-menu {
-                        display: none;
+                        padding: 0 16px;
                     }
                     .hero-main-h1 {
-                        font-size: 38px;
+                        font-size: 34px;
                     }
                     .hero-capabilities-strip {
-                        grid-template-columns: repeat(2, 1fr);
+                        grid-template-columns: 1fr;
                     }
                     .showcase-two-col {
                         grid-template-columns: 1fr;
                     }
                     .features-six-grid {
+                        grid-template-columns: 1fr;
+                    }
+                    .workflow-steps-grid {
                         grid-template-columns: 1fr;
                     }
                     .crops-eight-grid {
@@ -1506,6 +1692,18 @@ export default function LandingPage() {
                     }
                     .footer-grid-5col {
                         grid-template-columns: 1fr;
+                    }
+                    .hero-cta-row {
+                        flex-direction: column;
+                        align-items: stretch;
+                    }
+                    .hero-primary-btn, .hero-secondary-btn {
+                        justify-content: center;
+                    }
+                    .footer-bottom-row {
+                        flex-direction: column;
+                        gap: 12px;
+                        text-align: center;
                     }
                 }
             `}</style>
@@ -1709,8 +1907,80 @@ export default function LandingPage() {
                             </svg>
                             <span>Login</span>
                         </button>
+
+                        {/* Mobile Hamburger Button */}
+                        <button
+                            className="mobile-toggle-btn"
+                            onClick={() => setMobileMenuOpen(true)}
+                            aria-label="Toggle navigation"
+                        >
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                                <line x1="4" y1="6" x2="20" y2="6" />
+                                <line x1="4" y1="12" x2="20" y2="12" />
+                                <line x1="4" y1="18" x2="20" y2="18" />
+                            </svg>
+                        </button>
                     </div>
                 </div>
+
+                {/* Mobile Drawer Overlay */}
+                {mobileMenuOpen && (
+                    <div className="mobile-drawer-overlay" onClick={() => setMobileMenuOpen(false)}>
+                        <div className="mobile-drawer-panel" onClick={(e) => e.stopPropagation()}>
+                            <div className="mobile-drawer-header">
+                                <div className="brand-logo-area">
+                                    <img src="/images/agrimind-logo.png" alt="AgriMind Logo" style={{ width: "30px", height: "30px" }} />
+                                    <span style={{ fontSize: "18px", fontWeight: 800, color: "#0d281e" }}>AgriMind</span>
+                                </div>
+                                <button className="mobile-drawer-close" onClick={() => setMobileMenuOpen(false)}>✕</button>
+                            </div>
+
+                            <nav className="mobile-drawer-nav">
+                                <button className="mobile-drawer-link" onClick={() => { setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
+                                    <span>🏠</span> Overview
+                                </button>
+                                <button className="mobile-drawer-link" onClick={() => scrollToSection("how-it-works")}>
+                                    <span>⚙️</span> How It Works
+                                </button>
+                                <button className="mobile-drawer-link" onClick={() => scrollToSection("features")}>
+                                    <span>✨</span> Core Features
+                                </button>
+                                <button className="mobile-drawer-link" onClick={() => scrollToSection("solutions")}>
+                                    <span>🌱</span> Solutions
+                                </button>
+                                <button className="mobile-drawer-link" onClick={() => scrollToSection("crops-section")}>
+                                    <span>🌾</span> Supported Crops
+                                </button>
+                                <button className="mobile-drawer-link" onClick={() => scrollToSection("weather-preview")}>
+                                    <span>🌤️</span> Weather Advisory
+                                </button>
+                                <button className="mobile-drawer-link" onClick={() => scrollToSection("about-section")}>
+                                    <span>ℹ️</span> About AgriMind
+                                </button>
+                                <button className="mobile-drawer-link" onClick={() => handleNavigation("/detection")}>
+                                    <span>🔬</span> AI Disease Detection
+                                </button>
+                            </nav>
+
+                            <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: "10px" }}>
+                                <button
+                                    className="hero-primary-btn"
+                                    style={{ width: "100%", justifyContent: "center" }}
+                                    onClick={handleGetStarted}
+                                >
+                                    Get Started Free
+                                </button>
+                                <button
+                                    className="hero-secondary-btn"
+                                    style={{ width: "100%", justifyContent: "center" }}
+                                    onClick={handleLogin}
+                                >
+                                    Sign In to Account
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </header>
 
             {/* ================= HERO SECTION (CLEAN - NO FLOATING AI STICKERS) ================= */}
@@ -2123,6 +2393,30 @@ export default function LandingPage() {
                                 </div>
                             </div>
                             <p>Empowering farmers with artificial intelligence for healthier crops and a more sustainable agricultural future.</p>
+                            
+                            {/* Professional Luxury Social Media Connect */}
+                            <div className="footer-social-row">
+                                <a href="https://twitter.com" target="_blank" rel="noreferrer" className="footer-social-btn" title="Twitter / X">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                                    </svg>
+                                </a>
+                                <a href="https://linkedin.com" target="_blank" rel="noreferrer" className="footer-social-btn" title="LinkedIn">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.46 10.9v8.37H9.2V10.9H6.46M7.83 6.45a1.62 1.62 0 1 0 0 3.24 1.62 1.62 0 0 0 0-3.24z" />
+                                    </svg>
+                                </a>
+                                <a href="https://github.com" target="_blank" rel="noreferrer" className="footer-social-btn" title="GitHub">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.1-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z" />
+                                    </svg>
+                                </a>
+                                <a href="https://youtube.com" target="_blank" rel="noreferrer" className="footer-social-btn" title="YouTube">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+                                    </svg>
+                                </a>
+                            </div>
                         </div>
 
                         {/* Explore */}

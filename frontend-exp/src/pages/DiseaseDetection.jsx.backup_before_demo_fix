@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useLanguage } from "../context/LanguageContext";
-import UserProfileMenu from "../components/UserProfileMenu";
 
 export default function DiseaseDetection() {
     const { language, setLanguage } = useLanguage();
@@ -43,7 +42,7 @@ export default function DiseaseDetection() {
             modelRole: "Crop disease classification",
             tipsTitle: "Tips for Better Results",
             tipsList: "Use a clear, well-lit image  •  Keep the entire leaf visible  •  Avoid blurry images  •  Select the correct crop type",
-            tipsQuote: '"Early detection leads to better yields."',
+            tipsQuote: "“Early detection leads to better yields.”",
             cameraModalTitle: "Camera Capture",
             capturePhoto: "Capture Photo",
             cancel: "Cancel",
@@ -69,6 +68,122 @@ export default function DiseaseDetection() {
             notAuthenticated: "Authentication token expired. Please log in again.",
             predictionFailed: "Disease detection failed. Please try again.",
             serverError: "Unable to reach the AI prediction server."
+        },
+        mr: {
+            title: "रोग शोध",
+            subtitle: "AI द्वारे पिकाच्या पानांच्या आरोग्याचे विश्लेषण",
+            aiReady: "AI तयार आहे",
+            changeCrop: "पीक बदला",
+            analyzeCropLeaf: (crop) => `${crop} पानाचे विश्लेषण करा`,
+            uploadSub: "AI विश्लेषणासाठी पिकाच्या पानाचा स्पष्ट फोटो अपलोड करा",
+            maxSizeNote: "कमाल फाइल आकार: 10 MB",
+            dragDropTitle: "पानाची इमेज इथे ड्रॅग आणि ड्रॉप करा",
+            dragDropSub: "किंवा तुमच्या कॉम्प्युटरमधून निवडा",
+            chooseImage: "इमेज निवडा",
+            formatSpecs: "JPG / PNG / WEBP  |  10 MB पर्यंत  |  स्पष्ट पानाचा फोटो",
+            useCamera: "कॅमेरा वापरा",
+            sampleImage: "नमुना इमेज",
+            selectedImage: "निवडलेली इमेज:",
+            chooseAnother: "दुसरी निवडा",
+            analyzeWithAi: "AI ने विश्लेषण करा",
+            analyzing: "AI विश्लेषण करत आहे...",
+            analyzingDesc: (crop) => `EfficientNet-B0 तुमच्या ${crop} पानाचे विश्लेषण करत आहे...`,
+            howAiWorks: "AI रोग शोध कसा काम करतो",
+            step1Title: "पानाचा फोटो अपलोड करा",
+            step1Desc: "पिकाच्या पानाचा स्पष्ट आणि चांगल्या प्रकाशातील फोटो अपलोड करा.",
+            step2Title: "AI विश्लेषण",
+            step2Desc: "EfficientNet-B0 पानावरील रोगाच्या लक्षणांचे सखोल विश्लेषण करते.",
+            step3Title: "निकाल मिळवा",
+            step3Desc: "संभाव्य रोग आणि अचूकता (Confidence) त्वरित जाणून घ्या.",
+            aiModelBadge: "AI मॉडेल",
+            modelName: "EfficientNet-B0",
+            modelRole: "पिकांच्या रोगांचे वर्गीकरण",
+            tipsTitle: "उत्कृष्ट परिणामांसाठी टिप्स",
+            tipsList: "स्पष्ट आणि चांगल्या प्रकाशातील फोटो वापरा  •  संपूर्ण पान दिसेल असे ठेवा  •  धूसर फोटो टाळा  •  योग्य पीक निवडा",
+            tipsQuote: "“वेळेवर रोग शोध म्हणजे अधिक उत्पादन.”",
+            cameraModalTitle: "कॅमेरा कॅप्चर",
+            capturePhoto: "फोटो काढा",
+            cancel: "रद्द करा",
+            resultTitle: "रोग शोध निकाल",
+            detectedCondition: "अंदाजित रोग / स्थिती",
+            confidenceScore: "विश्वास पातळी (Confidence)",
+            plantCareTitle: "पिकाची काळजी व व्यवस्थापन",
+            symptoms: "लक्षणे",
+            immediateAction: "तात्काळ उपाय",
+            prevention: "प्रतिबंधात्मक उपाय",
+            sprayGuidance: "फवारणी मार्गदर्शन",
+            treatment: "उपचार / शेतकरी सल्ला",
+            classProbabilities: "AI वर्ग संभाव्यता",
+            probSubtitle: "प्रत्येक वर्गाची मॉडेल अचूकता",
+            analyzeAnother: "दुसऱ्या पानाचे विश्लेषण करा",
+            verifyAdvice: "कोणतीही रासायनिक फवारणी करण्यापूर्वी कृपया शेतातील लक्षणांची खात्री करा किंवा तज्ज्ञांचा सल्ला घ्या.",
+            lowConfidenceTitle: "कमी अचूकता असलेला अंदाज",
+            lowConfidenceDesc: "AI ची विश्वास पातळी 70% पेक्षा कमी आहे. कृपया अधिक स्पष्ट फोटो अपलोड करा.",
+            invalidImage: "कृपया वैध इमेज फाइल निवडा (JPG, PNG किंवा WEBP).",
+            fileTooLarge: "इमेजचा आकार 10 MB पेक्षा कमी असावा.",
+            cameraError: "कॅमेरा सुरू करता आला नाही किंवा परवानगी नाकारली आहे.",
+            cameraNotReady: "कॅमेरा अजून तयार नाही.",
+            notAuthenticated: "लॉगिन सत्र संपले आहे. कृपया पुन्हा लॉगिन करा.",
+            predictionFailed: "रोग शोध अयशस्वी झाला. कृपया पुन्हा प्रयत्न करा.",
+            serverError: "AI सर्व्हरशी संपर्क होऊ शकला नाही."
+        },
+        hi: {
+            title: "रोग पहचान",
+            subtitle: "AI द्वारा फसल के पत्ते के स्वास्थ्य का विश्लेषण",
+            aiReady: "AI तैयार है",
+            changeCrop: "फसल बदलें",
+            analyzeCropLeaf: (crop) => `${crop} पत्ते का विश्लेषण करें`,
+            uploadSub: "AI विश्लेषण के लिए फसल के पत्ते की स्पष्ट फोटो अपलोड करें",
+            maxSizeNote: "अधिकतम फ़ाइल आकार: 10 MB",
+            dragDropTitle: "पत्ते की फोटो यहाँ ड्रैग और ड्रॉप करें",
+            dragDropSub: "या अपने कंप्यूटर से चुनें",
+            chooseImage: "इमेज चुनें",
+            formatSpecs: "JPG / PNG / WEBP  |  10 MB तक  |  स्पष्ट पत्ते की तस्वीर",
+            useCamera: "कैमरा इस्तेमाल करें",
+            sampleImage: "नमूना इमेज",
+            selectedImage: "चयनित इमेज:",
+            chooseAnother: "दूसरी चुनें",
+            analyzeWithAi: "AI से विश्लेषण करें",
+            analyzing: "AI विश्लेषण कर रहा है...",
+            analyzingDesc: (crop) => `EfficientNet-B0 आपके ${crop} पत्ते का विश्लेषण कर रहा है...`,
+            howAiWorks: "AI रोग पहचान कैसे काम करती है",
+            step1Title: "पत्ते की फोटो अपलोड करें",
+            step1Desc: "फसल के पत्ते की स्पष्ट और अच्छी रोशनी वाली फोटो अपलोड करें।",
+            step2Title: "AI विश्लेषण",
+            step2Desc: "EfficientNet-B0 पत्ते पर दृश्य लक्षणों का सटीक विश्लेषण करता है।",
+            step3Title: "परिणाम प्राप्त करें",
+            step3Desc: "रोग की स्थिति और सटीकता (Confidence) तुरंत प्राप्त करें।",
+            aiModelBadge: "AI मॉडल",
+            modelName: "EfficientNet-B0",
+            modelRole: "फसल रोग वर्गीकरण",
+            tipsTitle: "बेहतर परिणामों के लिए टिप्स",
+            tipsList: "स्पष्ट और अच्छी रोशनी वाली तस्वीर लें  •  पूरा पत्ता दिखाई दे  •  धुंधली फोटो से बचें  •  सही फसल चुनें",
+            tipsQuote: "“समय पर रोग की पहचान, बेहतर पैदावार की कुंजी।”",
+            cameraModalTitle: "कैमरा कैप्चर",
+            capturePhoto: "फोटो खींचें",
+            cancel: "रद्द करें",
+            resultTitle: "रोग पहचान परिणाम",
+            detectedCondition: "पहचानी गई बीमारी",
+            confidenceScore: "सटीकता स्कोर (Confidence)",
+            plantCareTitle: "पौधे की देखभाल और प्रबंधन",
+            symptoms: "लक्षण",
+            immediateAction: "तत्काल उपाय",
+            prevention: "रोकथाम के उपाय",
+            sprayGuidance: "छिड़काव मार्गदर्शन",
+            treatment: "उपचार और किसान सलाह",
+            classProbabilities: "AI क्लास संभावनाएँ",
+            probSubtitle: "विभिन्न वर्गों की मॉडल सटीकता",
+            analyzeAnother: "अन्य पत्ते का विश्लेषण करें",
+            verifyAdvice: "रासायनिक छिड़काव से पहले कृपया अपने खेत में लक्षणों की पुष्टि करें या कृषि विशेषज्ञ से सलाह लें।",
+            lowConfidenceTitle: "कम सटीकता का अनुमान",
+            lowConfidenceDesc: "AI का विश्वास 70% से कम है। कृपया अधिक स्पष्ट फोटो अपलोड करें।",
+            invalidImage: "कृपया मान्य इमेज फाइल चुनें (JPG, PNG या WEBP).",
+            fileTooLarge: "इमेज का आकार 10 MB से कम होना चाहिए।",
+            cameraError: "कैमरा एक्सेस नहीं हो सका।",
+            cameraNotReady: "कैमरा अभी तैयार नहीं है।",
+            notAuthenticated: "सत्र समाप्त हो गया है। कृपया फिर से लॉगिन करें।",
+            predictionFailed: "रोग पहचान विफल रही। कृपया पुनः प्रयास करें।",
+            serverError: "AI सर्वर से संपर्क नहीं हो सका।"
         }
     };
 
@@ -79,14 +194,9 @@ export default function DiseaseDetection() {
     // =========================================================
     const routeCrop = location.state?.crop || null;
     const storageCrop = sessionStorage.getItem("selectedCrop") || null;
-    const rawSelectedCropKey = (routeCrop || storageCrop || "soybean").toLowerCase();
+    const selectedCropKey = (routeCrop || storageCrop || "soybean").toLowerCase();
 
-    const selectedCropKey =
-        rawSelectedCropKey === "tur"
-            ? "pigeon_pea"
-            : rawSelectedCropKey;
-
-    const supportedCrops = ["soybean", "cotton", "maize", "wheat", "pigeon_pea"];
+    const supportedCrops = ["soybean", "cotton", "maize", "wheat"];
 
     useEffect(() => {
         if (!selectedCropKey || !supportedCrops.includes(selectedCropKey)) {
@@ -100,8 +210,7 @@ export default function DiseaseDetection() {
         selectedCropKey === "soybean" ? "Soybean" :
         selectedCropKey === "cotton" ? "Cotton" :
         selectedCropKey === "maize" ? "Maize" :
-        selectedCropKey === "wheat" ? "Wheat" :
-        selectedCropKey === "pigeon_pea" ? "Tur (Pigeon Pea)" : "Soybean";
+        selectedCropKey === "wheat" ? "Wheat" : "Soybean";
 
     // Farmer Name
     const [farmerName, setFarmerName] = useState("Test Farmer 2");
@@ -464,56 +573,18 @@ export default function DiseaseDetection() {
             if (err.message?.includes("Failed to fetch") || err.message?.includes("NetworkError")) {
                 // Elegant local demo simulation so user can inspect both detection state and results
                 const demoConfidence = 94.8;
-
-                const demoData = {
-                    cotton: {
-                        prediction: "Bacterial Blight",
-                        class_probabilities: {
-                            "Bacterial Blight": 0.948,
-                            "Healthy Leaf": 0.012,
-                            "Alternaria Leaf Spot": 0.031,
-                            "Boll Rot": 0.009
-                        }
-                    },
-                    soybean: {
-                        prediction: "Bacterial_Blight",
-                        class_probabilities: {
-                            "Bacterial_Blight": 0.948,
-                            "Cercospora_Leaf_Blight": 0.012,
-                            "Downy_Mildew": 0.008,
-                            "Frogeye_Leaf_Spot": 0.006,
-                            "Healthy": 0.005,
-                            "Rust": 0.009,
-                            "Sudden_Death_Syndrome": 0.007,
-                            "Target_Spot": 0.005
-                        }
-                    },
-                    maize: {
-                        prediction: "Blight",
-                        class_probabilities: {
-                            "Blight": 0.948,
-                            "Common_Rust": 0.031,
-                            "Gray_Leaf_Spot": 0.012,
-                            "Healthy": 0.009
-                        }
-                    },
-                    wheat: {
-                        prediction: "Brown_Rust",
-                        class_probabilities: {
-                            "Brown_Rust": 0.948,
-                            "Yellow_Rust": 0.031,
-                            "Healthy": 0.021
-                        }
-                    }
-                };
-
-                const currentDemo = demoData[selectedCropKey] || demoData.maize;
+                const demoPrediction = "Bacterial Blight";
                 const mockResult = {
                     success: true,
                     crop: selectedCropKey,
-                    prediction: currentDemo.prediction,
+                    prediction: demoPrediction,
                     confidence: demoConfidence,
-                    class_probabilities: currentDemo.class_probabilities
+                    class_probabilities: {
+                        "Bacterial Blight": 0.948,
+                        "Cercospora Leaf Blight": 0.031,
+                        "Healthy": 0.012,
+                        "Rust": 0.009
+                    }
                 };
                 setPredictionResult(mockResult);
                 setRecommendation({
@@ -677,7 +748,7 @@ export default function DiseaseDetection() {
                     const cleanBullet = trimmed.replace(/^[-*]\s+|\d+\.\s+/, "");
                     return (
                         <div key={`line-${lIdx}`} style={{ display: "flex", alignItems: "flex-start", gap: "8px", margin: "4px 0" }}>
-                            <span style={{ color: "#16a34a", fontSize: "14px", lineHeight: "1.4" }}>✓</span>
+                            <span style={{ color: "#16a34a", fontSize: "14px", lineHeight: "1.4" }}>•</span>
                             <span style={{ flex: 1 }}>{parseInline(cleanBullet, `bullet-${lIdx}`)}</span>
                         </div>
                     );
@@ -694,26 +765,6 @@ export default function DiseaseDetection() {
 
         // Single line item (e.g., inside an existing <li>)
         return parseInline(rawText, "single");
-    };
-
-    // Helper to render complete guidance content inside table cells
-    const renderGuidanceContent = (content) => {
-        if (!content || (Array.isArray(content) && content.length === 0)) {
-            return <span style={{ color: "#94a3b8", fontStyle: "italic", fontSize: "13px" }}>No specific guidance indicated for this condition.</span>;
-        }
-        if (Array.isArray(content)) {
-            if (content.length === 1 && typeof content[0] === "string" && !content[0].includes("\n") && !content[0].match(/^[-*•]\s+/)) {
-                return <div className="exp-table-guidance-text">{renderFormattedText(content[0])}</div>;
-            }
-            return (
-                <ul className="exp-table-guidance-list">
-                    {content.map((item, idx) => (
-                        <li key={idx}>{renderFormattedText(item)}</li>
-                    ))}
-                </ul>
-            );
-        }
-        return <div className="exp-table-guidance-text">{renderFormattedText(content)}</div>;
     };
 
     return (
@@ -1829,122 +1880,72 @@ export default function DiseaseDetection() {
                     background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%);
                 }
 
-                /* Advisory Table (Plant Care & Management Raw Table) */
+                /* Advisory Grid (EXP5 6-Card System) */
                 .exp5-plant-care {
                     margin-bottom: 24px;
                 }
 
-                .exp-care-table-wrapper {
-                    width: 100%;
+                .exp5-care-grid {
+                    display: grid;
+                    grid-template-columns: repeat(3, minmax(0, 1fr));
+                    gap: 18px;
+                }
+
+                .exp5-care-card {
                     background: #ffffff;
-                    border-radius: 16px;
+                    border-radius: 18px;
                     border: 1px solid #e2e8f0;
-                    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
-                    overflow-x: auto;
-                    overflow-y: hidden;
+                    padding: 22px;
+                    display: flex;
+                    flex-direction: column;
+                    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+                    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease;
                 }
 
-                .exp-care-table {
-                    width: 100%;
-                    border-collapse: collapse;
-                    table-layout: fixed;
-                    text-align: left;
-                    font-family: inherit;
+                .exp5-care-card:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 10px 24px rgba(22, 163, 74, 0.08), 0 4px 12px rgba(15, 23, 42, 0.06);
+                    border-color: #86efac;
                 }
 
-                .exp-care-table thead {
-                    background: #f8fafc;
-                    border-bottom: 1.5px solid #e2e8f0;
-                }
-
-                .exp-care-th-area {
-                    width: 28%;
-                    padding: 14px 20px;
-                    font-size: 12.5px;
-                    font-weight: 800;
-                    color: #475569;
-                    text-transform: uppercase;
-                    letter-spacing: 0.05em;
-                    vertical-align: middle;
-                }
-
-                .exp-care-th-guidance {
-                    width: 72%;
-                    padding: 14px 24px;
-                    font-size: 12.5px;
-                    font-weight: 800;
-                    color: #475569;
-                    text-transform: uppercase;
-                    letter-spacing: 0.05em;
-                    vertical-align: middle;
-                }
-
-                .exp-care-table tbody tr {
+                .exp5-care-card-header {
+                    margin-bottom: 14px;
+                    padding-bottom: 12px;
                     border-bottom: 1px solid #f1f5f9;
-                    transition: background-color 0.15s ease;
                 }
 
-                .exp-care-table tbody tr:last-child {
-                    border-bottom: none;
-                }
-
-                .exp-care-table tbody tr:hover {
-                    background-color: #fafcfb;
-                }
-
-                .exp-care-td-area {
-                    width: 28%;
-                    padding: 18px 20px;
-                    vertical-align: top;
-                    background: #fafcfb;
-                    border-right: 1px solid #f1f5f9;
-                }
-
-                .exp-care-area-badge {
-                    display: inline-block;
-                    font-size: 14px;
-                    font-weight: 700;
-                    color: #166534;
-                    line-height: 1.4;
+                .exp5-care-card-title {
+                    font-size: 15px;
+                    font-weight: 800;
+                    color: #0f172a;
+                    margin: 0;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
                     letter-spacing: -0.01em;
                 }
 
-                .exp-care-td-guidance {
-                    width: 72%;
-                    padding: 18px 24px;
-                    vertical-align: top;
-                    color: #334155;
+                .exp5-care-card-content {
+                    flex: 1;
+                    color: #475569;
                     font-size: 13.5px;
-                    line-height: 1.65;
-                    word-break: break-word;
+                    line-height: 1.6;
                 }
 
-                .exp-table-guidance-list {
+                .exp5-care-card-content ul {
                     margin: 0;
-                    padding-left: 20px;
-                    color: #334155;
+                    padding-left: 18px;
+                    color: #475569;
                     font-size: 13.5px;
-                    line-height: 1.65;
+                    line-height: 1.6;
                 }
 
-                .exp-table-guidance-list li {
+                .exp5-care-card-content li {
                     margin-bottom: 8px;
                 }
 
-                .exp-table-guidance-list li:last-child {
+                .exp5-care-card-content li:last-child {
                     margin-bottom: 0;
-                }
-
-                .exp-table-guidance-text {
-                    color: #334155;
-                    font-size: 13.5px;
-                    line-height: 1.65;
-                }
-
-                @media (max-width: 768px) {
-                    .exp-care-table {
-                        min-width: 580px;
-                    }
                 }
 
                 /* Legacy compatibility */
@@ -2170,7 +2171,16 @@ export default function DiseaseDetection() {
                         <span className="notif-badge">3</span>
                     </button>
 
-                    <UserProfileMenu variant="topbar" />
+                    <div className="profile-pill" onClick={() => navigate("/settings")}>
+                        <img src="/images/farmer_avatar.jpg" alt="Farmer" className="profile-img" />
+                        <div className="profile-info">
+                            <span className="profile-name">{farmerName}</span>
+                            <span className="profile-tag">Farmer</span>
+                        </div>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: "4px" }}>
+                            <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                    </div>
                 </div>
             </div>
 
@@ -2203,7 +2213,7 @@ export default function DiseaseDetection() {
                             <path d="M20.5 4.5C13.5 4.5 7 7 5 14c-1 3.5 1 5.5 4.5 4.5C16.5 16.5 19.5 10 20.5 4.5Z" />
                             <path d="M4 21c3-4 6.5-6.5 11-9" />
                         </svg>
-                        <span>{cropDisplayName} ✨ {text.aiReady}</span>
+                        <span>{cropDisplayName} • {text.aiReady}</span>
                     </div>
                     <button className="btn-change-crop" onClick={() => navigate("/crops")}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -2500,7 +2510,7 @@ export default function DiseaseDetection() {
                             </div>
                             <div className="result-titles">
                                 <h3>{text.resultTitle || "Disease Detection Result"}</h3>
-                                <span>{cropDisplayName} ✨ {text.completed || "Analysis complete"}</span>
+                                <span>{cropDisplayName} • {text.completed || "Analysis complete"}</span>
                             </div>
                         </div>
 
@@ -2614,76 +2624,98 @@ export default function DiseaseDetection() {
                                 )}
                             </div>
 
-                            <div className="exp-care-table-wrapper">
-                                <table className="exp-care-table">
-                                    <thead>
-                                        <tr>
-                                            <th className="exp-care-th-area">Management Area</th>
-                                            <th className="exp-care-th-guidance">Guidance & Recommendations</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {/* 1. Symptoms */}
-                                        <tr>
-                                            <td className="exp-care-td-area">
-                                                <span className="exp-care-area-badge">{text.symptoms || "Symptoms"}</span>
-                                            </td>
-                                            <td className="exp-care-td-guidance">
-                                                {renderGuidanceContent(recommendation.symptoms)}
-                                            </td>
-                                        </tr>
+                            <div className="exp5-care-grid">
+                                {/* 1. Symptoms */}
+                                {recommendation.symptoms && recommendation.symptoms.length > 0 && (
+                                    <div className="exp5-care-card">
+                                        <div className="exp5-care-card-header">
+                                            <h5 className="exp5-care-card-title">🔍 {text.symptoms}</h5>
+                                        </div>
+                                        <div className="exp5-care-card-content">
+                                            <ul>
+                                                {recommendation.symptoms.slice(0, 3).map((s, idx) => (
+                                                    <li key={idx}>{renderFormattedText(s)}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                )}
 
-                                        {/* 2. Immediate Action */}
-                                        <tr>
-                                            <td className="exp-care-td-area">
-                                                <span className="exp-care-area-badge">{text.immediateAction || "Immediate Action"}</span>
-                                            </td>
-                                            <td className="exp-care-td-guidance">
-                                                {renderGuidanceContent(recommendation.immediate_action)}
-                                            </td>
-                                        </tr>
+                                {/* 2. Immediate Action */}
+                                {recommendation.immediate_action && recommendation.immediate_action.length > 0 && (
+                                    <div className="exp5-care-card">
+                                        <div className="exp5-care-card-header">
+                                            <h5 className="exp5-care-card-title">⚡ {text.immediateAction}</h5>
+                                        </div>
+                                        <div className="exp5-care-card-content">
+                                            <ul>
+                                                {recommendation.immediate_action.slice(0, 3).map((s, idx) => (
+                                                    <li key={idx}>{renderFormattedText(s)}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                )}
 
-                                        {/* 3. Spray Guidance */}
-                                        <tr>
-                                            <td className="exp-care-td-area">
-                                                <span className="exp-care-area-badge">{text.sprayGuidance || "Spray Guidance"}</span>
-                                            </td>
-                                            <td className="exp-care-td-guidance">
-                                                {renderGuidanceContent(recommendation.spray_guidance)}
-                                            </td>
-                                        </tr>
+                                {/* 3. Spray Guidance */}
+                                {recommendation.spray_guidance && recommendation.spray_guidance.length > 0 && (
+                                    <div className="exp5-care-card">
+                                        <div className="exp5-care-card-header">
+                                            <h5 className="exp5-care-card-title">🧪 {text.sprayGuidance}</h5>
+                                        </div>
+                                        <div className="exp5-care-card-content">
+                                            <ul>
+                                                {recommendation.spray_guidance.slice(0, 3).map((s, idx) => (
+                                                    <li key={idx}>{renderFormattedText(s)}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                )}
 
-                                        {/* 4. Prevention */}
-                                        <tr>
-                                            <td className="exp-care-td-area">
-                                                <span className="exp-care-area-badge">{text.prevention || "Prevention"}</span>
-                                            </td>
-                                            <td className="exp-care-td-guidance">
-                                                {renderGuidanceContent(recommendation.prevention)}
-                                            </td>
-                                        </tr>
+                                {/* 4. Prevention */}
+                                {recommendation.prevention && recommendation.prevention.length > 0 && (
+                                    <div className="exp5-care-card">
+                                        <div className="exp5-care-card-header">
+                                            <h5 className="exp5-care-card-title">🛡️ {text.prevention}</h5>
+                                        </div>
+                                        <div className="exp5-care-card-content">
+                                            <ul>
+                                                {recommendation.prevention.slice(0, 3).map((s, idx) => (
+                                                    <li key={idx}>{renderFormattedText(s)}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                )}
 
-                                        {/* 5. Treatment Guidance */}
-                                        <tr>
-                                            <td className="exp-care-td-area">
-                                                <span className="exp-care-area-badge">{text.treatment || "Treatment Guidance"}</span>
-                                            </td>
-                                            <td className="exp-care-td-guidance">
-                                                {renderGuidanceContent(recommendation.treatment || recommendation.treatment_guidance)}
-                                            </td>
-                                        </tr>
+                                {/* 5. Treatment Guidance */}
+                                {recommendation.treatment && recommendation.treatment.length > 0 && (
+                                    <div className="exp5-care-card">
+                                        <div className="exp5-care-card-header">
+                                            <h5 className="exp5-care-card-title">💊 Treatment Guidance</h5>
+                                        </div>
+                                        <div className="exp5-care-card-content">
+                                            <ul>
+                                                {recommendation.treatment.slice(0, 3).map((s, idx) => (
+                                                    <li key={idx}>{renderFormattedText(s)}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                )}
 
-                                        {/* 6. Farmer Action Recommendation */}
-                                        <tr>
-                                            <td className="exp-care-td-area">
-                                                <span className="exp-care-area-badge">Farmer Action Recommendation</span>
-                                            </td>
-                                            <td className="exp-care-td-guidance">
-                                                {renderGuidanceContent(recommendation.farmer_action || recommendation.farmer_action_recommendation)}
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                                {/* 6. Farmer Action Recommendation (Sixth card in the same unified grid) */}
+                                {recommendation.farmer_action && (
+                                    <div className="exp5-care-card exp5-farmer-action">
+                                        <div className="exp5-care-card-header">
+                                            <h5 className="exp5-care-card-title">🧑‍🌾 Farmer Action Recommendation</h5>
+                                        </div>
+                                        <div className="exp5-care-card-content">
+                                            <span>{renderFormattedText(recommendation.farmer_action)}</span>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     ) : null}
@@ -2714,7 +2746,7 @@ export default function DiseaseDetection() {
                                                 <div className="exp-prob-labels">
                                                     <span className="exp-prob-name">
                                                         {isTop && (
-                                                            <span style={{ color: "#16a34a", fontSize: "14px" }}>✅</span>
+                                                            <span style={{ color: "#16a34a", fontSize: "14px" }}>●</span>
                                                         )}
                                                         {cls.replace(/_/g, " ")}
                                                         {isTop && (
@@ -2830,4 +2862,3 @@ export default function DiseaseDetection() {
         </div>
     );
 }
-
