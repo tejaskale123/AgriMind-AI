@@ -97,6 +97,10 @@ MIN_CONTRAST = 15
 
 MIN_CONFIDENCE = 70.0
 
+MIN_PLANT_SPECTRUM_RATIO = 0.12
+MIN_EDGE_VARIANCE = 8.0
+MAX_ENTROPY_RATIO = 0.85
+
 
 # ============================================================
 # IMAGE TRANSFORM

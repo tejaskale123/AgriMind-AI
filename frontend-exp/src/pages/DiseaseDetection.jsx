@@ -131,6 +131,7 @@ export default function DiseaseDetection() {
     const [recommendation, setRecommendation] = useState(null);
     const [recommendationLoading, setRecommendationLoading] = useState(false);
     const [error, setError] = useState("");
+    const [validationError, setValidationError] = useState(null);
     const [cameraOpen, setCameraOpen] = useState(false);
 
     const fileInputRef = useRef(null);
@@ -141,18 +142,40 @@ export default function DiseaseDetection() {
     // AUTH TOKEN
     // =========================================================
     const getAuthToken = () => {
+        const isExpired = (t) => {
+            try {
+                const parts = t.split(".");
+                if (parts.length === 3) {
+                    const payload = JSON.parse(atob(parts[1]));
+                    if (payload.exp && payload.exp * 1000 < Date.now()) return true;
+                }
+            } catch {
+                // Ignore parse errors
+            }
+            return false;
+        };
+
         const keys = ["access_token", "token", "accessToken", "authToken", "jwt", "auth"];
         for (const key of keys) {
             for (const storage of [localStorage, sessionStorage]) {
                 const val = storage.getItem(key);
                 if (val) {
+                    let candidate = null;
                     try {
                         const parsed = JSON.parse(val);
-                        if (typeof parsed === "string" && parsed.length > 20) return parsed;
-                        if (parsed?.access_token) return parsed.access_token;
-                        if (parsed?.token) return parsed.token;
+                        if (typeof parsed === "string" && parsed.length > 20) candidate = parsed;
+                        else if (parsed?.access_token) candidate = parsed.access_token;
+                        else if (parsed?.token) candidate = parsed.token;
                     } catch {
-                        if (val.length > 20) return val;
+                        if (val.length > 20) candidate = val;
+                    }
+
+                    if (candidate) {
+                        if (isExpired(candidate)) {
+                            storage.removeItem(key);
+                        } else {
+                            return candidate;
+                        }
                     }
                 }
             }
@@ -177,6 +200,7 @@ export default function DiseaseDetection() {
     const processFile = (file) => {
         if (!file) return;
         setError("");
+        setValidationError(null);
         setPredictionResult(null);
         setRecommendation(null);
 
@@ -232,6 +256,7 @@ export default function DiseaseDetection() {
     // Sample Image Loader
     const loadSampleImage = async () => {
         setError("");
+        setValidationError(null);
         setPredictionResult(null);
         setRecommendation(null);
         try {
@@ -255,6 +280,7 @@ export default function DiseaseDetection() {
     const startCamera = async () => {
         try {
             setError("");
+            setValidationError(null);
             if (!navigator.mediaDevices?.getUserMedia) {
                 setError(text.cameraError);
                 return;
@@ -363,6 +389,19 @@ export default function DiseaseDetection() {
             );
 
             if (!response.ok || !response.body) {
+                if (response.status === 401) {
+                    localStorage.removeItem("access_token");
+                    localStorage.removeItem("token");
+                }
+                const fallbackRes = await fetch(
+                    `http://127.0.0.1:8000/recommendation/${encodeURIComponent(predictedDisease)}`
+                );
+                if (fallbackRes.ok) {
+                    const fallbackData = await fallbackRes.json();
+                    setRecommendation(normalizeRecommendation(fallbackData));
+                    setRecommendationLoading(false);
+                    return;
+                }
                 throw new Error("Stream connection failed");
             }
 
@@ -406,6 +445,7 @@ export default function DiseaseDetection() {
 
         setLoading(true);
         setError("");
+        setValidationError(null);
         setPredictionResult(null);
         setRecommendation(null);
 
@@ -440,6 +480,15 @@ export default function DiseaseDetection() {
             }
 
             if (!data.success) {
+                if (data.validation_error) {
+                    setValidationError({
+                        type: data.validation_error,
+                        message: data.message || "The uploaded image does not appear to contain a valid plant leaf. Please upload a clear photo of a crop leaf."
+                    });
+                    setPredictionResult(null);
+                    setRecommendation(null);
+                    return;
+                }
                 if (data.warning) {
                     setPredictionResult({
                         ...data,
@@ -447,7 +496,7 @@ export default function DiseaseDetection() {
                     });
                     return;
                 }
-                throw new Error(text.predictionFailed);
+                throw new Error(data.message || text.predictionFailed);
             }
 
             const result = {
@@ -551,6 +600,7 @@ export default function DiseaseDetection() {
         setFileDetails({ name: "", size: "" });
         setPredictionResult(null);
         setRecommendation(null);
+        setValidationError(null);
         setError("");
     };
 
@@ -2485,6 +2535,189 @@ export default function DiseaseDetection() {
                 </div>
 
             </div>
+
+            {/* ================= VALIDATION SECURITY GATE ERROR DISPLAY ================= */}
+            {validationError && (
+                <div
+                    className="validation-error-card"
+                    style={{
+                        marginTop: "28px",
+                        marginBottom: "12px",
+                        padding: "36px 32px",
+                        borderRadius: "20px",
+                        background: "linear-gradient(180deg, #fff5f5 0%, #fef2f2 100%)",
+                        border: "1.5px solid #fecaca",
+                        boxShadow: "0 4px 20px -2px rgba(239, 68, 68, 0.07), 0 2px 6px -1px rgba(239, 68, 68, 0.04)",
+                        textAlign: "center",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        maxWidth: "640px",
+                        width: "100%",
+                        marginLeft: "auto",
+                        marginRight: "auto",
+                        boxSizing: "border-box",
+                        animation: "validationErrorFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards"
+                    }}
+                >
+                    <style>{`
+                        @keyframes validationErrorFadeIn {
+                            from {
+                                opacity: 0;
+                                transform: translateY(6px);
+                            }
+                            to {
+                                opacity: 1;
+                                transform: translateY(0);
+                            }
+                        }
+                    `}</style>
+
+                    {/* Warning / Validation Icon Badge */}
+                    <div
+                        style={{
+                            width: "56px",
+                            height: "56px",
+                            borderRadius: "50%",
+                            background: "#fee2e2",
+                            border: "3px solid #fecaca",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            color: "#dc2626",
+                            boxShadow: "0 2px 10px rgba(220, 38, 38, 0.12)",
+                            marginBottom: "16px"
+                        }}
+                    >
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                            <line x1="12" y1="9" x2="12" y2="13" />
+                            <line x1="12" y1="17" x2="12.01" y2="17" />
+                        </svg>
+                    </div>
+
+                    {/* Heading */}
+                    <h3
+                        style={{
+                            margin: "0 0 10px 0",
+                            fontSize: "1.3rem",
+                            fontWeight: 700,
+                            color: "#991b1b",
+                            letterSpacing: "-0.01em",
+                            lineHeight: 1.3
+                        }}
+                    >
+                        Image Not Suitable for Analysis
+                    </h3>
+
+                    {/* Main Message */}
+                    <p
+                        style={{
+                            margin: "0 0 8px 0",
+                            fontSize: "1.02rem",
+                            fontWeight: 600,
+                            color: "#7f1d1d",
+                            lineHeight: 1.5,
+                            maxWidth: "520px"
+                        }}
+                    >
+                        {validationError.type === "CROP_MISMATCH"
+                            ? `We couldn't detect a suitable ${cropDisplayName} leaf in this image.`
+                            : "We couldn't detect a suitable crop leaf in this image."}
+                    </p>
+
+                    {/* Supporting Message */}
+                    <p
+                        style={{
+                            margin: "0 0 18px 0",
+                            fontSize: "0.925rem",
+                            color: "#991b1b",
+                            lineHeight: 1.55,
+                            maxWidth: "520px",
+                            opacity: 0.95
+                        }}
+                    >
+                        {validationError.type === "CROP_MISMATCH"
+                            ? `Please upload a clear photo of a single ${cropDisplayName} leaf. Avoid photos of other crops, people, phones, equipment, soil, or other objects.`
+                            : "Please upload a clear photo of a single crop leaf. Avoid photos of people, phones, equipment, soil, or other objects."}
+                    </p>
+
+                    {/* Small Helpful Instruction / Tip */}
+                    <div
+                        style={{
+                            display: "flex",
+                            alignItems: "flex-start",
+                            gap: "10px",
+                            background: "#ffffff",
+                            border: "1px solid #fecaca",
+                            borderRadius: "12px",
+                            padding: "10px 16px",
+                            maxWidth: "520px",
+                            width: "100%",
+                            boxSizing: "border-box",
+                            textAlign: "left",
+                            marginBottom: "20px"
+                        }}
+                    >
+                        <div style={{ color: "#d97706", display: "flex", alignItems: "center", marginTop: "1px", flexShrink: 0 }}>
+                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" />
+                                <path d="M9 18h6" />
+                                <path d="M10 22h4" />
+                            </svg>
+                        </div>
+                        <p style={{ margin: 0, fontSize: "0.875rem", color: "#78350f", lineHeight: 1.45 }}>
+                            <strong style={{ fontWeight: 600, color: "#92400e" }}>Tip:</strong> Keep the entire leaf visible and use good lighting for better results.
+                        </p>
+                    </div>
+
+                    {/* Choose Another Image Action Button */}
+                    <button
+                        type="button"
+                        id="btn-choose-another-image"
+                        onClick={() => {
+                            setValidationError(null);
+                            handleClearSelected();
+                            fileInputRef.current?.click();
+                        }}
+                        style={{
+                            padding: "11px 26px",
+                            background: "#ffffff",
+                            border: "1.5px solid #dc2626",
+                            color: "#dc2626",
+                            fontWeight: 600,
+                            borderRadius: "12px",
+                            cursor: "pointer",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: "8px",
+                            fontSize: "0.95rem",
+                            boxShadow: "0 2px 6px rgba(220, 38, 38, 0.08)",
+                            transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)"
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.background = "#dc2626";
+                            e.currentTarget.style.color = "#ffffff";
+                            e.currentTarget.style.boxShadow = "0 4px 14px rgba(220, 38, 38, 0.22)";
+                            e.currentTarget.style.transform = "translateY(-1px)";
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.background = "#ffffff";
+                            e.currentTarget.style.color = "#dc2626";
+                            e.currentTarget.style.boxShadow = "0 2px 6px rgba(220, 38, 38, 0.08)";
+                            e.currentTarget.style.transform = "translateY(0)";
+                        }}
+                    >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="17 8 12 3 7 8" />
+                            <line x1="12" y1="3" x2="12" y2="15" />
+                        </svg>
+                        <span>Choose Another Image</span>
+                    </button>
+                </div>
+            )}
 
             {/* ================= RESULTS DISPLAY (IF DETECTED) ================= */}
             {predictionResult && (
