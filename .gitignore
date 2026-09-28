@@ -185,3 +185,27 @@ archive/
 backend_backup/
 frontend_backup/
 *.csv
+
+# Leaf detection generated outputs
+ml/leaf_detection/annotation/automatic_test/full_run/outputs/previews/
+ml/leaf_detection/annotation/automatic_test/outputs/previews/
+ml/leaf_detection/annotation/automatic_test/outputs/masks/
+ml/leaf_detection/annotation/automatic_test/outputs/json/
+ml/leaf_detection/annotation/human_verification/decisions/
+scratch/
+
+# Leaf detection datasets
+ml/leaf_detection/dataset/final/
+ml/leaf_detection/annotation/images/
+
+
+# Leaf detection automatic test generated data
+ml/leaf_detection/annotation/automatic_test/full_run/outputs/
+
+
+# Leaf detection local generated/cache folders
+ml/leaf_detection/dataset/
+ml/leaf_detection/outputs/
+ml/leaf_detection/__pycache__/
+ml/leaf_detection/**/__pycache__/
+

@@ -1,0 +1,136 @@
+{
+  "prototype_version": "1.0",
+  "image_filename": "alternaria_(100).png",
+  "relative_path": "datasets/processed/cotton_final/test/Alternaria Leaf Spot/alternaria_(100).png",
+  "sha256": "7373e7bcee92eb641fd7d2de03eba850d03dfdfccadd127a3a2cd5da52516b91",
+  "original_width": 700,
+  "original_height": 700,
+  "category": "leaf",
+  "polygon_coordinates": [
+    [
+      306,
+      225
+    ],
+    [
+      252,
+      209
+    ],
+    [
+      199,
+      208
+    ],
+    [
+      144,
+      225
+    ],
+    [
+      110,
+      259
+    ],
+    [
+      110,
+      277
+    ],
+    [
+      124,
+      314
+    ],
+    [
+      127,
+      334
+    ],
+    [
+      132,
+      356
+    ],
+    [
+      155,
+      422
+    ],
+    [
+      159,
+      428
+    ],
+    [
+      262,
+      385
+    ],
+    [
+      301,
+      414
+    ],
+    [
+      357,
+      436
+    ],
+    [
+      401,
+      456
+    ],
+    [
+      405,
+      448
+    ],
+    [
+      407,
+      434
+    ],
+    [
+      428,
+      415
+    ],
+    [
+      460,
+      357
+    ],
+    [
+      468,
+      343
+    ],
+    [
+      505,
+      347
+    ],
+    [
+      530,
+      343
+    ],
+    [
+      609,
+      329
+    ],
+    [
+      630,
+      325
+    ],
+    [
+      600,
+      306
+    ],
+    [
+      568,
+      263
+    ],
+    [
+      536,
+      226
+    ],
+    [
+      478,
+      196
+    ],
+    [
+      415,
+      183
+    ],
+    [
+      372,
+      190
+    ]
+  ],
+  "point_count": 30,
+  "polygon_area_pixels": 84724.5,
+  "is_closed": true,
+  "annotation_status": "PROTOTYPE_VALIDATED",
+  "notes": "Verified in Phase 3C local prototype environment"
+}

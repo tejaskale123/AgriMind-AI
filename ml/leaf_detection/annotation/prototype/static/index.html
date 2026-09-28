@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgriMind AI — Prototype Leaf Annotation</title>
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --panel-bg: #1e293b;
+      --card-bg: #24334a;
+      --border: #334155;
+      --primary: #10b981;
+      --primary-hover: #059669;
+      --primary-light: rgba(16, 185, 129, 0.15);
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --accent: #38bdf8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Header */
+    header {
+      background-color: var(--panel-bg);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-badge {
+      background: linear-gradient(135deg, #10b981, #047857);
+      color: white;
+      font-weight: 700;
+      font-size: 14px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      letter-spacing: 0.5px;
+    }
+
+    .title {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .badge-prototype {
+      background-color: rgba(245, 158, 11, 0.2);
+      border: 1px solid var(--warning);
+      color: var(--warning);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 9999px;
+    }
+
+    /* Main workspace layout */
+    .workspace {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - 65px);
+      overflow: hidden;
+    }
+
+    /* Canvas stage */
+    .canvas-container {
+      flex: 1;
+      background-color: #0b1120;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      position: relative;
+      user-select: none;
+    }
+
+    #annotationCanvas {
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+      border: 2px solid var(--border);
+      border-radius: 4px;
+      cursor: crosshair;
+      background-color: #000;
+    }
+
+    /* Right Sidebar */
+    .sidebar {
+      width: 380px;
+      background-color: var(--panel-bg);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      gap: 16px;
+      overflow-y: auto;
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+    }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .meta-row:last-child {
+      border-bottom: none;
+    }
+
+    .meta-label {
+      color: var(--text-muted);
+    }
+
+    .meta-val {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .class-badge {
+      background-color: var(--primary-light);
+      border: 1px solid var(--primary);
+      color: var(--primary);
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    /* Tool Buttons */
+    .btn-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    button {
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-secondary {
+      background-color: #334155;
+      color: #f1f5f9;
+      border-color: #475569;
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background-color: #475569;
+    }
+
+    .btn-danger {
+      background-color: rgba(239, 68, 68, 0.15);
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+
+    .btn-danger:hover:not(:disabled) {
+      background-color: rgba(239, 68, 68, 0.25);
+    }
+
+    .btn-primary {
+      background-color: var(--primary);
+      color: #0f172a;
+      font-weight: 700;
+      width: 100%;
+      padding: 12px;
+      margin-top: 4px;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background-color: var(--primary-hover);
+      color: #ffffff;
+    }
+
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* Live Points Box */
+    .points-list {
+      max-height: 140px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 11px;
+      background-color: rgba(0, 0, 0, 0.25);
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      color: #cbd5e1;
+    }
+
+    .point-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 2px 0;
+    }
+
+    /* Feedback Banner */
+    .status-banner {
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      line-height: 1.4;
+      display: none;
+    }
+
+    .status-success {
+      display: block;
+      background-color: rgba(16, 185, 129, 0.15);
+      border: 1px solid var(--primary);
+      color: #34d399;
+    }
+
+    .status-error {
+      display: block;
+      background-color: rgba(239, 68, 68, 0.15);
+      border: 1px solid var(--danger);
+      color: #f87171;
+    }
+
+    .status-info {
+      display: block;
+      background-color: rgba(56, 189, 248, 0.15);
+      border: 1px solid var(--accent);
+      color: #7dd3fc;
+    }
+
+    .instructions {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .instructions ul {
+      padding-left: 16px;
+      margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="logo-badge">AgriMind AI</div>
+      <div>
+        <div class="title">Leaf Segmentation Prototype</div>
+        <div class="subtitle">Phase 3C Single-Image Polygon Validator</div>
+      </div>
+    </div>
+    <div class="badge-prototype">SAFE PROTOTYPE MODE</div>
+  </header>
+
+  <div class="workspace">
+    <!-- Canvas container -->
+    <div class="canvas-container" id="container">
+      <canvas id="annotationCanvas"></canvas>
+    </div>
+
+    <!-- Controls sidebar -->
+    <aside class="sidebar">
+      <!-- Target Image Card -->
+      <div class="card">
+        <div class="card-title">Candidate Metadata</div>
+        <div class="meta-row">
+          <span class="meta-label">Crop</span>
+          <span class="meta-val" id="metaCrop">Cotton</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-label">File</span>
+          <span class="meta-val" id="metaFilename">alternaria_(100).png</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-label">Original Res</span>
+          <span class="meta-val" id="metaRes">700 x 700 px</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-label">Semantic Class</span>
+          <span class="class-badge" id="metaClass">leaf (ID: 1)</span>
+        </div>
+      </div>
+
+      <!-- Geometry Status Card -->
+      <div class="card">
+        <div class="card-title">Polygon Geometry</div>
+        <div class="meta-row">
+          <span class="meta-label">Vertices</span>
+          <span class="meta-val" id="pointCount">0</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-label">Area (Orig Px)</span>
+          <span class="meta-val" id="polyArea">0.0 px²</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-label">Status</span>
+          <span class="meta-val" id="polyStatus" style="color: var(--warning)">In Progress</span>
+        </div>
+        <div style="margin-top: 10px;">
+          <div class="points-list" id="pointsList">Click on the leaf border to begin.</div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="card">
+        <div class="card-title">Annotation Controls</div>
+        <div class="btn-grid">
+          <button class="btn-secondary" id="btnUndo" disabled title="Undo last point (Ctrl+Z)">
+            ⤺ Undo Point
+          </button>
+          <button class="btn-secondary" id="btnClose" disabled title="Close polygon (Enter)">
+            ✔ Close Poly
+          </button>
+        </div>
+        <div style="margin-top: 10px;">
+          <button class="btn-danger" id="btnReset" disabled style="width: 100%;" title="Reset polygon (Esc)">
+            ✕ Reset Polygon
+          </button>
+        </div>
+        <button class="btn-primary" id="btnSave" disabled title="Validate and save (S)">
+          💾 Save Prototype Annotation
+        </button>
+      </div>
+
+      <!-- Feedback Banner -->
+      <div class="status-banner" id="statusBanner"></div>
+
+      <!-- Instructions & Protocol -->
+      <div class="card">
+        <div class="card-title">Protocol & Guidance</div>
+        <div class="instructions">
+          <ul>
+            <li>Click along the <strong>exterior boundary</strong> of the leaf.</li>
+            <li>Exclude stems, soil, background, hands, and fingernails.</li>
+            <li>Coordinates are automatically mapped to <strong>original 700x700</strong> space.</li>
+            <li>Click on the yellow starting point or press <strong>Close Poly</strong> to finish.</li>
+          </ul>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    // State
+    let candidate = null;
+    let originalImage = new Image();
+    let originalWidth = 700;
+    let originalHeight = 700;
+
+    // Polygon coordinates stored in ORIGINAL image coordinate space [x, y]
+    let points = []; 
+    let isClosed = false;
+
+    // Canvas elements
+    const canvas = document.getElementById('annotationCanvas');
+    const ctx = canvas.getContext('2d');
+    const container = document.getElementById('container');
+
+    // UI elements
+    const pointCountEl = document.getElementById('pointCount');
+    const polyAreaEl = document.getElementById('polyArea');
+    const polyStatusEl = document.getElementById('polyStatus');
+    const pointsListEl = document.getElementById('pointsList');
+    const statusBanner = document.getElementById('statusBanner');
+
+    const btnUndo = document.getElementById('btnUndo');
+    const btnClose = document.getElementById('btnClose');
+    const btnReset = document.getElementById('btnReset');
+    const btnSave = document.getElementById('btnSave');
+
+    // Initialize: load candidate metadata & image
+    async function init() {
+      showStatus("Loading candidate image...", "info");
+      try {
+        const res = await fetch('/api/candidate');
+        if (!res.ok) throw new Error("Failed to load candidate metadata");
+        candidate = await res.json();
+
+        document.getElementById('metaCrop').textContent = candidate.crop;
+        document.getElementById('metaFilename').textContent = candidate.filename;
+        document.getElementById('metaRes').textContent = `${candidate.width} x ${candidate.height} px`;
+
+        originalWidth = candidate.width;
+        originalHeight = candidate.height;
+
+        originalImage.src = candidate.image_url;
+        originalImage.onload = () => {
+          fitCanvas();
+          draw();
+          showStatus("Ready for annotation. Click along the leaf margin.", "info");
+        };
+      } catch (err) {
+        showStatus("Error: " + err.message, "error");
+      }
+    }
+
+    // Size canvas to fit container while preserving original aspect ratio
+    function fitCanvas() {
+      const containerWidth = container.clientWidth - 40;
+      const containerHeight = container.clientHeight - 40;
+
+      const scale = Math.min(containerWidth / originalWidth, containerHeight / originalHeight, 1.2);
+      canvas.width = Math.round(originalWidth * scale);
+      canvas.height = Math.round(originalHeight * scale);
+    }
+
+    window.addEventListener('resize', () => {
+      fitCanvas();
+      draw();
+    });
+
+    // Helper: convert canvas click (px) -> original image coordinates (px)
+    function canvasToOrig(cx, cy) {
+      const scaleX = canvas.width / originalWidth;
+      const scaleY = canvas.height / originalHeight;
+      const ox = Math.round(cx / scaleX);
+      const oy = Math.round(cy / scaleY);
+      return [
+        Math.max(0, Math.min(originalWidth, ox)),
+        Math.max(0, Math.min(originalHeight, oy))
+      ];
+    }
+
+    // Helper: convert original image coordinates (px) -> canvas display coordinates (px)
+    function origToCanvas(ox, oy) {
+      const scaleX = canvas.width / originalWidth;
+      const scaleY = canvas.height / originalHeight;
+      return [ox * scaleX, oy * scaleY];
+    }
+
+    // Canvas click handler
+    canvas.addEventListener('click', (e) => {
+      if (isClosed) return; // Prevent adding points after closure
+
+      const rect = canvas.getBoundingClientRect();
+      const cx = e.clientX - rect.left;
+      const cy = e.clientY - rect.top;
+      const [ox, oy] = canvasToOrig(cx, cy);
+
+      // Check if click is close to the first point to close the polygon
+      if (points.length >= 3) {
+        const [firstCx, firstCy] = origToCanvas(points[0][0], points[0][1]);
+        const dist = Math.hypot(cx - firstCx, cy - firstCy);
+        if (dist <= 14) {
+          closePolygon();
+          return;
+        }
+      }
+
+      points.push([ox, oy]);
+      updateUI();
+      draw();
+    });
+
+    function closePolygon() {
+      if (points.length < 3) {
+        showStatus("At least 3 points required to close the polygon.", "error");
+        return;
+      }
+      isClosed = true;
+      updateUI();
+      draw();
+      showStatus("Polygon closed! Review your outline and click 'Save Prototype Annotation'.", "success");
+    }
+
+    function undoPoint() {
+      if (points.length === 0) return;
+      if (isClosed) {
+        isClosed = false;
+      } else {
+        points.pop();
+      }
+      updateUI();
+      draw();
+    }
+
+    function resetPolygon() {
+      points = [];
+      isClosed = false;
+      updateUI();
+      draw();
+      showStatus("Polygon reset. Click along the leaf margin to begin again.", "info");
+    }
+
+    // Compute Shoelace polygon area
+    function computeArea(pts) {
+      if (pts.length < 3) return 0;
+      let area = 0;
+      for (let i = 0; i < pts.length; i++) {
+        let j = (i + 1) % pts.length;
+        area += pts[i][0] * pts[j][1];
+        area -= pts[j][0] * pts[i][1];
+      }
+      return Math.abs(area) / 2;
+    }
+
+    // Draw image and polygon on canvas
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (originalImage.complete) {
+        ctx.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
+      }
+
+      if (points.length === 0) return;
+
+      // Draw polygon edges
+      ctx.beginPath();
+      const [startCx, startCy] = origToCanvas(points[0][0], points[0][1]);
+      ctx.moveTo(startCx, startCy);
+
+      for (let i = 1; i < points.length; i++) {
+        const [cx, cy] = origToCanvas(points[i][0], points[i][1]);
+        ctx.lineTo(cx, cy);
+      }
+
+      if (isClosed) {
+        ctx.closePath();
+        // Emerald fill
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.28)';
+        ctx.fill();
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 2.5;
+      } else {
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2.0;
+      }
+      ctx.stroke();
+
+      // Draw vertices
+      for (let i = 0; i < points.length; i++) {
+        const [cx, cy] = origToCanvas(points[i][0], points[i][1]);
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, i === 0 ? 6 : 4, 0, Math.PI * 2);
+
+        if (i === 0) {
+          // Highlight first point (closing target)
+          ctx.fillStyle = '#f59e0b'; // Gold
+          ctx.fill();
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        } else {
+          ctx.fillStyle = '#ffffff';
+          ctx.fill();
+          ctx.strokeStyle = '#10b981';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        }
+      }
+    }
+
+    // Update UI panels & button states
+    function updateUI() {
+      pointCountEl.textContent = points.length;
+      btnUndo.disabled = points.length === 0;
+      btnReset.disabled = points.length === 0;
+      btnClose.disabled = points.length < 3 || isClosed;
+      btnSave.disabled = !isClosed || points.length < 3;
+
+      if (isClosed) {
+        const area = computeArea(points);
+        polyAreaEl.textContent = `${area.toFixed(1)} px²`;
+        polyStatusEl.textContent = "Closed & Valid";
+        polyStatusEl.style.color = "var(--primary)";
+      } else {
+        polyAreaEl.textContent = "0.0 px²";
+        polyStatusEl.textContent = points.length > 0 ? "Drawing..." : "Idle";
+        polyStatusEl.style.color = "var(--warning)";
+      }
+
+      // Render points list
+      if (points.length === 0) {
+        pointsListEl.textContent = "Click on the leaf border to begin.";
+      } else {
+        let html = '';
+        points.forEach((p, idx) => {
+          html += `<div class="point-item"><span>#${idx + 1}</span><span>[${p[0]}, ${p[1]}]</span></div>`;
+        });
+        pointsListEl.innerHTML = html;
+        pointsListEl.scrollTop = pointsListEl.scrollHeight;
+      }
+    }
+
+    function showStatus(msg, type) {
+      statusBanner.className = `status-banner status-${type}`;
+      statusBanner.textContent = msg;
+    }
+
+    // Button event listeners
+    btnUndo.addEventListener('click', undoPoint);
+    btnClose.addEventListener('click', closePolygon);
+    btnReset.addEventListener('click', resetPolygon);
+
+    // Save Annotation to Server
+    btnSave.addEventListener('click', async () => {
+      if (!isClosed || points.length < 3) return;
+
+      btnSave.disabled = true;
+      showStatus("Validating and saving prototype annotation...", "info");
+
+      try {
+        const payload = {
+          candidate_id: candidate.id,
+          category: "leaf",
+          points: points
+        };
+
+        const res = await fetch('/api/save_annotation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.message || (data.errors ? data.errors.join(", ") : "Save failed"));
+        }
+
+        showStatus(`✔ Success! Saved to: ${data.saved_file} (${data.point_count} vertices, ${data.area_pixels} px²)`, "success");
+      } catch (err) {
+        showStatus("Save Failed: " + err.message, "error");
+        btnSave.disabled = false;
+      }
+    });
+
+    // Keyboard shortcuts
+    window.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey && e.key === 'z') || e.key === 'z' || e.key === 'Z') {
+        undoPoint();
+      } else if (e.key === 'Enter' || e.key === 'c' || e.key === 'C') {
+        if (!isClosed && points.length >= 3) closePolygon();
+      } else if (e.key === 'Escape' || e.key === 'r' || e.key === 'R') {
+        resetPolygon();
+      } else if (e.key === 's' || e.key === 'S') {
+        if (isClosed && points.length >= 3) btnSave.click();
+      }
+    });
+
+    init();
+  </script>
+</body>
+</html>

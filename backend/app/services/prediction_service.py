@@ -38,6 +38,9 @@ from backend.app.services.leaf_validator import (
     validate_is_plant_leaf,
     validate_crop_match,
 )
+from backend.app.services.leaf_segmentation_service import (
+    segment_and_extract_leaf_roi,
+)
 
 
 # ============================================================
@@ -146,19 +149,19 @@ def validate_plant_leaf_spectrum(
         & (cb <= 127)
         & (r > g * 1.15)
         & (r > b * 1.25)
-        & (r > 70)
+        & (r > 90)
     )
     skin_ratio = float(np.mean(skin_mask))
 
-    if skin_ratio > 0.12 and skin_ratio > plant_ratio * 0.6:
+    if skin_ratio > 0.22 and skin_ratio > plant_ratio * 1.2:
         return (
             False,
             "The uploaded image contains human skin or a portrait. Please upload a photo of a crop leaf.",
         )
 
     # 4. Botanical Foliage Requirement
-    # A genuine crop leaf must have either sufficient green foliage (>= 6%) or plant tissue (>= 12%)
-    if plant_ratio < 0.12 and green_ratio < 0.06:
+    # A genuine crop leaf must have either sufficient foliage or plant tissue
+    if plant_ratio < 0.08 and green_ratio < 0.035:
         return (
             False,
             f"The uploaded image does not appear to contain a valid {crop} leaf. Please upload a clear photo of a plant leaf.",
@@ -289,10 +292,22 @@ def run_crop_prediction(
             "message": crop_message,
         }
 
-    # 2. Tensor Transformation
-    tensor = IMAGE_TRANSFORM(image).unsqueeze(0).to(DEVICE)
+    # 4. Automatic Crop-Agnostic Leaf Segmentation Gate
+    seg_res = segment_and_extract_leaf_roi(image)
+    if not seg_res["detected"]:
+        return {
+            "success": False,
+            "validation_error": "LEAF_DETECTION_FAILED",
+            "message": seg_res.get("message", "No leaf detected with sufficient confidence (< 70%). Please upload a clear photo of a crop leaf."),
+            "leaf_confidence": seg_res.get("confidence", 0.0),
+        }
 
-    # 3. Model & Classes Selection
+    leaf_roi = seg_res["roi_image"]
+
+    # 5. Tensor Transformation on Extracted Leaf ROI (Never full image)
+    tensor = IMAGE_TRANSFORM(leaf_roi).unsqueeze(0).to(DEVICE)
+
+    # 6. Model & Classes Selection (Existing disease models remain 100% untouched)
     if crop == "soybean":
         selected_model = soybean_model
         selected_classes = SOYBEAN_CLASSES
@@ -309,7 +324,7 @@ def run_crop_prediction(
         selected_model = cotton_model
         selected_classes = COTTON_CLASSES
 
-    # 4. Model Inference
+    # 7. Model Inference on Isolated Leaf ROI
     with torch.no_grad():
         outputs = selected_model(tensor)
         probabilities = torch.softmax(outputs, dim=1)[0]
@@ -319,7 +334,7 @@ def run_crop_prediction(
     predicted_class = selected_classes[predicted_index]
     confidence_value = confidence.item() * 100
 
-    # 5. Confidence Level Evaluation
+    # 8. Confidence Level Evaluation
     if confidence_value >= 90:
         confidence_level = "Very High"
     elif confidence_value >= 80:
@@ -327,7 +342,7 @@ def run_crop_prediction(
     else:
         confidence_level = "Moderate"
 
-    # 6. All Class Probabilities Dictionary
+    # 9. All Class Probabilities Dictionary
     all_probabilities = {}
     for index, class_name in enumerate(selected_classes):
         all_probabilities[class_name] = round(
@@ -335,7 +350,7 @@ def run_crop_prediction(
             2,
         )
 
-    # 7. Entropy Calculation & Low Confidence / OOD Handling
+    # 10. Entropy Calculation & Low Confidence / OOD Handling
     num_classes = len(selected_classes)
     log_p = torch.log2(probabilities + 1e-12)
     entropy = -torch.sum(probabilities * log_p).item()
@@ -358,7 +373,7 @@ def run_crop_prediction(
             ),
         }
 
-    # 8. Save Detection History in SQLite
+    # 11. Save Detection History in SQLite
     b64_img = base64.b64encode(image_bytes).decode("utf-8")
     content_type = file_content_type or "image/jpeg"
     data_uri = f"data:{content_type};base64,{b64_img}"
@@ -373,7 +388,7 @@ def run_crop_prediction(
         recommendation=None,
     )
 
-    # 9. Final Response Payload
+    # 12. Final Response Payload with AgriMind Green Boundary & Leaf Detection Details
     return {
         "success": True,
         "crop": crop,
@@ -383,4 +398,14 @@ def run_crop_prediction(
         "confidence_level": confidence_level,
         "probabilities": all_probabilities,
         "recommendation": None,
+        "leaf_detection": {
+            "detected": True,
+            "confidence": round(seg_res["confidence"] * 100, 2),
+            "area_ratio": seg_res.get("area_ratio", 0.0),
+            "bbox": seg_res.get("bbox", []),
+            "boundary_points": seg_res.get("boundary_points", []),
+            "boundary_overlay": seg_res.get("boundary_overlay", None),
+            "targets": seg_res.get("targets", []),
+            "total_leaves_detected": seg_res.get("total_leaves_detected", 1),
+        }
     }

@@ -117,25 +117,31 @@ NON_LEAF_KEYWORDS = [
     "motorcycle", "moped", "bicycle", "mountain bike", "tandem bicycle",
     "tractor", "harvester", "thresher", "plow", "lawn mower",
     "airplane", "airliner", "space shuttle", "speedboat", "canoe", "lifeboat",
-    # People & Apparel
+    # People, Portraits & Apparel
     "suit", "sweatshirt", "jersey", "trench coat", "fur coat", "cardigan", "coat",
     "brassiere", "bikini", "swimming trunks", "jean", "skirt", "hoopskirt", "gown",
     "sock", "shoe", "running shoe", "sandal", "boot", "cowboy boot",
     "wig", "hair slide", "hair spray", "sunscreen", "sunglasses", "gasmask", "ski mask",
-    # Furniture & Household
+    "person", "human", "face", "man", "woman", "boy", "girl", "groom", "bride", "scuba diver",
+    "sombrero", "cowboy hat", "bonnet", "beret", "cap", "headband", "pajama", "kimono",
+    # Furniture, Household & Indoor Structures
     "desk", "dining table", "coffee table", "chair", "folding chair", "rocking chair",
     "barber chair", "toilet seat", "studio couch", "sofa", "bed", "wardrobe", "bookcase",
     "filing cabinet", "refrigerator", "microwave", "toaster", "dishwasher", "vacuum",
-    "pillow", "quilt", "doormat", "washbasin", "bathtub",
+    "pillow", "quilt", "doormat", "washbasin", "bathtub", "mirror", "window shade", "sliding door",
+    "wall", "room", "door", "curtain", "lamp", "lampshade", "chandelier", "radiator", "vault",
     # Tools & Hardware
     "hammer", "screwdriver", "wrench", "pliers", "hatchet", "axe", "power drill",
     "chainsaw", "shovel", "nail", "screw", "padlock", "combination lock", "safe",
-    # Animals (Domestic & wild mammals, birds, pets)
+    # Animals (Domestic & wild mammals, birds, pets, reptiles, marine)
     "dog", "terrier", "retriever", "hound", "shepherd", "spaniel", "poodle", "collie",
     "cat", "tabby", "siamese", "persian", "cougar", "lion", "tiger", "cheetah", "leopard",
     "bear", "panda", "horse", "zebra", "cow", "ox", "water buffalo", "pig", "wild boar",
     "sheep", "ram", "goat", "llama", "camel", "elephant", "rhino", "hippo", "monkey", "ape",
     "gorilla", "chimpanzee", "baboon", "squirrel", "rabbit", "hare", "mouse", "rat",
+    "turtle", "leatherback turtle", "mud turtle", "terrapin", "box turtle", "alligator",
+    "crocodile", "lizard", "chameleon", "gecko", "iguana", "snake", "boa", "python", "cobra",
+    "sturgeon", "goldfish", "shark", "ray", "whale", "dolphin", "sea cucumber", "starfish",
     # Food (Prepared food / dishes)
     "pizza", "cheeseburger", "hotdog", "bagel", "pretzel", "burrito", "sandwich",
     "ice cream", "french loaf", "meat loaf", "trifle", "consomme", "espresso",
@@ -277,19 +283,19 @@ def validate_is_plant_leaf(image: Image.Image) -> tuple[bool, str]:
         & (cb <= 127)
         & (r > g * 1.15)
         & (r > b * 1.25)
-        & (r > 70)
+        & (r > 90)
     )
     skin_ratio = float(np.mean(skin_mask))
 
-    if skin_ratio > 0.12 and skin_ratio > plant_ratio * 0.6:
+    if skin_ratio > 0.22 and skin_ratio > plant_ratio * 1.2:
         return (
             False,
-            "The uploaded image does not appear to contain a valid plant leaf. Please upload a clear photo of a crop leaf."
+            "The uploaded image appears to contain human skin or a portrait. Please upload a clear photo of a crop leaf."
         )
 
     # Human Presence Detection (Haar Cascades)
-    # Triggered when potential human skin is detected and green foliage is low
-    if green_ratio < 0.20 and skin_ratio > 0.08:
+    # Evaluated whenever the image is not overwhelmingly green foliage
+    if green_ratio < 0.35 and skin_ratio > 0.05:
         if FACE_CASCADE and not FACE_CASCADE.empty():
             faces = FACE_CASCADE.detectMultiScale(
                 gray_cv, scaleFactor=1.15, minNeighbors=5, minSize=(45, 45)
@@ -297,7 +303,7 @@ def validate_is_plant_leaf(image: Image.Image) -> tuple[bool, str]:
             if len(faces) > 0:
                 return (
                     False,
-                    "The uploaded image does not appear to contain a valid plant leaf. Please upload a clear photo of a crop leaf."
+                    "The uploaded image contains a human face or portrait. Please upload a clear photo of a crop leaf."
                 )
 
         if PROFILE_CASCADE and not PROFILE_CASCADE.empty():
@@ -307,25 +313,25 @@ def validate_is_plant_leaf(image: Image.Image) -> tuple[bool, str]:
             if len(profiles) > 0:
                 return (
                     False,
-                    "The uploaded image does not appear to contain a valid plant leaf. Please upload a clear photo of a crop leaf."
+                    "The uploaded image contains a human portrait. Please upload a clear photo of a crop leaf."
                 )
 
         if UPPERBODY_CASCADE and not UPPERBODY_CASCADE.empty():
             upper_bodies = UPPERBODY_CASCADE.detectMultiScale(
-                gray_cv, scaleFactor=1.15, minNeighbors=6, minSize=(60, 60)
+                gray_cv, scaleFactor=1.15, minNeighbors=5, minSize=(60, 60)
             )
-            if len(upper_bodies) > 0 and skin_ratio > 0.15:
+            if len(upper_bodies) > 0 and skin_ratio > 0.12:
                 return (
                     False,
-                    "The uploaded image does not appear to contain a valid plant leaf. Please upload a clear photo of a crop leaf."
+                    "The uploaded image appears to contain a person or upper body. Please upload a clear photo of a crop leaf."
                 )
 
     # Any genuine crop leaf (healthy or diseased) must exhibit organic plant tissue.
-    # Non-leaf objects (cars, phones, computers, sky, asphalt, bare soil) have < 5% plant tissue.
-    if plant_ratio < 0.05 and green_ratio < 0.03:
+    # Non-leaf objects (cars, phones, computers, sky, asphalt, bare soil) have negligible plant tissue.
+    if plant_ratio < 0.08 and green_ratio < 0.035:
         return (
             False,
-            "The uploaded image does not appear to contain a valid plant leaf. Please upload a clear photo of a crop leaf."
+            "The uploaded image lacks sufficient plant foliage or leaf tissue. Please upload a clear photo of a crop leaf."
         )
 
     # 6. Deep Pretrained ImageNet Object Verification
@@ -335,19 +341,27 @@ def validate_is_plant_leaf(image: Image.Image) -> tuple[bool, str]:
         with torch.no_grad():
             outputs = _imagenet_model(tensor)
             probs = torch.softmax(outputs, dim=1)[0]
-            top3_prob, top3_idx = torch.topk(probs, 3)
+            top5_prob, top5_idx = torch.topk(probs, 5)
 
-        # Check top-1 and top-3 against non-leaf keywords with word boundaries
-        for idx_rank, (p, idx) in enumerate(zip(top3_prob, top3_idx)):
+        total_non_leaf_prob = 0.0
+        for idx_rank, (p, idx) in enumerate(zip(top5_prob, top5_idx)):
             cat_name = _imagenet_categories[idx.item()]
             prob = p.item()
             if _matches_non_leaf_keyword(cat_name):
-                # Strong match on non-leaf object
-                if (idx_rank == 0 and prob > 0.10) or prob > 0.18:
+                total_non_leaf_prob += prob
+                # Immediate rejection on high-confidence non-leaf top-1 match
+                if idx_rank == 0 and prob >= 0.10:
                     return (
                         False,
-                        "The uploaded image does not appear to contain a valid plant leaf. Please upload a clear photo of a crop leaf."
+                        f"The uploaded image was identified as a non-leaf object ({cat_name}). Please upload a clear photo of a crop leaf."
                     )
+
+        # Reject if cumulative non-leaf probability in top-5 exceeds 20%
+        if total_non_leaf_prob >= 0.20:
+            return (
+                False,
+                "The uploaded image appears to contain non-plant objects or background. Please upload a clear photo of a crop leaf."
+            )
     except Exception as e:
         print(f"Warning: ImageNet validation error: {e}")
 

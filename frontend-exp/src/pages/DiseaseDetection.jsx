@@ -133,6 +133,8 @@ export default function DiseaseDetection() {
     const [error, setError] = useState("");
     const [validationError, setValidationError] = useState(null);
     const [cameraOpen, setCameraOpen] = useState(false);
+    const [overlayMode, setOverlayMode] = useState("scifi"); // "scifi" | "original"
+    const [activeTargetId, setActiveTargetId] = useState(1);
 
     const fileInputRef = useRef(null);
     const videoRef = useRef(null);
@@ -509,80 +511,10 @@ export default function DiseaseDetection() {
             streamRecommendation(result.prediction, result.confidence);
         } catch (err) {
             console.error("Analyze error:", err);
-            // If backend is offline during preview/demo, provide a polished fallback result for demo inspection
+            setPredictionResult(null);
+            setRecommendation(null);
             if (err.message?.includes("Failed to fetch") || err.message?.includes("NetworkError")) {
-                // Elegant local demo simulation so user can inspect both detection state and results
-                const demoConfidence = 94.8;
-
-                const demoData = {
-                    cotton: {
-                        prediction: "Bacterial Blight",
-                        class_probabilities: {
-                            "Bacterial Blight": 0.948,
-                            "Healthy Leaf": 0.012,
-                            "Alternaria Leaf Spot": 0.031,
-                            "Boll Rot": 0.009
-                        }
-                    },
-                    soybean: {
-                        prediction: "Bacterial_Blight",
-                        class_probabilities: {
-                            "Bacterial_Blight": 0.948,
-                            "Cercospora_Leaf_Blight": 0.012,
-                            "Downy_Mildew": 0.008,
-                            "Frogeye_Leaf_Spot": 0.006,
-                            "Healthy": 0.005,
-                            "Rust": 0.009,
-                            "Sudden_Death_Syndrome": 0.007,
-                            "Target_Spot": 0.005
-                        }
-                    },
-                    maize: {
-                        prediction: "Blight",
-                        class_probabilities: {
-                            "Blight": 0.948,
-                            "Common_Rust": 0.031,
-                            "Gray_Leaf_Spot": 0.012,
-                            "Healthy": 0.009
-                        }
-                    },
-                    wheat: {
-                        prediction: "Brown_Rust",
-                        class_probabilities: {
-                            "Brown_Rust": 0.948,
-                            "Yellow_Rust": 0.031,
-                            "Healthy": 0.021
-                        }
-                    }
-                };
-
-                const currentDemo = demoData[selectedCropKey] || demoData.maize;
-                const mockResult = {
-                    success: true,
-                    crop: selectedCropKey,
-                    prediction: currentDemo.prediction,
-                    confidence: demoConfidence,
-                    class_probabilities: currentDemo.class_probabilities
-                };
-                setPredictionResult(mockResult);
-                setRecommendation({
-                    symptoms: [
-                        "Small, angular, water-soaked yellow or brown spots on leaves.",
-                        "Lesions may enlarge and coalesce, causing premature leaf drop."
-                    ],
-                    immediate_action: [
-                        "Avoid overhead irrigation to minimize leaf wetness.",
-                        "Isolate severely affected plant areas to avoid spore dispersal."
-                    ],
-                    spray_guidance: [
-                        "Apply copper-based bactericide (e.g. Copper Oxychloride 50 WP @ 2.5g/L) during early emergence.",
-                        "Re-apply after 10-14 days if humid rainy conditions persist."
-                    ],
-                    prevention: [
-                        "Use certified disease-free seeds and practice 2-year crop rotation.",
-                        "Maintain adequate spacing between rows to promote air circulation."
-                    ]
-                });
+                setError("Unable to connect to AgriMind AI backend server. Please check your network or ensure the backend service is running, then try again.");
             } else {
                 setError(err.message || text.serverError);
             }
@@ -1211,17 +1143,110 @@ export default function DiseaseDetection() {
                 .preview-media-frame {
                     position: relative;
                     width: 100%;
-                    height: 250px;
+                    height: 270px;
                     border-radius: 16px;
                     overflow: hidden;
-                    background: #000000;
-                    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+                    background: #020617;
+                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
                 }
 
                 .preview-media-frame img {
                     width: 100%;
                     height: 100%;
                     object-fit: cover;
+                }
+
+                /* Sci-Fi HUD Animations & Badges */
+                @keyframes scifiLaserSweep {
+                    0% { top: 0%; opacity: 0.8; }
+                    50% { top: 96%; opacity: 1; }
+                    100% { top: 0%; opacity: 0.8; }
+                }
+
+                .scifi-laser-sweep {
+                    position: absolute;
+                    left: 0;
+                    width: 100%;
+                    height: 3px;
+                    background: linear-gradient(90deg, transparent, #22c55e, #00f0ff, #22c55e, transparent);
+                    box-shadow: 0 0 14px #00f0ff, 0 0 24px #22c55e;
+                    animation: scifiLaserSweep 2.2s ease-in-out infinite;
+                    z-index: 10;
+                    pointer-events: none;
+                }
+
+                .scifi-grid-overlay {
+                    position: absolute;
+                    inset: 0;
+                    background-image: linear-gradient(rgba(0, 240, 255, 0.06) 1px, transparent 1px),
+                                      linear-gradient(90deg, rgba(0, 240, 255, 0.06) 1px, transparent 1px);
+                    background-size: 24px 24px;
+                    pointer-events: none;
+                    z-index: 5;
+                }
+
+                .scifi-scanning-badge {
+                    position: absolute;
+                    top: 14px;
+                    left: 14px;
+                    background: rgba(15, 23, 42, 0.88);
+                    border: 1px solid rgba(0, 240, 255, 0.5);
+                    box-shadow: 0 0 12px rgba(0, 240, 255, 0.25);
+                    border-radius: 8px;
+                    padding: 4px 10px;
+                    font-size: 11px;
+                    font-family: monospace;
+                    color: #38bdf8;
+                    font-weight: 700;
+                    letter-spacing: 0.5px;
+                    z-index: 12;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                }
+
+                .scifi-target-chip {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 5px;
+                    padding: 3px 9px;
+                    border-radius: 6px;
+                    font-size: 11px;
+                    font-weight: 700;
+                    cursor: pointer;
+                    transition: all 0.15s ease;
+                    border: 1px solid rgba(34, 197, 94, 0.35);
+                    background: rgba(15, 23, 42, 0.85);
+                    color: #4ade80;
+                }
+
+                .scifi-target-chip.active {
+                    background: #15803d;
+                    border-color: #4ade80;
+                    color: #ffffff;
+                    box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
+                }
+
+                .scifi-view-btn {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 5px;
+                    padding: 4px 10px;
+                    border-radius: 6px;
+                    font-size: 11px;
+                    font-weight: 700;
+                    border: 1px solid rgba(255, 255, 255, 0.25);
+                    background: rgba(15, 23, 42, 0.85);
+                    color: #e2e8f0;
+                    cursor: pointer;
+                    backdrop-filter: blur(6px);
+                    transition: all 0.15s ease;
+                }
+
+                .scifi-view-btn.active {
+                    background: rgba(34, 197, 94, 0.25);
+                    border-color: #22c55e;
+                    color: #4ade80;
                 }
 
                 .btn-close-preview {
@@ -2345,11 +2370,95 @@ export default function DiseaseDetection() {
                             </div>
                         ) : (
                             <div className="preview-box">
-                                <div className="preview-label-bar">
+                                <div className="preview-label-bar" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "6px" }}>
                                     <span className="preview-label-text">{text.selectedImage}</span>
+                                    {predictionResult?.leaf_detection?.detected ? (
+                                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                            <span style={{ fontSize: "11px", fontWeight: "700", color: "#22c55e", background: "rgba(34, 197, 94, 0.12)", border: "1px solid rgba(34, 197, 94, 0.35)", padding: "2px 8px", borderRadius: "12px", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                                                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 6px #22c55e" }}></span>
+                                                {predictionResult.leaf_detection.total_leaves_detected > 1
+                                                    ? `${predictionResult.leaf_detection.total_leaves_detected} Leaves Tracked`
+                                                    : "Primary Leaf Isolated"
+                                                } ({predictionResult.leaf_detection.confidence}%)
+                                            </span>
+                                        </div>
+                                    ) : null}
                                 </div>
-                                <div className="preview-media-frame">
-                                    <img src={preview} alt="Selected leaf" />
+
+                                {/* Multi-Target Leaf Selector (If > 1 leaves detected) */}
+                                {predictionResult?.leaf_detection?.targets?.length > 1 && (
+                                    <div style={{ display: "flex", alignItems: "center", gap: "6px", overflowX: "auto", paddingBottom: "2px" }}>
+                                        <span style={{ fontSize: "11px", fontWeight: "600", color: "#64748b" }}>Targets:</span>
+                                        {predictionResult.leaf_detection.targets.map((tgt) => (
+                                            <button
+                                                key={tgt.id}
+                                                type="button"
+                                                className={`scifi-target-chip ${activeTargetId === tgt.id ? "active" : ""}`}
+                                                onClick={() => setActiveTargetId(tgt.id)}
+                                            >
+                                                <span>{tgt.id === 1 ? "🎯" : "🍃"}</span>
+                                                {tgt.id === 1 ? "Target #01 (Primary)" : `Target #0${tgt.id}`}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+
+                                <div className="preview-media-frame" style={{ position: "relative" }}>
+                                    {/* Sci-Fi Scanning Animation when analyzing */}
+                                    {loading && (
+                                        <>
+                                            <div className="scifi-grid-overlay"></div>
+                                            <div className="scifi-laser-sweep"></div>
+                                            <div className="scifi-scanning-badge">
+                                                <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#00f0ff", boxShadow: "0 0 8px #00f0ff", animation: "pulse 1s infinite" }}></span>
+                                                AGRIMIND BIO-SCAN // LOCKING TARGET...
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {/* Render HUD overlay or original image based on toggle */}
+                                    <img
+                                        src={
+                                            overlayMode === "scifi" && predictionResult?.leaf_detection?.boundary_overlay
+                                                ? predictionResult.leaf_detection.boundary_overlay
+                                                : preview
+                                        }
+                                        alt="Selected crop leaf"
+                                        style={{
+                                            filter: predictionResult?.leaf_detection?.detected ? "drop-shadow(0 0 8px rgba(34, 197, 94, 0.2))" : "none",
+                                            transition: "filter 0.3s ease"
+                                        }}
+                                    />
+
+                                    {/* Bottom View Mode Switcher & HUD Badge */}
+                                    {predictionResult?.leaf_detection?.detected && (
+                                        <>
+                                            <div style={{ position: "absolute", bottom: "10px", left: "10px", background: "rgba(15, 23, 42, 0.88)", backdropFilter: "blur(8px)", border: "1px solid rgba(0, 240, 255, 0.4)", borderRadius: "6px", padding: "4px 9px", fontSize: "11px", color: "#38bdf8", fontWeight: "700", fontFamily: "monospace", display: "flex", alignItems: "center", gap: "6px", boxShadow: "0 2px 10px rgba(0,0,0,0.5)" }}>
+                                                <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 8px #22c55e" }}></span>
+                                                TARGET #01: PRIMARY ROI [{predictionResult.leaf_detection.confidence}%]
+                                            </div>
+
+                                            <div style={{ position: "absolute", bottom: "10px", right: "10px", display: "flex", gap: "6px", zIndex: 8 }}>
+                                                <button
+                                                    type="button"
+                                                    className={`scifi-view-btn ${overlayMode === "scifi" ? "active" : ""}`}
+                                                    onClick={() => setOverlayMode("scifi")}
+                                                    title="View Sci-Fi Scanner Overlay with targeting brackets"
+                                                >
+                                                    🎯 Scanner
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className={`scifi-view-btn ${overlayMode === "original" ? "active" : ""}`}
+                                                    onClick={() => setOverlayMode("original")}
+                                                    title="View Original Image"
+                                                >
+                                                    📷 Raw
+                                                </button>
+                                            </div>
+                                        </>
+                                    )}
+
                                     <button
                                         type="button"
                                         className="btn-close-preview"
@@ -2623,6 +2732,8 @@ export default function DiseaseDetection() {
                     >
                         {validationError.type === "CROP_MISMATCH"
                             ? `We couldn't detect a suitable ${cropDisplayName} leaf in this image.`
+                            : validationError.type === "LEAF_DETECTION_FAILED"
+                            ? `Leaf Segmentation Confidence Below 70%`
                             : "We couldn't detect a suitable crop leaf in this image."}
                     </p>
 
@@ -2639,6 +2750,8 @@ export default function DiseaseDetection() {
                     >
                         {validationError.type === "CROP_MISMATCH"
                             ? `Please upload a clear photo of a single ${cropDisplayName} leaf. Avoid photos of other crops, people, phones, equipment, soil, or other objects.`
+                            : validationError.type === "LEAF_DETECTION_FAILED"
+                            ? validationError.message || `AgriMind AI leaf detector could not isolate the leaf boundary with sufficient confidence (>= 70%). Please focus directly on a single leaf with good lighting.`
                             : "Please upload a clear photo of a single crop leaf. Avoid photos of people, phones, equipment, soil, or other objects."}
                     </p>
 
